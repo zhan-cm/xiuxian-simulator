@@ -41,6 +41,9 @@ class GameEngine:
         if action.startswith("读档"):
             return self._load(action)
 
+        if self.state.phase == "breakthrough_talent_choice":
+            return self._handle_destiny_choice(action)
+
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
         if self.state.phase in {"character_creation", "character_creation_basic"}:
@@ -56,8 +59,10 @@ class GameEngine:
         retreat_months = ProgressionEngine.parse_retreat_months(action)
         if retreat_months is not None:
             return self._cultivate(retreat=True, months=retreat_months)
-        if action == "突破":
-            return self._breakthrough_hint()
+        if action.startswith("突破"):
+            return self._breakthrough(action)
+        if action in {"背包", "资源"}:
+            return self._resources()
 
         return self._free_action(action)
 
@@ -156,8 +161,53 @@ class GameEngine:
         self._autosave()
         return f"{self.state.time_label}\n{narrative}\n\n{self._status()}"
 
-    def _breakthrough_hint(self) -> str:
+    def _breakthrough(self, action: str) -> str:
         player = self.state.player
+        ProgressionEngine.sync_realm(player)
+        if player.breakthrough_cooldown_months > 0:
+            return f"突破反噬尚未平复，还需休养 {player.breakthrough_cooldown_months} 个月。"
+        if player.stage_index == 3:
+            parts = action.split(maxsplit=1)
+            if len(parts) == 1:
+                lines = []
+                for route in ("人道", "地道", "天道"):
+                    requirements = ProgressionEngine.major_requirements(player, route)
+                    needs = "、".join(f"{name}×{count}" for name, count in requirements.items())
+                    lines.append(f"{route}：{needs}")
+                return "【大境界突破路线】\n" + "\n".join(lines) + "\n输入：突破 人道／突破 地道／突破 天道"
+            route = parts[1].strip()
+            try:
+                result = ProgressionEngine.major_breakthrough(self.state, route)
+            except ValueError as exc:
+                return str(exc)
+            self.state.advance_month()
+            if result.success:
+                choices = ProgressionEngine.destiny_choices(self.state)
+                self.state.pending_choices = choices
+                self.state.phase = "breakthrough_talent_choice"
+                self.state.remember(f"{route}突破成功：{result.old_realm} → {result.new_realm}")
+                self._autosave()
+                options = "\n".join(f"{index}. {trait}" for index, trait in enumerate(choices, 1))
+                return (
+                    f"{self.state.time_label}\n{route}突破成功：{result.old_realm} → {result.new_realm}\n"
+                    f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}\n\n"
+                    f"【逆天改命 · 三选一】\n{options}\n输入：选择 1（或直接输入天资名称）"
+                )
+            self.state.remember(
+                f"{route}突破失败：{result.failure_type}；心魔 {result.heart_roll}/{result.heart_chance}；"
+                f"雷劫 {result.thunder_roll}/{result.thunder_chance}"
+            )
+            self._autosave()
+            if result.fatal:
+                return (
+                    f"{self.state.time_label}\n{route}突破失败，{result.failure_type}将你吞没。\n"
+                    f"【陨落结局】{result.old_realm}，道途止于此地。"
+                )
+            return (
+                f"{self.state.time_label}\n{route}突破失败：败于{result.failure_type}。\n"
+                f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}\n\n"
+                + self._status()
+            )
         try:
             result = ProgressionEngine.small_breakthrough(self.state)
         except ValueError as exc:
@@ -176,6 +226,31 @@ class GameEngine:
         self._autosave()
         return f"{self.state.time_label}\n{message}\n判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._status()}"
 
+    def _handle_destiny_choice(self, action: str) -> str:
+        text = action.strip()
+        selected = ""
+        number = text.removeprefix("选择").strip()
+        if number.isdigit():
+            index = int(number)
+            if 1 <= index <= len(self.state.pending_choices):
+                selected = self.state.pending_choices[index - 1]
+        elif text in self.state.pending_choices:
+            selected = text
+        if not selected:
+            options = "、".join(f"{index}.{trait}" for index, trait in enumerate(self.state.pending_choices, 1))
+            return f"请选择本次逆天改命：{options}"
+        ProgressionEngine.apply_destiny_trait(self.state.player, selected)
+        self.state.pending_choices = []
+        self.state.phase = "playing"
+        self.state.remember(f"获得逆天改命：{selected}")
+        self._autosave()
+        return f"你选择了逆天改命【{selected}】。\n\n{self._status()}"
+
+    def _resources(self) -> str:
+        resources = self.state.player.resources
+        lines = "\n".join(f"{name} × {count}" for name, count in sorted(resources.items())) or "暂无突破资源"
+        return f"【乾坤袋 · 突破资源】\n{lines}\n普通物品：{'、'.join(self.state.player.inventory) if self.state.player.inventory else '无'}"
+
     def _status(self) -> str:
         p = self.state.player
         return (
@@ -189,6 +264,7 @@ class GameEngine:
             f"灵力 {p.spirit}/{p.spirit_max}｜修为 {p.cultivation}/{p.cultivation_required}\n"
             f"灵石 {p.spirit_stones}｜功德 {p.merit}｜业力 {p.karma}｜声望 {p.reputation}｜异常 {p.condition}\n"
             f"天赋：{'、'.join(p.talents) if p.talents else '无'}\n"
+            f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 

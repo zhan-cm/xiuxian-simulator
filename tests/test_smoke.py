@@ -164,6 +164,71 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(engine.state.phase, "ended")
             self.assertIn("坐化结局", result)
 
+    def test_major_breakthrough_requires_route_resource(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.stage_index = 3
+            engine.state.player.cultivation = engine.state.player.cultivation_required
+            result = engine.process("突破 人道")
+            self.assertIn("筑基丹×1", result)
+            self.assertEqual(engine.state.player.realm_index, 0)
+
+    def test_major_breakthrough_success_and_destiny_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.stage_index = 3
+            player.cultivation = player.cultivation_required
+            player.dao_heart = 20
+            player.fortune = 20
+            player.merit = 100
+            player.resources["筑基丹"] = 1
+            engine.state.rng_seed = 1
+            result = engine.process("突破 人道")
+            self.assertIn("逆天改命", result)
+            self.assertEqual(player.realm_index, 1)
+            self.assertNotIn("筑基丹", player.resources)
+            self.assertEqual(engine.state.phase, "breakthrough_talent_choice")
+            choices = list(engine.state.pending_choices)
+            chosen = engine.process("选择 1")
+            self.assertIn(choices[0], chosen)
+            self.assertIn(choices[0], player.destiny_traits)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_failed_major_breakthrough_applies_cooldown(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.stage_index = 3
+            player.cultivation = player.cultivation_required
+            player.dao_heart = 1
+            player.fortune = 1
+            player.karma = 100
+            player.resources.update({"天材地宝": 1, "五行灵珠": 1, "道韵": 1})
+            for seed in range(1, 100):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                result = ProgressionEngine.major_breakthrough(probe, "天道")
+                if not result.success:
+                    engine.state.rng_seed = seed
+                    break
+            output = engine.process("突破 天道")
+            self.assertIn("突破失败", output)
+            self.assertGreater(player.breakthrough_cooldown_months, 0)
+            blocked = engine.process("突破")
+            self.assertIn("还需休养", blocked)
+            remaining = player.breakthrough_cooldown_months
+            for _ in range(remaining):
+                engine.state.advance_month()
+            self.assertEqual(player.breakthrough_cooldown_months, 0)
+            self.assertIn("大境界突破路线", engine.process("突破"))
+
 
 if __name__ == "__main__":
     unittest.main()

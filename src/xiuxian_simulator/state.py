@@ -39,6 +39,9 @@ class PlayerState:
     cultivation_required: int = 100
     primary_technique: str = "聚气诀"
     primary_technique_grade: str = "黄阶"
+    breakthrough_cooldown_months: int = 0
+    breakthrough_quality: dict[int, str] = field(default_factory=dict)
+    destiny_traits: list[str] = field(default_factory=list)
     spirit_stones: int = 100
     merit: int = 0
     karma: int = 0
@@ -49,13 +52,14 @@ class PlayerState:
     location: str = "东洲·青岳"
     character_notes: str = "默认创角"
     inventory: list[str] = field(default_factory=list)
+    resources: dict[str, int] = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
     modifiers: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.3.0"
+    version: str = "0.4.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -68,6 +72,7 @@ class GameState:
     aura_level: str = "普通"
     rng_seed: int = 20260827
     rng_counter: int = 0
+    pending_choices: list[str] = field(default_factory=list)
 
     @property
     def time_label(self) -> str:
@@ -84,6 +89,8 @@ class GameState:
                 if self.player.age >= self.player.lifespan:
                     died_of_age = True
             self.turn += 1
+            if self.player.breakthrough_cooldown_months > 0:
+                self.player.breakthrough_cooldown_months -= 1
         return died_of_age
 
     def remember(self, event: str) -> None:
