@@ -23,7 +23,12 @@ class PlayerState:
     dao_heart: int = 10
     fortune: int = 10
     appearance: str = "清秀"
+    appearance_description: str = "眉目清秀，神情沉静"
+    background: str = "农家子"
+    dao_path: str = "问道飞升"
     spiritual_root: str = "木火双灵根"
+    constitution: str = "凡体"
+    talents: list[str] = field(default_factory=list)
     health: int = 100
     health_max: int = 100
     spirit: int = 100
@@ -33,14 +38,20 @@ class PlayerState:
     spirit_stones: int = 100
     merit: int = 0
     karma: int = 0
+    reputation: int = 0
+    alchemy_level: int = 0
+    initial_affinity_bonus: int = 0
     condition: str = "无"
     location: str = "东洲·青岳"
     character_notes: str = "默认创角"
+    inventory: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    modifiers: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.1.0"
+    version: str = "0.2.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -49,6 +60,7 @@ class GameState:
     main_quest: str = "灵气潮汐将至"
     history: list[str] = field(default_factory=list)
     rule_sha256: str = ""
+    character_draft: dict[str, Any] = field(default_factory=dict)
 
     @property
     def time_label(self) -> str:
@@ -76,4 +88,3 @@ class GameState:
         data = dict(payload)
         data["player"] = PlayerState(**data.get("player", {}))
         return cls(**data)
-
