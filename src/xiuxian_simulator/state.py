@@ -15,6 +15,8 @@ class PlayerState:
     age: int = 16
     lifespan: int = 100
     realm: str = "炼气·初期"
+    realm_index: int = 0
+    stage_index: int = 0
     sect: str = "散修"
     aptitude: int = 10
     comprehension: int = 10
@@ -35,6 +37,8 @@ class PlayerState:
     spirit_max: int = 100
     cultivation: int = 0
     cultivation_required: int = 100
+    primary_technique: str = "聚气诀"
+    primary_technique_grade: str = "黄阶"
     spirit_stones: int = 100
     merit: int = 0
     karma: int = 0
@@ -51,7 +55,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.2.0"
+    version: str = "0.3.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -61,19 +65,26 @@ class GameState:
     history: list[str] = field(default_factory=list)
     rule_sha256: str = ""
     character_draft: dict[str, Any] = field(default_factory=dict)
+    aura_level: str = "普通"
+    rng_seed: int = 20260827
+    rng_counter: int = 0
 
     @property
     def time_label(self) -> str:
         return f"天玄历 {self.calendar_year} 年 · {MONTH_NAMES[self.month - 1]}"
 
-    def advance_month(self, months: int = 1) -> None:
+    def advance_month(self, months: int = 1) -> bool:
+        died_of_age = False
         for _ in range(months):
             self.month += 1
             if self.month > 12:
                 self.month = 1
                 self.calendar_year += 1
                 self.player.age += 1
+                if self.player.age >= self.player.lifespan:
+                    died_of_age = True
             self.turn += 1
+        return died_of_age
 
     def remember(self, event: str) -> None:
         self.history.append(f"第 {self.turn} 回合｜{self.time_label}｜{event}")

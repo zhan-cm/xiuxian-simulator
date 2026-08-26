@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
 from .narrator import Narrator
+from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
@@ -49,7 +50,12 @@ class GameEngine:
         if self.state.phase == "ended":
             return "此世已终。输入“开始游戏”可创建新的轮回。"
         if action == "修炼":
-            return self._cultivate()
+            return self._cultivate(retreat=False)
+        if action == "闭关":
+            return self._cultivate(retreat=True)
+        retreat_months = ProgressionEngine.parse_retreat_months(action)
+        if retreat_months is not None:
+            return self._cultivate(retreat=True, months=retreat_months)
         if action == "突破":
             return self._breakthrough_hint()
 
@@ -113,23 +119,38 @@ class GameEngine:
             + "\n\n【洞府主界面】\n石屋一间，灵气普通，设施尚无。你可修炼、外出或自由行动。"
         )
 
-    def _cultivate(self) -> str:
+    def _cultivate(self, retreat: bool, months: int = 1) -> str:
         player = self.state.player
-        constitution_multiplier = player.modifiers.get("cultivation_multiplier", 1.0)
-        gain = max(1, round(10 * (1 + player.aptitude * 0.05) * 1.3 * constitution_multiplier))
-        before = player.cultivation
-        player.cultivation = min(player.cultivation_required, before + gain)
-        self.state.advance_month()
-        self.state.remember(f"闭关修炼一月，修为 +{player.cultivation - before}")
+        gain, breakdown, months_used = ProgressionEngine.cultivate(self.state, months=months, retreat=retreat)
+        if months_used == 0:
+            return f"修为已圆满：{player.cultivation}/{player.cultivation_required}。请先尝试突破。"
+        died_of_age = self.state.advance_month(months_used)
+        mode = "闭关" if retreat else "吐纳"
+        self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}")
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.remember("寿元耗尽，坐化")
         self._autosave()
+        if died_of_age:
+            return (
+                f"{self.state.time_label}\n岁月无声，你在闭关中走到了寿元尽头。\n"
+                f"【坐化结局】享年 {player.age} 岁，境界 {player.realm}。"
+            )
+        early_stop = "，修为圆满后自动出关" if months_used < months else ""
         return (
-            f"{self.state.time_label}\n你在石屋中吐纳一月，灵气沿经脉缓缓流转。\n"
-            f"修为 +{player.cultivation - before}（{player.cultivation}/{player.cultivation_required}）\n\n"
+            f"{self.state.time_label}\n你在石屋中{mode}{months_used}月{early_stop}，灵气沿经脉缓缓流转。\n"
+            f"修为 +{gain}（{player.cultivation}/{player.cultivation_required}）\n"
+            f"结算：{breakdown.summary()}／月\n\n"
             + self._status()
         )
 
     def _free_action(self, action: str) -> str:
-        self.state.advance_month()
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.remember("寿元耗尽，坐化")
+            self._autosave()
+            return f"{self.state.time_label}\n你在行动途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
         narrative = self.narrator.narrate(action, self.state)
         self.state.remember(action)
         self._autosave()
@@ -137,12 +158,23 @@ class GameEngine:
 
     def _breakthrough_hint(self) -> str:
         player = self.state.player
-        if player.cultivation < player.cultivation_required:
-            return (
-                f"修为尚未圆满：{player.cultivation}/{player.cultivation_required}。"
-                "突破必须有失败与代价，V0.1 不会允许提前无风险破境。"
-            )
-        return "修为已圆满。人道、地道、天道三条突破路线的完整判定将在下一阶段实现；当前不会伪造成功。"
+        try:
+            result = ProgressionEngine.small_breakthrough(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.remember("突破期间寿元耗尽，坐化")
+            self._autosave()
+            return f"突破尚未落定，你已寿元耗尽。\n【坐化结局】享年 {player.age} 岁。"
+        if result.success:
+            message = f"突破成功：{result.old_realm} → {result.new_realm}，修为归零。"
+        else:
+            message = f"突破失败：修为跌回 70%，当前 {result.cultivation_after}/{player.cultivation_required}。"
+        self.state.remember(f"{message} 掷骰 {result.roll}/{result.chance}")
+        self._autosave()
+        return f"{self.state.time_label}\n{message}\n判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._status()}"
 
     def _status(self) -> str:
         p = self.state.player
@@ -189,5 +221,6 @@ class GameEngine:
             "【指令大全 · 问道长生】\n"
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
             "退出：退出／quit／Ctrl+C\n"
-            "其余任何文字都视为自由行动；V0.1 本地叙事器会推进一个月并记录历史。"
+            "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
+            "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

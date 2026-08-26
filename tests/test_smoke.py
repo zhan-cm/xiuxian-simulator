@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
 
 from xiuxian_simulator.engine import GameEngine
 from xiuxian_simulator.narrator import LocalNarrator
+from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
 from xiuxian_simulator.save_manager import SaveManager
 from xiuxian_simulator.state import GameState
@@ -112,6 +113,56 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.player.cultivation, 42)
         self.assertEqual(state.player.constitution, "凡体")
         self.assertEqual(state.character_draft, {})
+
+    def test_cultivation_formula_and_retreat_multiplier(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            normal = ProgressionEngine.cultivation_gain(engine.state, retreat=False)
+            retreat = ProgressionEngine.cultivation_gain(engine.state, retreat=True)
+            self.assertEqual(retreat.retreat, 2.0)
+            self.assertLessEqual(abs(retreat.total - normal.total * 2), 1)
+            self.assertEqual(normal.spiritual_root, 1.6)
+
+    def test_multi_month_retreat_advances_time_and_caps_cultivation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            result = engine.process("闭关3月")
+            self.assertEqual(engine.state.month, 3)
+            self.assertEqual(engine.state.turn, 3)
+            self.assertEqual(engine.state.player.cultivation, engine.state.player.cultivation_required)
+            self.assertIn("自动出关", result)
+            self.assertIn("结算：", result)
+
+    def test_small_breakthrough_is_reproducible(self) -> None:
+        with tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+            left = self.make_engine(Path(left_dir))
+            right = self.make_engine(Path(right_dir))
+            for engine in (left, right):
+                engine.process("开始游戏")
+                engine.process("确认默认创角")
+                engine.state.player.cultivation = engine.state.player.cultivation_required
+                engine.state.rng_seed = 42
+            left_result = left.process("突破")
+            right_result = right.process("突破")
+            self.assertEqual(left_result, right_result)
+            self.assertEqual(left.state.player.stage_index, right.state.player.stage_index)
+            self.assertEqual(left.state.player.cultivation, right.state.player.cultivation)
+
+    def test_lifespan_exhaustion_ends_game(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.month = 12
+            engine.state.player.age = 99
+            engine.state.player.lifespan = 100
+            result = engine.process("修炼")
+            self.assertEqual(engine.state.phase, "ended")
+            self.assertIn("坐化结局", result)
 
 
 if __name__ == "__main__":
