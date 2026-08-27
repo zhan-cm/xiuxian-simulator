@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .config import Settings
 from .engine import GameEngine
-from .narrator import LocalNarrator
+from .narrator import FallbackNarrator, LocalNarrator, OpenAINarrator
 from .rules import RuleBook
 from .save_manager import SaveManager
 
@@ -18,9 +18,24 @@ def build_engine(root: Path | None = None) -> GameEngine:
     settings = Settings.from_root(root or find_project_root())
     rules = RuleBook.load(settings.rule_docx)
     saves = SaveManager(settings.save_dir)
-    if settings.narrator != "local":
-        raise ValueError(f"尚未安装叙事器：{settings.narrator!r}；V0.1 请使用 XIU_NARRATOR=local")
-    return GameEngine(rules, saves, LocalNarrator(), settings.autosave_name)
+    local = LocalNarrator()
+    if settings.narrator == "local":
+        narrator = local
+    elif settings.narrator == "openai":
+        instructions = settings.overlay_prompt.read_text(encoding="utf-8")
+        narrator = FallbackNarrator(
+            OpenAINarrator(
+                api_key=settings.openai_api_key,
+                model=settings.model,
+                instructions=instructions,
+                base_url=settings.api_base,
+                timeout=settings.api_timeout,
+            ),
+            local,
+        )
+    else:
+        raise ValueError(f"未知叙事器：{settings.narrator!r}；可选 local 或 openai。")
+    return GameEngine(rules, saves, narrator, settings.autosave_name)
 
 
 def main() -> None:
@@ -30,8 +45,9 @@ def main() -> None:
         print(f"启动失败：{exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
-    print("问道长生 V0.12 本地基线版")
+    print("问道长生 V0.13 本地基线版")
     print(engine.rules.summary)
+    print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")
 
     while True:

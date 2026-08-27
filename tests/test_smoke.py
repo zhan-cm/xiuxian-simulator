@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +23,8 @@ from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
 from xiuxian_simulator.world import SectProgressionEngine, WorldTimelineEngine
-from xiuxian_simulator.narrator import LocalNarrator
+from xiuxian_simulator.config import Settings
+from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
 from xiuxian_simulator.save_manager import SaveManager
@@ -1072,6 +1075,75 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.world_events, [])
         self.assertEqual(state.world_event_keys, [])
         self.assertEqual(state.world_tension, 0)
+
+    def test_openai_narrator_builds_responses_payload(self) -> None:
+        captured = {}
+
+        def transport(url, headers, payload, timeout):
+            captured.update(url=url, headers=headers, payload=payload, timeout=timeout)
+            return {"output_text": "山风掠过青岳，你的试探引来一声遥远剑鸣。"}
+
+        narrator = OpenAINarrator(
+            api_key="test-key",
+            model="test-model",
+            instructions="只负责叙事",
+            transport=transport,
+        )
+        state = GameState(phase="playing")
+        state.history = [f"经历{i}" for i in range(12)]
+        result = narrator.narrate("夜探藏经阁", state)
+        self.assertIn("剑鸣", result)
+        self.assertEqual(captured["url"], "https://api.openai.com/v1/responses")
+        self.assertEqual(captured["payload"]["model"], "test-model")
+        self.assertFalse(captured["payload"]["store"])
+        self.assertIn("夜探藏经阁", captured["payload"]["input"])
+        self.assertNotIn("经历0", captured["payload"]["input"])
+        self.assertIn("经历11", captured["payload"]["input"])
+        self.assertEqual(captured["headers"]["Authorization"], "Bearer test-key")
+
+    def test_openai_narrator_parses_nested_output_text(self) -> None:
+        narrator = OpenAINarrator(
+            api_key="test-key",
+            model="test-model",
+            instructions="只负责叙事",
+            transport=lambda *_: {
+                "output": [
+                    {"type": "message", "content": [{"type": "output_text", "text": "第一句。"}]},
+                    {"type": "message", "content": [{"type": "output_text", "text": "第二句。"}]},
+                ]
+            },
+        )
+        self.assertEqual(narrator.narrate("观云", GameState(phase="playing")), "第一句。\n第二句。")
+
+    def test_openai_narrator_requires_api_key(self) -> None:
+        with self.assertRaisesRegex(ValueError, "OPENAI_API_KEY"):
+            OpenAINarrator(api_key="", model="test-model", instructions="叙事")
+
+    def test_cloud_narrator_falls_back_without_losing_turn(self) -> None:
+        primary = OpenAINarrator(
+            api_key="test-key",
+            model="test-model",
+            instructions="叙事",
+            transport=lambda *_: (_ for _ in ()).throw(NarrationError("模拟断网")),
+        )
+        narrator = FallbackNarrator(primary, LocalNarrator())
+        result = narrator.narrate("登高", GameState(phase="playing"))
+        self.assertIn("自动切换本地叙事", result)
+        self.assertIn("登高", result)
+        self.assertIn("模拟断网", narrator.last_error)
+
+    def test_settings_loads_local_dotenv_without_overriding_environment(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / ".env").write_text(
+                "XIU_NARRATOR=openai\nOPENAI_API_KEY=file-key\nXIU_MODEL=file-model\n",
+                encoding="utf-8",
+            )
+            with mock.patch.dict(os.environ, {"XIU_MODEL": "environment-model"}, clear=True):
+                settings = Settings.from_root(root)
+            self.assertEqual(settings.narrator, "openai")
+            self.assertEqual(settings.openai_api_key, "file-key")
+            self.assertEqual(settings.model, "environment-model")
 
 
 if __name__ == "__main__":

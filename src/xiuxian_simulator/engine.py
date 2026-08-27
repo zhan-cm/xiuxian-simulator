@@ -44,6 +44,8 @@ class GameEngine:
             return self._help()
         if action == "面板":
             return self._status()
+        if action == "叙事器":
+            return f"当前叙事器：{self.narrator.name}"
         if action.startswith("存档"):
             return self._save(action)
         if action.startswith("读档"):
