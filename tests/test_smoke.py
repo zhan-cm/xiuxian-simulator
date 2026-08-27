@@ -1528,6 +1528,12 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn('id="guideDialog"', page)
         self.assertIn("xiuxian-guide-seen", script)
 
+    def test_windows_launchers_use_cmd_compatible_line_endings(self) -> None:
+        for name in ("启动网页版.bat", "检查环境.bat"):
+            payload = (ROOT / name).read_bytes()
+            self.assertIn(b"\r\n", payload)
+            self.assertNotIn(b"\n", payload.replace(b"\r\n", b""))
+
     def test_fifty_year_world_simulation_is_bounded_and_reproducible(self) -> None:
         left = GameState(phase="playing", rng_seed=991)
         right = GameState.from_dict(left.to_dict())
