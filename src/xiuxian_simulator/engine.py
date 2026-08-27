@@ -8,6 +8,7 @@ from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
+from .world import SectProgressionEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
 from .rules import RuleBook
@@ -15,7 +16,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 战斗 技艺 情缘 世情 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 天下 战斗 技艺 情缘 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -60,6 +61,8 @@ class GameEngine:
             return self._adventure_ready(action)
         if self.state.phase == "adventure":
             return self._adventure_action(action)
+        if self.state.phase == "sect_defection_ready":
+            return self._sect_defection_ready(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -95,10 +98,18 @@ class GameEngine:
             return self._market()
         if action == "宗门":
             return self._sect()
+        if action == "申请晋升":
+            return self._sect_promotion()
+        if action == "宗门大比":
+            return self._sect_tournament()
+        if action == "叛宗":
+            return self._prepare_defection()
         if action.startswith("拜入"):
             return self._join_sect(action)
         if action.startswith("宗门任务"):
             return self._sect_task(action)
+        if action in {"天下", "大事记"}:
+            return self._world_timeline()
         if action in {"道法", "功法", "法术", "法宝"}:
             return self._arts()
         if action.startswith("参悟"):
@@ -499,9 +510,102 @@ class GameEngine:
                 + "\n".join(f"{sect}｜入门试炼" for sect in SECTS)
                 + "\n输入：拜入 青云宗（试炼会推进一个月，可能失败）"
             )
+        target, contribution, minimum_realm = SectProgressionEngine.promotion_requirements(self.state)
+        promotion = (
+            f"下一职位 {target}｜贡献要求 {contribution}｜境界要求 第{minimum_realm + 1}大境界"
+            if target
+            else "已位列掌门"
+        )
+        tournament = "本年可参加" if SectProgressionEngine.tournament_available(self.state) else "本年未开放"
+        privileges = "、".join(self.state.sect_privileges) or "暂无"
         return (
-            f"【{player.sect} · {player.sect_rank}】\n贡献：{player.sect_contribution}\n"
-            f"任务：{'、'.join(SECT_TASKS)}\n输入：宗门任务 采药"
+            f"【{player.sect} · {player.sect_rank}】\n贡献：{player.sect_contribution}｜权限：{privileges}\n"
+            f"晋升：{promotion}\n宗门大比：{tournament}\n"
+            f"任务：{'、'.join(SECT_TASKS)}\n"
+            "指令：宗门任务 采药／申请晋升／宗门大比／叛宗"
+        )
+
+    def _sect_promotion(self) -> str:
+        try:
+            result = SectProgressionEngine.promote(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died = self._advance_time()
+        verdict = f"晋升为{result.new_rank}" if result.success else "晋升试炼未获认可"
+        self.state.remember(f"宗门晋升：{verdict}；判定{result.roll}/{result.chance}")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "晋升试炼后寿元耗尽"
+        self._autosave()
+        if died:
+            return "晋升试炼结束后，你的寿元也走到尽头。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【宗门晋升试炼】{verdict}\n"
+            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._sect()}"
+        )
+
+    def _sect_tournament(self) -> str:
+        try:
+            result = SectProgressionEngine.tournament(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died = self._advance_time()
+        verdict = "夺得魁首" if result.success else "止步本届大比"
+        reward = f"、{result.reward} +1" if result.reward else ""
+        self.state.remember(
+            f"宗门大比{verdict}；贡献+{result.contribution}、声望+{result.reputation}{reward}"
+        )
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "宗门大比后寿元耗尽"
+        self._autosave()
+        if died:
+            return "大比落幕后，你在众人注视中寿元耗尽。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【宗门大比】{verdict}\n"
+            f"判定：1d100={result.roll}，胜率 {result.chance}%｜"
+            f"贡献 +{result.contribution}｜声望 +{result.reputation}{reward}\n\n{self._sect()}"
+        )
+
+    def _prepare_defection(self) -> str:
+        if self.state.player.sect == "散修":
+            return "你本就是散修，无宗可叛。"
+        self.state.phase = "sect_defection_ready"
+        self._autosave()
+        return (
+            f"【叛宗警告】你将离开{self.state.player.sect}，清空宗门贡献，声望 -30、业力 +5，"
+            "并留下可能被追杀的叛宗标记。\n输入“确认叛宗”承担后果，或输入“取消”。"
+        )
+
+    def _sect_defection_ready(self, action: str) -> str:
+        if action == "取消":
+            self.state.phase = "playing"
+            self._autosave()
+            return "你收回叛宗之念，此事尚未传出。\n\n" + self._sect()
+        if action != "确认叛宗":
+            return "叛宗是重大决定：请输入“确认叛宗”或“取消”。"
+        try:
+            old_sect = SectProgressionEngine.defect(self.state)
+        except ValueError as exc:
+            self.state.phase = "playing"
+            return str(exc)
+        self.state.phase = "playing"
+        died = self._advance_time()
+        self.state.remember(f"叛离{old_sect}，成为散修")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "叛宗途中寿元耗尽"
+        self._autosave()
+        if died:
+            return "你逃出宗门，却在荒野中寿元耗尽。\n【坐化结局】"
+        return f"{self.state.time_label}\n你已叛离{old_sect}，从此重归散修。\n\n{self._status()}"
+
+    def _world_timeline(self) -> str:
+        schedule = "\n".join(WorldTimelineEngine.schedule_lines(self.state))
+        recent = "\n".join(self.state.world_events[-8:]) or "尚无足以载入史册的大事"
+        return (
+            f"【九州天下 · 局势 {self.state.world_tension}】\n{schedule}\n\n"
+            f"【近期大事记】\n{recent}"
         )
 
     def _join_sect(self, action: str) -> str:
@@ -992,6 +1096,7 @@ class GameEngine:
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"人物动态：{self.state.last_npc_event or '众生各循其道'}\n"
+            f"天下大势：{self.state.last_world_event or '灵气潮汐尚在暗中酝酿'}｜局势 {self.state.world_tension}\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 
@@ -1023,6 +1128,7 @@ class GameEngine:
         for _ in range(months):
             died_of_age = self.state.advance_month() or died_of_age
             NpcEcologyEngine.tick(self.state)
+            WorldTimelineEngine.tick(self.state)
         return died_of_age
 
     @staticmethod
@@ -1034,7 +1140,8 @@ class GameEngine:
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
-            "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
+            "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜叛宗\n"
+            "天下｜查看升仙大会、宗门大比、猎魔大会、拍卖会与灵气潮汐时间线\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"

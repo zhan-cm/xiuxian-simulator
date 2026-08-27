@@ -20,6 +20,7 @@ from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
+from xiuxian_simulator.world import SectProgressionEngine, WorldTimelineEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -955,6 +956,122 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.npc_invitations, {})
         self.assertEqual(state.npc_event_log, [])
         self.assertEqual(state.last_npc_event, "")
+
+    def test_world_timeline_triggers_calendar_events_once(self) -> None:
+        state = GameState(phase="playing", calendar_year=390, month=1)
+        events = WorldTimelineEngine.tick(state)
+        self.assertTrue(any("升仙大会" in event for event in events))
+        self.assertTrue(any("宗门大比" in event for event in events))
+        before = list(state.world_events)
+        self.assertEqual(WorldTimelineEngine.tick(state), [])
+        self.assertEqual(state.world_events, before)
+
+    def test_crossing_year_updates_world_timeline(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.calendar_year = 389
+            engine.state.month = 12
+            engine.process("静候新岁")
+            self.assertEqual((engine.state.calendar_year, engine.state.month), (390, 1))
+            self.assertTrue(any("升仙大会" in event for event in engine.state.world_events))
+            self.assertTrue(any("宗门大比" in event for event in engine.state.world_events))
+
+    def test_sect_promotion_checks_contribution_and_realm(self) -> None:
+        state = GameState(phase="playing")
+        state.player.sect = "青云宗"
+        state.player.sect_rank = "外门弟子"
+        with self.assertRaisesRegex(ValueError, "需要贡献 100"):
+            SectProgressionEngine.promote(state)
+        state.player.sect_contribution = 100
+        state.player.reputation = 100
+        for seed in range(1, 300):
+            probe = GameState.from_dict(state.to_dict())
+            probe.rng_seed = seed
+            result = SectProgressionEngine.promote(probe)
+            if result.success:
+                state = probe
+                break
+        else:
+            self.fail("未找到晋升成功的确定性种子")
+        self.assertEqual(state.player.sect_rank, "内门弟子")
+        self.assertIn("青云宗内门弟子权限", state.sect_privileges)
+
+    def test_engine_sect_promotion_advances_one_month(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.sect = "青云宗"
+            engine.state.player.sect_rank = "外门弟子"
+            engine.state.player.sect_contribution = 100
+            engine.state.player.reputation = 100
+            for seed in range(1, 300):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if SectProgressionEngine.promote(probe).success:
+                    engine.state.rng_seed = seed
+                    break
+            before = engine.state.turn
+            result = engine.process("申请晋升")
+            self.assertIn("晋升为内门弟子", result)
+            self.assertEqual(engine.state.turn, before + 1)
+
+    def test_sect_tournament_is_decennial_and_single_entry(self) -> None:
+        state = GameState(phase="playing", calendar_year=391)
+        state.player.sect = "玄剑门"
+        state.player.sect_rank = "外门弟子"
+        with self.assertRaisesRegex(ValueError, "下一届"):
+            SectProgressionEngine.tournament(state)
+        state.calendar_year = 390
+        state.player.sect_contribution = 500
+        state.player.reputation = 100
+        for seed in range(1, 300):
+            probe = GameState.from_dict(state.to_dict())
+            probe.rng_seed = seed
+            result = SectProgressionEngine.tournament(probe)
+            if result.success:
+                state = probe
+                break
+        else:
+            self.fail("未找到大比夺魁的确定性种子")
+        self.assertEqual(state.player.resources["太虚剑典残卷"], 1)
+        with self.assertRaisesRegex(ValueError, "已经参加过"):
+            SectProgressionEngine.tournament(state)
+
+    def test_defection_requires_confirmation_and_has_consequences(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.sect = "丹霞谷"
+            player.sect_rank = "内门弟子"
+            player.sect_contribution = 180
+            warning = engine.process("叛宗")
+            self.assertIn("叛宗警告", warning)
+            self.assertEqual(engine.state.phase, "sect_defection_ready")
+            result = engine.process("确认叛宗")
+            self.assertIn("重归散修", result)
+            self.assertEqual(player.sect, "散修")
+            self.assertEqual(player.sect_contribution, 0)
+            self.assertEqual(player.karma, 5)
+            self.assertTrue(any("叛离丹霞谷" in tag for tag in player.tags))
+
+    def test_v11_save_payload_gets_world_and_sect_defaults(self) -> None:
+        payload = {
+            "version": "0.11.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.sect_privileges, [])
+        self.assertEqual(state.sect_tournament_results, {})
+        self.assertEqual(state.world_events, [])
+        self.assertEqual(state.world_event_keys, [])
+        self.assertEqual(state.world_tension, 0)
 
 
 if __name__ == "__main__":
