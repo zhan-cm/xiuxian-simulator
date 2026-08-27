@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .engine import GameEngine
+from .presentation import present_action, welcome_presentation
 
 
 CONTENT_TYPES = {
@@ -24,12 +25,14 @@ class WebApplication:
         self.engine = engine
         self.web_root = web_root.resolve()
         self._lock = threading.Lock()
+        self._presentation = welcome_presentation()
 
     def snapshot(self) -> dict[str, Any]:
         return {
             "state": self.engine.state.to_dict(),
             "narrator": self.engine.narrator.name,
             "save_names": self.engine.saves.list_names(),
+            "presentation": self._presentation,
         }
 
     @staticmethod
@@ -54,7 +57,10 @@ class WebApplication:
             if len(action) > 2000:
                 return self._json({"error": "单次行动不能超过 2000 个字符。"}, HTTPStatus.BAD_REQUEST)
             with self._lock:
+                before = self.engine.state.to_dict()
                 output = self.engine.process(action.strip())
+                after = self.engine.state.to_dict()
+                self._presentation = present_action(action.strip(), output, before, after)
                 snapshot = self.snapshot()
             return self._json({"output": output, **snapshot})
         if method != "GET":
@@ -72,7 +78,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.14"
+        server_version = "XiuxianSimulator/0.15"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

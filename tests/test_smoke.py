@@ -26,6 +26,7 @@ from xiuxian_simulator.world import SectProgressionEngine, WorldTimelineEngine
 from xiuxian_simulator.webapp import WebApplication
 from xiuxian_simulator.config import Settings
 from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
+from xiuxian_simulator.presentation import present_action, welcome_presentation
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
 from xiuxian_simulator.save_manager import SaveManager
@@ -1154,12 +1155,14 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertIn("text/html", content_type)
             self.assertIn("问道长生", body.decode("utf-8"))
+            self.assertIn("eventHero", body.decode("utf-8"))
             status, content_type, body = app.dispatch("GET", "/api/state")
             payload = json.loads(body)
             self.assertEqual(status, 200)
             self.assertIn("application/json", content_type)
             self.assertEqual(payload["state"]["phase"], "new")
             self.assertIn("Narrator", payload["narrator"])
+            self.assertEqual(payload["presentation"]["title"], "灵气潮汐将至")
 
     def test_web_action_endpoint_drives_same_game_engine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1171,7 +1174,41 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertIn("创角大面板", payload["output"])
             self.assertEqual(payload["state"]["phase"], "character_creation_basic")
+            self.assertEqual(payload["presentation"]["tone"], "system")
+            self.assertTrue(payload["presentation"]["sections"])
             self.assertTrue((Path(temp_dir) / "autosave.json").is_file())
+
+    def test_event_presenter_builds_state_change_components(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before = engine.state.to_dict()
+            output = engine.process("修炼")
+            presentation = present_action("修炼", output, before, engine.state.to_dict())
+            labels = {item["label"] for item in presentation["changes"]}
+            self.assertEqual(presentation["tone"], "cultivation")
+            self.assertIn("修为", labels)
+            self.assertIn("时间流逝", labels)
+            self.assertTrue(presentation["has_details"])
+            self.assertNotIn("【状态卡", "".join(presentation["paragraphs"]))
+
+    def test_event_presenter_detects_resources_and_affinity(self) -> None:
+        before = GameState(phase="playing").to_dict()
+        after_state = GameState.from_dict(json.loads(json.dumps(before, ensure_ascii=False)))
+        after_state.player.resources["聚气丹"] = 2
+        after_state.npc_relations["顾清玄"] = {"affinity": 5}
+        result = present_action("送礼 顾清玄 聚气丹", "【赠礼成功】顾清玄欣然收下。", before, after_state.to_dict())
+        changes = {(item["label"], item["value"]) for item in result["changes"]}
+        self.assertIn(("聚气丹", "+2"), changes)
+        self.assertIn(("顾清玄好感", "+5"), changes)
+        self.assertEqual(result["tone"], "relation")
+
+    def test_welcome_presentation_is_component_ready(self) -> None:
+        result = welcome_presentation()
+        self.assertEqual(result["seal"], "道")
+        self.assertGreaterEqual(len(result["paragraphs"]), 2)
+        self.assertFalse(result["has_details"])
 
     def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1201,6 +1238,17 @@ class SimulatorSmokeTests(unittest.TestCase):
         state = GameState.from_dict(payload)
         self.assertEqual(state.player.name, "旧档修士")
         self.assertEqual(state.version, "0.13.0")
+
+    def test_v14_save_payload_remains_compatible_with_structured_ui(self) -> None:
+        payload = {
+            "version": "0.14.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.name, "旧档修士")
+        self.assertEqual(state.version, "0.14.0")
 
 
 if __name__ == "__main__":

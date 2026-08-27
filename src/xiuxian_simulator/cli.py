@@ -63,7 +63,7 @@ def main() -> None:
         )
         return
 
-    print("问道长生 V0.14 本地基线版")
+    print("问道长生 V0.15 本地基线版")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

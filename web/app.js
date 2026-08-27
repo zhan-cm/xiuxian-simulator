@@ -25,6 +25,90 @@ function setBar(prefix, value, max) {
   $(`${prefix}Bar`).style.width = `${percent(value, max)}%`;
 }
 
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderPresentation(presentation) {
+  const view = presentation || {
+    title: "天道推演",
+    eyebrow: "云深不知处",
+    seal: "道",
+    tone: "story",
+    paragraphs: ["等待下一次天道推演。"],
+    changes: [],
+    sections: [],
+    details: "",
+    has_details: false,
+  };
+
+  $("eventHero").dataset.tone = view.tone || "story";
+  $("eventSeal").textContent = view.seal || "道";
+  $("eventEyebrow").textContent = view.eyebrow || "天道推演";
+  $("eventTitle").textContent = view.title || "天道推演";
+  $("storyOutput").replaceChildren(...(view.paragraphs || []).map((text) => element("p", "", text)));
+
+  $("changeRibbon").replaceChildren(...(view.changes || []).map((change) => {
+    const card = element("article", "change-chip");
+    card.dataset.tone = change.tone || "story";
+    const seal = element("span", "change-seal", change.seal || "变");
+    const copy = element("span", "change-copy");
+    copy.append(element("small", "", change.label), element("strong", "", change.value));
+    card.append(seal, copy);
+    return card;
+  }));
+
+  $("eventSections").replaceChildren(...(view.sections || []).map((section, index) => {
+    const card = element("article", "event-section");
+    card.dataset.kind = section.kind || "note";
+    card.style.setProperty("--section-order", index);
+    const head = element("div", "section-head");
+    head.append(element("span", "section-mark", section.title.slice(0, 1)), element("h4", "", section.title));
+    const body = element("div", "section-body");
+    for (const line of (section.body || "").split("\n").filter(Boolean).slice(0, 8)) {
+      body.append(element("p", "", line));
+    }
+    card.append(head, body);
+    return card;
+  }));
+
+  const details = $("eventDetails");
+  details.hidden = !view.has_details;
+  details.open = false;
+  $("eventDetailsText").textContent = view.details || "";
+}
+
+function renderLoading() {
+  renderPresentation({
+    title: "天机流转",
+    eyebrow: "正在推演此行",
+    seal: "演",
+    tone: "loading",
+    paragraphs: ["灵台微动，因果正在汇成新的篇章……"],
+    changes: [],
+    sections: [],
+    details: "",
+    has_details: false,
+  });
+}
+
+function renderError(message) {
+  renderPresentation({
+    title: "推演受阻",
+    eyebrow: "天机暂晦",
+    seal: "阻",
+    tone: "danger",
+    paragraphs: [message],
+    changes: [],
+    sections: [],
+    details: "",
+    has_details: false,
+  });
+}
+
 function render(snapshot) {
   const state = snapshot.state;
   const p = state.player;
@@ -67,6 +151,7 @@ function render(snapshot) {
     ? history.map((entry) => { const li = document.createElement("li"); li.textContent = entry; return li; })
     : [Object.assign(document.createElement("li"), { className: "empty", textContent: "等待第一段经历" })]));
   $("worldEvent").textContent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
+  renderPresentation(snapshot.presentation);
 
   const actions = phaseActions[state.phase] || ["面板", "帮助"];
   $("quickActions").replaceChildren(...actions.map((action) => {
@@ -87,18 +172,17 @@ async function sendAction(action) {
   const trimmed = action.trim();
   if (!trimmed) return;
   $("submitAction").disabled = true;
-  $("storyOutput").textContent = "天机流转，正在推演……";
+  renderLoading();
   try {
     const payload = await requestJson("/api/action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: trimmed }),
     });
-    $("storyOutput").textContent = payload.output;
     $("actionInput").value = "";
     render(payload);
   } catch (error) {
-    $("storyOutput").textContent = `推演受阻：${error.message}`;
+    renderError(error.message);
   } finally {
     $("submitAction").disabled = false;
     $("actionInput").focus();
@@ -112,4 +196,4 @@ $("actionForm").addEventListener("submit", (event) => {
 
 requestJson("/api/state")
   .then((snapshot) => render(snapshot))
-  .catch((error) => { $("storyOutput").textContent = `无法读取游戏状态：${error.message}`; });
+  .catch((error) => { renderError(`无法读取游戏状态：${error.message}`); });

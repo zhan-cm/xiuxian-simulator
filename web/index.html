@@ -48,12 +48,30 @@
     </aside>
 
     <section class="story-column">
-      <section class="story-card">
+      <section class="story-card event-canvas">
         <div class="story-heading">
-          <div><p class="card-kicker">天道推演</p><h2 id="sceneTitle">此世尚未开启</h2></div>
+          <div><p class="card-kicker">当前道途</p><h2 id="sceneTitle">此世尚未开启</h2></div>
           <span id="turnBadge" class="turn-badge">第 0 回合</span>
         </div>
-        <div id="storyOutput" class="story-output" aria-live="polite">点击“开始游戏”，踏入九州仙途。</div>
+        <article id="eventHero" class="event-hero" data-tone="story" aria-live="polite">
+          <div class="event-seal-wrap" aria-hidden="true"><span id="eventSeal">道</span></div>
+          <div class="event-copy">
+            <p id="eventEyebrow" class="event-eyebrow">天道初启</p>
+            <h3 id="eventTitle">灵气潮汐将至</h3>
+            <div id="storyOutput" class="story-output">
+              <p>九州云海未定，你的长生路尚待落笔。</p>
+              <p>点击下方的“开始游戏”，踏入这方修真世界。</p>
+            </div>
+          </div>
+        </article>
+
+        <div id="changeRibbon" class="change-ribbon" aria-label="本回合变化"></div>
+        <div id="eventSections" class="event-sections"></div>
+
+        <details id="eventDetails" class="event-details" hidden>
+          <summary><span>查看完整推演记录</span><i aria-hidden="true"></i></summary>
+          <pre id="eventDetailsText"></pre>
+        </details>
       </section>
 
       <section class="action-card">
