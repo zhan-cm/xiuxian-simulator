@@ -15,6 +15,7 @@ if str(SRC) not in sys.path:
 from xiuxian_simulator.engine import GameEngine
 from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.combat import CombatEngine
+from xiuxian_simulator.arts import ArtsEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -401,6 +402,102 @@ class SimulatorSmokeTests(unittest.TestCase):
         state = GameState.from_dict(payload)
         self.assertEqual(state.combat, {})
         self.assertEqual(state.pending_loot, {})
+
+    def test_learning_technique_consumes_manual(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.comprehension = 20
+            player.resources["青木长生诀残卷"] = 1
+            for seed in range(1, 100):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if ArtsEngine.learn(probe, "青木长生诀").success:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("参悟 青木长生诀")
+            self.assertIn("参悟成功", result)
+            self.assertIn("青木长生诀", player.known_techniques)
+            self.assertNotIn("青木长生诀残卷", player.resources)
+
+    def test_failed_learning_destroys_manual(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.comprehension = 1
+            player.resources["五行道藏残卷"] = 1
+            for seed in range(1, 300):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if not ArtsEngine.learn(probe, "五行道藏").success:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("参悟 五行道藏")
+            self.assertIn("残卷损毁", result)
+            self.assertNotIn("五行道藏", player.known_techniques)
+            self.assertNotIn("五行道藏残卷", player.resources)
+
+    def test_main_technique_grade_changes_cultivation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before = ProgressionEngine.cultivation_gain(engine.state).total
+            engine.state.player.known_techniques.append("太虚剑典")
+            equipped = engine.process("装备功法 太虚剑典")
+            after = ProgressionEngine.cultivation_gain(engine.state).total
+            self.assertIn("地阶", equipped)
+            self.assertEqual(engine.state.player.primary_technique_grade, "地阶")
+            self.assertGreater(after, before)
+
+    def test_equipped_spell_uses_element_and_spirit_cost(self) -> None:
+        state = GameState(phase="playing", rng_seed=19)
+        state.player.speed = 30
+        CombatEngine.prepare(state, "筑基客卿")
+        CombatEngine.start(state)
+        state.combat["player_observed"] = True
+        before = state.player.spirit
+        result = CombatEngine.act(state, "施法 流火术")
+        self.assertIn("五行×1.3", result.player_text)
+        self.assertEqual(state.player.spirit, before - 20)
+
+    def test_armor_reduces_incoming_damage(self) -> None:
+        armored = GameState(phase="playing", rng_seed=101)
+        unarmored = GameState(phase="playing", rng_seed=101)
+        armored.player.resources["玄龟甲"] = 1
+        ArtsEngine.equip_artifact(armored.player, "玄龟甲")
+        for state in (armored, unarmored):
+            CombatEngine.prepare(state, "山野劫修")
+            CombatEngine.start(state)
+            CombatEngine.act(state, "冷静观察")
+        self.assertGreater(armored.player.health, unarmored.player.health)
+
+    def test_selling_last_artifact_unequips_it(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.resources["青锋剑"] = 1
+            engine.process("装备法宝 青锋剑")
+            self.assertEqual(engine.state.player.equipped_weapon, "青锋剑")
+            engine.process("卖 青锋剑")
+            self.assertEqual(engine.state.player.equipped_weapon, "")
+
+    def test_v06_save_payload_gets_arts_defaults(self) -> None:
+        payload = {
+            "version": "0.6.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.known_techniques, ["聚气诀"])
+        self.assertEqual(state.player.known_spells, ["流火术"])
+        self.assertEqual(state.player.equipped_weapon, "")
 
 
 if __name__ == "__main__":

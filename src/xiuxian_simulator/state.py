@@ -41,6 +41,12 @@ class PlayerState:
     cultivation_required: int = 100
     primary_technique: str = "聚气诀"
     primary_technique_grade: str = "黄阶"
+    known_techniques: list[str] = field(default_factory=lambda: ["聚气诀"])
+    equipped_auxiliary_techniques: list[str] = field(default_factory=list)
+    known_spells: list[str] = field(default_factory=lambda: ["流火术"])
+    equipped_spell: str = "流火术"
+    equipped_weapon: str = ""
+    equipped_armor: str = ""
     breakthrough_cooldown_months: int = 0
     breakthrough_quality: dict[int, str] = field(default_factory=dict)
     destiny_traits: list[str] = field(default_factory=list)
@@ -61,7 +67,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.6.0"
+    version: str = "0.7.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387

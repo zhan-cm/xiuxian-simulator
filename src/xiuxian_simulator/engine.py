@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
+from .arts import ARTIFACTS, ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .narrator import Narrator
@@ -86,6 +87,18 @@ class GameEngine:
             return self._join_sect(action)
         if action.startswith("宗门任务"):
             return self._sect_task(action)
+        if action in {"道法", "功法", "法术", "法宝"}:
+            return self._arts()
+        if action.startswith("参悟"):
+            return self._learn_art(action)
+        if action.startswith("装备功法"):
+            return self._equip_main_technique(action)
+        if action.startswith("辅修功法"):
+            return self._equip_auxiliary_technique(action)
+        if action.startswith("装备法术"):
+            return self._equip_spell(action)
+        if action.startswith("装备法宝"):
+            return self._equip_artifact(action)
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -519,6 +532,87 @@ class GameEngine:
         loot = "、".join(f"{name}×{count}" for name, count in self.state.pending_loot.items()) or "无"
         return f"【待取战利品】{loot}\n请选择：拾取全部／离开"
 
+    def _arts(self) -> str:
+        player = self.state.player
+        artifacts = [name for name in ARTIFACTS if player.resources.get(name, 0) > 0]
+        auxiliary = "、".join(player.equipped_auxiliary_techniques) if player.equipped_auxiliary_techniques else "无"
+        return (
+            "【道法构筑】\n"
+            f"主修：{player.primary_technique}（{player.primary_technique_grade}）\n"
+            f"辅修：{auxiliary}\n"
+            f"已悟功法：{'、'.join(player.known_techniques)}\n"
+            f"当前法术：{player.equipped_spell or '无'}｜已悟法术：{'、'.join(player.known_spells)}\n"
+            f"武器：{player.equipped_weapon or '无'}｜护甲：{player.equipped_armor or '无'}\n"
+            f"持有法宝：{'、'.join(artifacts) if artifacts else '无'}\n"
+            "指令：参悟 [名称]／装备功法 [名称]／辅修功法 [名称] [1或2]／"
+            "装备法术 [名称]／装备法宝 [名称]"
+        )
+
+    def _learn_art(self, action: str) -> str:
+        name = action.removeprefix("参悟").strip()
+        if not name:
+            return "请输入要参悟的功法或法术名称；参悟需要对应残卷。"
+        try:
+            result = ArtsEngine.learn(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "参悟中寿元耗尽"
+        verdict = "参悟成功" if result.success else "参悟失败，残卷损毁"
+        self.state.remember(f"参悟{result.name}：{verdict}；判定 {result.roll}/{result.chance}")
+        self._autosave()
+        if died_of_age:
+            return f"你在参悟{result.name}时寿元耗尽。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【参悟 · {result.name}】{verdict}\n"
+            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._arts()}"
+        )
+
+    def _equip_main_technique(self, action: str) -> str:
+        name = action.removeprefix("装备功法").strip()
+        try:
+            ArtsEngine.equip_main_technique(self.state.player, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"将{name}设为主修功法")
+        self._autosave()
+        return f"主修功法已更换为{name}，修炼品级同步为{self.state.player.primary_technique_grade}。\n\n{self._arts()}"
+
+    def _equip_auxiliary_technique(self, action: str) -> str:
+        text = action.removeprefix("辅修功法").strip()
+        parts = text.rsplit(maxsplit=1)
+        slot = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else None
+        name = parts[0] if slot is not None else text
+        try:
+            ArtsEngine.equip_auxiliary_technique(self.state.player, name, slot)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"辅修功法：{name}")
+        self._autosave()
+        return f"已将{name}纳入辅修。\n\n{self._arts()}"
+
+    def _equip_spell(self, action: str) -> str:
+        name = action.removeprefix("装备法术").strip()
+        try:
+            ArtsEngine.equip_spell(self.state.player, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"装备法术：{name}")
+        self._autosave()
+        return f"当前战斗法术已更换为{name}。\n\n{self._arts()}"
+
+    def _equip_artifact(self, action: str) -> str:
+        name = action.removeprefix("装备法宝").strip()
+        try:
+            ArtsEngine.equip_artifact(self.state.player, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"装备法宝：{name}")
+        self._autosave()
+        return f"已装备{name}。\n\n{self._arts()}"
+
     def _status(self) -> str:
         p = self.state.player
         return (
@@ -533,6 +627,7 @@ class GameEngine:
             f"灵石 {p.spirit_stones}｜功德 {p.merit}｜业力 {p.karma}｜声望 {p.reputation}｜异常 {p.condition}\n"
             f"天赋：{'、'.join(p.talents) if p.talents else '无'}\n"
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
+            f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 
@@ -569,5 +664,6 @@ class GameEngine:
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
             "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
+            "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

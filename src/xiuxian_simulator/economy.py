@@ -10,6 +10,20 @@ from .state import GameState
 MARKET_PRICES = {
     "聚气丹": 20,
     "疗伤丹": 60,
+    "青木长生诀残卷": 600,
+    "赤炎真经残卷": 700,
+    "太虚剑典残卷": 3200,
+    "五行道藏残卷": 12000,
+    "青木缚灵术残卷": 250,
+    "庚金剑气残卷": 600,
+    "玄水剑诀残卷": 1600,
+    "厚土印诀残卷": 2200,
+    "青锋剑": 180,
+    "玄铁剑": 900,
+    "火云刃": 1000,
+    "护身法袍": 220,
+    "流云衣": 1200,
+    "玄龟甲": 1800,
     "筑基丹": 500,
     "凝晶丹": 1200,
     "结丹灵药": 3000,
@@ -114,6 +128,10 @@ class EconomyEngine:
             state.player.resources[item] = owned - count
             if state.player.resources[item] <= 0:
                 state.player.resources.pop(item, None)
+                if state.player.equipped_weapon == item:
+                    state.player.equipped_weapon = ""
+                if state.player.equipped_armor == item:
+                    state.player.equipped_armor = ""
             state.player.spirit_stones += total
             return total, -count
         raise ValueError("交易指令必须是买或卖。")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .arts import ArtsEngine
 from .progression import ProgressionEngine, REALMS, STAGES
 from .state import GameState
 
@@ -154,18 +155,25 @@ class CombatEngine:
         return (
             f"【战斗 · 第 {combat['round']} 轮】\n"
             f"你：气血 {state.player.health}/{state.player.health_max}｜灵力 {state.player.spirit}/{state.player.spirit_max}｜"
-            f"蓄势 {combat['player_charge']}/2\n"
+            f"蓄势 {combat['player_charge']}/2｜法术 {state.player.equipped_spell or '无'}\n"
             f"{combat['enemy_name']}：气血 {combat['enemy_health']}/{combat['enemy_health_max']}｜"
             f"境界 {cls.enemy_realm_label(state)}\n"
             "指令：攻击／施法／防御／冷静观察／蓄势／绝技／遁走／用丹"
         )
 
     @classmethod
-    def _player_strike(cls, state: GameState, power_multiplier: float, purpose: str) -> StrikeResult:
+    def _player_strike(
+        cls,
+        state: GameState,
+        power_multiplier: float,
+        purpose: str,
+        element_override: str = "",
+    ) -> StrikeResult:
         player = state.player
         combat = state.combat
         observed = bool(combat.get("player_observed"))
-        hit_chance = 100 if observed else max(15, min(95, 75 + (player.speed - int(combat["enemy_speed"])) * 3))
+        player_speed = ArtsEngine.effective_speed(player)
+        hit_chance = 100 if observed else max(15, min(95, 75 + (player_speed - int(combat["enemy_speed"])) * 3))
         hit_roll = ProgressionEngine.deterministic_roll(state, f"combat-player-hit:{purpose}:{combat['round']}")
         if hit_roll > hit_chance:
             combat["player_observed"] = False
@@ -176,12 +184,17 @@ class CombatEngine:
             int(combat["enemy_realm_index"]),
             int(combat["enemy_stage_index"]),
         )
-        element = cls.element_multiplier(cls.player_element(state), str(combat["enemy_element"]))
+        attack_element = element_override or ArtsEngine.attack_element(player, cls.player_element(state))
+        element = cls.element_multiplier(attack_element, str(combat["enemy_element"]))
         critical_roll = ProgressionEngine.deterministic_roll(state, f"combat-player-critical:{purpose}:{combat['round']}")
         critical = critical_roll <= max(5, min(35, 5 + player.fortune))
         critical_multiplier = 1.5 if critical else 1.0
         base = 14 + player.aptitude + player.realm_index * 14 + player.stage_index * 3
-        damage = max(1, round(base * power_multiplier * realm * element * critical_multiplier - int(combat["enemy_defense"])))
+        arts_multiplier = ArtsEngine.attack_multiplier(player)
+        damage = max(
+            1,
+            round(base * power_multiplier * arts_multiplier * realm * element * critical_multiplier - int(combat["enemy_defense"])),
+        )
         combat["enemy_health"] = max(0, int(combat["enemy_health"]) - damage)
         combat["player_observed"] = False
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
@@ -190,7 +203,8 @@ class CombatEngine:
     def _enemy_strike(cls, state: GameState, defending: bool) -> StrikeResult:
         player = state.player
         combat = state.combat
-        hit_chance = max(15, min(95, 75 + (int(combat["enemy_speed"]) - player.speed) * 3))
+        player_speed = ArtsEngine.effective_speed(player)
+        hit_chance = max(15, min(95, 75 + (int(combat["enemy_speed"]) - player_speed) * 3))
         hit_roll = ProgressionEngine.deterministic_roll(state, f"combat-enemy-hit:{combat['round']}")
         if hit_roll > hit_chance:
             return StrikeResult(False, hit_roll, hit_chance, False, 0, 1.0, 1.0)
@@ -203,8 +217,10 @@ class CombatEngine:
         element = cls.element_multiplier(str(combat["enemy_element"]), cls.player_element(state))
         critical_roll = ProgressionEngine.deterministic_roll(state, f"combat-enemy-critical:{combat['round']}")
         critical = critical_roll <= 10
-        multiplier = 0.5 if defending else 1.0
-        damage = max(1, round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0) * multiplier))
+        raw_damage = round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0))
+        damage = max(1, raw_damage - ArtsEngine.defense_bonus(player))
+        if defending:
+            damage = max(1, round(damage * 0.5))
         player.health = max(0, player.health - damage)
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
 
@@ -230,7 +246,8 @@ class CombatEngine:
 
         if action == "遁走":
             difference = int(combat["enemy_realm_index"]) - player.realm_index
-            chance = max(5, min(95, 55 + (player.speed - int(combat["enemy_speed"])) * 5 - max(0, difference) * 20))
+            player_speed = ArtsEngine.effective_speed(player)
+            chance = max(5, min(95, 55 + (player_speed - int(combat["enemy_speed"])) * 5 - max(0, difference) * 20))
             roll = ProgressionEngine.deterministic_roll(state, f"combat-escape:{combat['round']}")
             if roll <= chance:
                 player_text = f"遁走成功（{roll}/{chance}）"
@@ -238,11 +255,14 @@ class CombatEngine:
             player_text = f"遁走失败（{roll}/{chance}），被对手截住"
         elif action == "攻击":
             player_text = cls._strike_text("你", cls._player_strike(state, 1.0, "attack"))
-        elif action == "施法":
-            if player.spirit < 20:
-                raise ValueError("灵力不足：施法需要 20 点灵力。")
-            player.spirit -= 20
-            player_text = cls._strike_text("你施法", cls._player_strike(state, 1.45, "spell")) + "，灵力 -20"
+        elif action.startswith("施法"):
+            requested = action.removeprefix("施法").strip()
+            spell = ArtsEngine.spell(player, requested)
+            if player.spirit < spell.spirit_cost:
+                raise ValueError(f"灵力不足：{spell.name}需要 {spell.spirit_cost} 点灵力。")
+            player.spirit -= spell.spirit_cost
+            strike = cls._player_strike(state, spell.power_multiplier, f"spell:{spell.name}", spell.element)
+            player_text = cls._strike_text(f"你施展{spell.name}", strike) + f"，灵力 -{spell.spirit_cost}"
         elif action == "防御":
             defending = True
             player_text = "你收束灵力护住周身，本轮所受伤害减半"
