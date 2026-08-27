@@ -30,7 +30,7 @@ def main() -> None:
         print(f"启动失败：{exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
-    print("问道长生 V0.8 本地基线版")
+    print("问道长生 V0.9 本地基线版")
     print(engine.rules.summary)
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")
 

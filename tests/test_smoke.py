@@ -17,6 +17,7 @@ from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.arts import ArtsEngine
 from xiuxian_simulator.crafting import CraftingEngine
+from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -625,6 +626,85 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.player.craft_skills, {})
         self.assertEqual(state.cave_facilities, {})
         self.assertEqual(state.spirit_crops, {})
+
+    def test_preferred_gift_changes_affinity_and_consumes_item(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.resources["清茶"] = 1
+            before_turn = engine.state.turn
+            result = engine.process("送礼 顾清玄 清茶")
+            self.assertIn("好感 +10", result)
+            self.assertEqual(RelationshipEngine.affinity(engine.state, "顾清玄"), 10)
+            self.assertNotIn("清茶", engine.state.player.resources)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+
+    def test_disliked_gift_can_lower_affinity(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.resources["烈酒"] = 1
+            result = engine.process("送礼 白凝霜 烈酒")
+            self.assertIn("好感 -5", result)
+            self.assertEqual(RelationshipEngine.affinity(engine.state, "白凝霜"), -5)
+
+    def test_talking_uses_npc_personality_line(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            result = engine.process("对话 云栖")
+            self.assertIn("买卖可以谈", result)
+            self.assertEqual(RelationshipEngine.affinity(engine.state, "云栖"), 2)
+
+    def test_partner_choice_is_affinity_gated_and_gender_neutral(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.gender = "男"
+            blocked = engine.process("结为道侣 顾清玄")
+            self.assertIn("尚未达到 80", blocked)
+            RelationshipEngine.relation(engine.state, "顾清玄")["affinity"] = 80
+            accepted = engine.process("结为道侣 顾清玄")
+            self.assertIn("结下道侣之契", accepted)
+            self.assertIn("顾清玄", engine.state.dao_partners)
+
+    def test_dual_cultivation_requires_partner_and_gives_progress(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            rejected = engine.process("双修 洛浅浅")
+            self.assertIn("尚不是你的道侣", rejected)
+            RelationshipEngine.relation(engine.state, "洛浅浅")["affinity"] = 80
+            engine.process("结为道侣 洛浅浅")
+            before = engine.state.player.cultivation
+            result = engine.process("双修 洛浅浅")
+            self.assertIn("合修一月", result)
+            self.assertGreater(engine.state.player.cultivation, before)
+            self.assertEqual(RelationshipEngine.affinity(engine.state, "洛浅浅"), 83)
+
+    def test_dao_discussion_is_reproducible(self) -> None:
+        left = GameState(phase="playing", rng_seed=303)
+        right = GameState.from_dict(left.to_dict())
+        left_result = RelationshipEngine.discuss_dao(left, "墨尘")
+        right_result = RelationshipEngine.discuss_dao(right, "墨尘")
+        self.assertEqual(left_result, right_result)
+        self.assertEqual(left.player.cultivation, right.player.cultivation)
+
+    def test_v08_save_payload_gets_relationship_defaults(self) -> None:
+        payload = {
+            "version": "0.8.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.npc_relations, {})
+        self.assertEqual(state.dao_partners, [])
 
 
 if __name__ == "__main__":

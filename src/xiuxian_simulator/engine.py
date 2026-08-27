@@ -4,6 +4,7 @@ from .character_creation import BasicCharacter, CharacterCreationError, Characte
 from .arts import ARTIFACTS, ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
+from .relationships import NPCS, RelationshipEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
@@ -116,6 +117,18 @@ class GameEngine:
             return self._plant(action)
         if action.startswith("收获"):
             return self._harvest(action)
+        if action in {"情缘", "人物"}:
+            return self._relationships()
+        if action.startswith("对话"):
+            return self._talk(action)
+        if action.startswith("送礼"):
+            return self._gift(action)
+        if action.startswith("论道"):
+            return self._discuss_dao(action)
+        if action.startswith("结为道侣"):
+            return self._become_partners(action)
+        if action.startswith("双修"):
+            return self._dual_cultivate(action)
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -726,6 +739,91 @@ class GameEngine:
             return "收获之后，你在灵田边寿元耗尽。\n【坐化结局】"
         return f"灵田收获：{crop} +{count}。\n\n{self._cave()}"
 
+    def _relationships(self) -> str:
+        lines = []
+        elapsed_years = max(0, self.state.calendar_year - 387)
+        for npc in NPCS.values():
+            affinity = RelationshipEngine.affinity(self.state, npc.name)
+            bond = RelationshipEngine.bond_label(affinity, npc.name in self.state.dao_partners)
+            lines.append(
+                f"{npc.name}｜{npc.gender}｜{npc.identity}｜{npc.age + elapsed_years}岁｜"
+                f"{npc.realm}｜好感 {affinity}（{bond}）｜所在地 {npc.location}"
+            )
+        return (
+            "【人物与情缘】\n"
+            + "\n".join(lines)
+            + "\n指令：对话 [姓名]／送礼 [姓名] [物品]／论道 [姓名]／结为道侣 [姓名]／双修 [姓名]"
+        )
+
+    def _finish_social_action(self, event: str) -> bool:
+        died_of_age = self.state.advance_month()
+        self.state.remember(event)
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "交游途中寿元耗尽"
+        self._autosave()
+        return died_of_age
+
+    def _talk(self, action: str) -> str:
+        name = action.removeprefix("对话").strip()
+        try:
+            line, affinity = RelationshipEngine.talk(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"与{name}交谈，好感升至{affinity}")
+        if died:
+            return "交谈之后，你在归途中寿元耗尽。\n【坐化结局】"
+        return f"{self.state.time_label}\n【{name}】“{line}”\n好感 +2，当前 {affinity}。\n\n{self._relationships()}"
+
+    def _gift(self, action: str) -> str:
+        parts = action.removeprefix("送礼").strip().split()
+        if len(parts) != 2:
+            return "格式：送礼 [姓名] [物品]。"
+        name, item = parts
+        try:
+            change, affinity = RelationshipEngine.gift(self.state, name, item)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"赠予{name}{item}，好感{change:+d}至{affinity}")
+        if died:
+            return "赠礼之后，你在归途中寿元耗尽。\n【坐化结局】"
+        reaction = "十分喜欢" if change >= 10 else ("并不喜欢" if change < 0 else "礼貌收下")
+        return f"{self.state.time_label}\n{name}{reaction}{item}。\n好感 {change:+d}，当前 {affinity}。\n\n{self._relationships()}"
+
+    def _discuss_dao(self, action: str) -> str:
+        name = action.removeprefix("论道").strip()
+        try:
+            success, roll, chance, affinity = RelationshipEngine.discuss_dao(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        verdict = "彼此印证所得，修为有所精进，好感 +6" if success else "道途分歧，只作浅谈，好感 +1"
+        died = self._finish_social_action(f"与{name}论道：{'成功' if success else '未能契合'}，好感{affinity}")
+        if died:
+            return "论道之后，你的寿元走到尽头。\n【坐化结局】"
+        return f"{self.state.time_label}\n【与{name}论道】{verdict}\n判定 {roll}/{chance}｜当前好感 {affinity}。\n\n{self._status()}"
+
+    def _become_partners(self, action: str) -> str:
+        name = action.removeprefix("结为道侣").strip()
+        try:
+            affinity = RelationshipEngine.become_partners(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"与{name}结为道侣")
+        if died:
+            return "结契之后，你的寿元却已走到尽头。\n【坐化结局】"
+        return f"{self.state.time_label}\n你与{name}自愿结下道侣之契。\n当前好感 {affinity}（道侣）。\n\n{self._relationships()}"
+
+    def _dual_cultivate(self, action: str) -> str:
+        name = action.removeprefix("双修").strip()
+        try:
+            gain, affinity = RelationshipEngine.dual_cultivate(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"与{name}双修，修为+{gain}，好感{affinity}")
+        if died:
+            return "双修结束后，你安然坐化。\n【坐化结局】"
+        return f"{self.state.time_label}\n你与{name}合修一月。\n修为 +{gain}｜好感 +3，当前 {affinity}。\n\n{self._status()}"
+
     def _status(self) -> str:
         p = self.state.player
         return (
@@ -741,6 +839,7 @@ class GameEngine:
             f"天赋：{'、'.join(p.talents) if p.talents else '无'}\n"
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
+            f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 
@@ -779,5 +878,6 @@ class GameEngine:
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
+            "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )
