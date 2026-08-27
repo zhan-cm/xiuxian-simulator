@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from .engine import GameEngine
 from .narrator import FallbackNarrator, LocalNarrator, OpenAINarrator
 from .rules import RuleBook
 from .save_manager import SaveManager
+from .webapp import run_web_server
 
 
 def find_project_root() -> Path:
@@ -39,13 +41,29 @@ def build_engine(root: Path | None = None) -> GameEngine:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="《问道长生》本地修仙模拟器")
+    parser.add_argument("--web", action="store_true", help="启动本地网页界面")
+    parser.add_argument("--port", type=int, default=8765, help="网页界面端口，默认 8765")
+    parser.add_argument("--no-open-browser", action="store_true", help="启动网页服务但不自动打开浏览器")
+    args = parser.parse_args()
     try:
         engine = build_engine()
     except Exception as exc:
         print(f"启动失败：{exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
-    print("问道长生 V0.13 本地基线版")
+    if args.web:
+        if not 1 <= args.port <= 65535:
+            parser.error("端口必须在 1～65535 之间")
+        run_web_server(
+            engine,
+            find_project_root(),
+            port=args.port,
+            open_browser=not args.no_open_browser,
+        )
+        return
+
+    print("问道长生 V0.14 本地基线版")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

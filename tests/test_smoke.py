@@ -23,6 +23,7 @@ from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
 from xiuxian_simulator.world import SectProgressionEngine, WorldTimelineEngine
+from xiuxian_simulator.webapp import WebApplication
 from xiuxian_simulator.config import Settings
 from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
 from xiuxian_simulator.progression import ProgressionEngine
@@ -1144,6 +1145,62 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(settings.narrator, "openai")
             self.assertEqual(settings.openai_api_key, "file-key")
             self.assertEqual(settings.model, "environment-model")
+
+    def test_web_app_serves_local_interface_and_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            app = WebApplication(engine, ROOT / "web")
+            status, content_type, body = app.dispatch("GET", "/")
+            self.assertEqual(status, 200)
+            self.assertIn("text/html", content_type)
+            self.assertIn("问道长生", body.decode("utf-8"))
+            status, content_type, body = app.dispatch("GET", "/api/state")
+            payload = json.loads(body)
+            self.assertEqual(status, 200)
+            self.assertIn("application/json", content_type)
+            self.assertEqual(payload["state"]["phase"], "new")
+            self.assertIn("Narrator", payload["narrator"])
+
+    def test_web_action_endpoint_drives_same_game_engine(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            app = WebApplication(engine, ROOT / "web")
+            request_body = json.dumps({"action": "开始游戏"}, ensure_ascii=False).encode("utf-8")
+            status, _, body = app.dispatch("POST", "/api/action", request_body)
+            payload = json.loads(body)
+            self.assertEqual(status, 200)
+            self.assertIn("创角大面板", payload["output"])
+            self.assertEqual(payload["state"]["phase"], "character_creation_basic")
+            self.assertTrue((Path(temp_dir) / "autosave.json").is_file())
+
+    def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            app = WebApplication(self.make_engine(Path(temp_dir)), ROOT / "web")
+            status, _, _ = app.dispatch("POST", "/api/action", b"not-json")
+            self.assertEqual(status, 400)
+            status, _, body = app.dispatch("POST", "/api/action", json.dumps({"action": ""}).encode())
+            self.assertEqual(status, 400)
+            self.assertIn("请输入行动", json.loads(body)["error"])
+            status, _, _ = app.dispatch("POST", "/api/action", b"x" * 65537)
+            self.assertEqual(status, 413)
+
+    def test_web_app_blocks_unknown_static_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            app = WebApplication(self.make_engine(Path(temp_dir)), ROOT / "web")
+            for path in ("/../README.md", "/.env", "/missing.js"):
+                status, _, _ = app.dispatch("GET", path)
+                self.assertEqual(status, 404)
+
+    def test_v13_save_payload_remains_compatible_with_web_version(self) -> None:
+        payload = {
+            "version": "0.13.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.name, "旧档修士")
+        self.assertEqual(state.version, "0.13.0")
 
 
 if __name__ == "__main__":

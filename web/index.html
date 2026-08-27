@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>问道长生 · 修仙模拟器</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="mist mist-one"></div>
+  <div class="mist mist-two"></div>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">高自由修仙文字模拟</p>
+      <h1>问道长生</h1>
+    </div>
+    <div class="top-status">
+      <span id="timeLabel">天玄历 387 年</span>
+      <span class="dot"></span>
+      <span id="narratorLabel">本地叙事器</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side-column">
+      <section class="card identity-card">
+        <p class="card-kicker">修士名帖</p>
+        <div class="seal" id="daoSeal">清</div>
+        <h2 id="playerName">尚未入世</h2>
+        <p id="playerMeta" class="muted">请先开始游戏</p>
+        <div class="stat-line"><span>境界</span><strong id="realmValue">凡人</strong></div>
+        <div class="stat-line"><span>宗门</span><strong id="sectValue">散修</strong></div>
+        <div class="stat-line"><span>灵石</span><strong id="stonesValue">0</strong></div>
+      </section>
+
+      <section class="card bars-card">
+        <h3>道途根基</h3>
+        <div class="bar-row"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
+        <div class="bar-row"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
+        <div class="bar-row"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
+      </section>
+
+      <section class="card compact-card">
+        <h3>乾坤袋</h3>
+        <div id="inventoryList" class="tag-list"><span class="empty">空空如也</span></div>
+      </section>
+    </aside>
+
+    <section class="story-column">
+      <section class="story-card">
+        <div class="story-heading">
+          <div><p class="card-kicker">天道推演</p><h2 id="sceneTitle">此世尚未开启</h2></div>
+          <span id="turnBadge" class="turn-badge">第 0 回合</span>
+        </div>
+        <div id="storyOutput" class="story-output" aria-live="polite">点击“开始游戏”，踏入九州仙途。</div>
+      </section>
+
+      <section class="action-card">
+        <div id="quickActions" class="quick-actions" aria-label="快捷行动"></div>
+        <form id="actionForm" class="action-form">
+          <label for="actionInput">自由行动</label>
+          <div class="input-row">
+            <textarea id="actionInput" maxlength="2000" rows="2" placeholder="例如：我想去坊市打听最近的秘境传闻"></textarea>
+            <button id="submitAction" type="submit">推演此行</button>
+          </div>
+          <p class="form-tip">可以输入任何合理行动；重要决定仍由你亲自确认。</p>
+        </form>
+      </section>
+    </section>
+
+    <aside class="side-column right-column">
+      <section class="card">
+        <h3>人物牵绊</h3>
+        <div id="relationList" class="relation-list"><p class="empty">尚未结识修士</p></div>
+      </section>
+      <section class="card">
+        <h3>最近经历</h3>
+        <ol id="historyList" class="history-list"><li class="empty">等待第一段经历</li></ol>
+      </section>
+      <section class="card world-card">
+        <h3>九州风声</h3>
+        <p id="worldEvent">灵气潮汐尚在暗中酝酿。</p>
+      </section>
+    </aside>
+  </main>
+
+  <footer>本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算</footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>
