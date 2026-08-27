@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from xiuxian_simulator.engine import GameEngine
+from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -228,6 +229,82 @@ class SimulatorSmokeTests(unittest.TestCase):
                 engine.state.advance_month()
             self.assertEqual(player.breakthrough_cooldown_months, 0)
             self.assertIn("大境界突破路线", engine.process("突破"))
+
+    def test_exploration_is_reproducible_and_advances_time(self) -> None:
+        with tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+            left = self.make_engine(Path(left_dir))
+            right = self.make_engine(Path(right_dir))
+            for engine in (left, right):
+                engine.process("开始游戏")
+                engine.process("确认默认创角")
+                engine.state.rng_seed = 77
+            left_result = left.process("探索 青岳山麓")
+            right_result = right.process("探索 青岳山麓")
+            self.assertEqual(left_result, right_result)
+            self.assertEqual(left.state.turn, 2)
+            self.assertEqual(left.state.player.resources, right.state.player.resources)
+            self.assertIn("探索", left_result)
+
+    def test_market_buy_and_sell_updates_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.spirit_stones = 1000
+            bought = engine.process("买 筑基丹")
+            self.assertIn("坊市成交", bought)
+            self.assertEqual(engine.state.player.spirit_stones, 500)
+            self.assertEqual(engine.state.player.resources["筑基丹"], 1)
+            sold = engine.process("卖 筑基丹")
+            self.assertIn("+300", sold)
+            self.assertNotIn("筑基丹", engine.state.player.resources)
+            self.assertEqual(engine.state.player.spirit_stones, 800)
+
+    def test_market_rejects_unaffordable_purchase_without_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before = engine.state.player.spirit_stones
+            result = engine.process("买 筑基丹")
+            self.assertIn("灵石不足", result)
+            self.assertEqual(engine.state.player.spirit_stones, before)
+            self.assertNotIn("筑基丹", engine.state.player.resources)
+
+    def test_sect_join_and_task_rewards_are_persisted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.aptitude = 20
+            engine.state.player.comprehension = 20
+            for seed in range(1, 100):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                success, _, _ = EconomyEngine.join_sect(probe, "青云宗")
+                if success:
+                    engine.state.rng_seed = seed
+                    break
+            joined = engine.process("拜入 青云宗")
+            self.assertIn("外门弟子", joined)
+            self.assertEqual(engine.state.player.sect, "青云宗")
+            engine.state.player.fortune = 20
+            task = engine.process("宗门任务 采药")
+            self.assertIn("任务完成", task)
+            self.assertGreater(engine.state.player.sect_contribution, 0)
+            self.assertGreaterEqual(engine.state.player.resources.get("灵药", 0), 2)
+
+    def test_v04_save_payload_gets_economy_defaults(self) -> None:
+        payload = {
+            "version": "0.4.0",
+            "phase": "playing",
+            "player": {"name": "旧档散修", "sect": "散修"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.sect_rank, "无")
+        self.assertEqual(state.player.sect_contribution, 0)
+        self.assertEqual(state.version, "0.4.0")
 
 
 if __name__ == "__main__":

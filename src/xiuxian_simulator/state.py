@@ -18,6 +18,8 @@ class PlayerState:
     realm_index: int = 0
     stage_index: int = 0
     sect: str = "散修"
+    sect_rank: str = "无"
+    sect_contribution: int = 0
     aptitude: int = 10
     comprehension: int = 10
     spirit_sense: int = 10
@@ -59,7 +61,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.4.0"
+    version: str = "0.5.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
+from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
 from .rules import RuleBook
@@ -63,6 +64,21 @@ class GameEngine:
             return self._breakthrough(action)
         if action in {"背包", "资源"}:
             return self._resources()
+        if action == "地图":
+            return self._map()
+        if action.startswith("探索"):
+            return self._explore(action)
+        trade = EconomyEngine.parse_trade(action)
+        if trade is not None:
+            return self._trade(*trade)
+        if action == "坊市":
+            return self._market()
+        if action == "宗门":
+            return self._sect()
+        if action.startswith("拜入"):
+            return self._join_sect(action)
+        if action.startswith("宗门任务"):
+            return self._sect_task(action)
 
         return self._free_action(action)
 
@@ -251,12 +267,126 @@ class GameEngine:
         lines = "\n".join(f"{name} × {count}" for name, count in sorted(resources.items())) or "暂无突破资源"
         return f"【乾坤袋 · 突破资源】\n{lines}\n普通物品：{'、'.join(self.state.player.inventory) if self.state.player.inventory else '无'}"
 
+    @staticmethod
+    def _map() -> str:
+        lines = []
+        for name, (minimum_realm, danger) in AREAS.items():
+            realm_hint = "炼气可入" if minimum_realm == 0 else f"至少第 {minimum_realm + 1} 大境界"
+            lines.append(f"{name}｜{realm_hint}｜危险度 {danger}")
+        return "【东洲探索地图】\n" + "\n".join(lines) + "\n输入：探索 青岳山麓（不写地点时默认青岳山麓）"
+
+    def _explore(self, action: str) -> str:
+        area = action.removeprefix("探索").strip() or "青岳山麓"
+        try:
+            result = EconomyEngine.explore(self.state, area)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        rewards = [f"灵石 +{result.spirit_stones}"] if result.spirit_stones else []
+        rewards.extend(f"{name} +{count}" for name, count in result.rewards.items())
+        if result.health_loss:
+            rewards.append(f"气血 -{result.health_loss}")
+        reward_text = "、".join(rewards) if rewards else "无"
+        self.state.remember(f"探索{result.area}：{result.event}；收获 {reward_text}")
+        if died_of_age and not result.fatal:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if self.state.phase == "ended":
+            ending = "寿元耗尽，坐化荒野" if died_of_age and not result.fatal else result.event
+            return f"{self.state.time_label}\n{ending}。\n【陨落结局】道途止于 {result.area}。"
+        return (
+            f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
+            f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}"
+        )
+
+    @staticmethod
+    def _market() -> str:
+        return (
+            "【青岳坊市】\n"
+            + "\n".join(EconomyEngine.market_lines())
+            + "\n输入：买 筑基丹／卖 灵药 2（买卖本身不推进月份）"
+        )
+
+    def _trade(self, operation: str, item: str, count: int) -> str:
+        try:
+            stone_change, item_change = EconomyEngine.trade(self.state, operation, item, count)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}")
+        self._autosave()
+        direction = "+" if item_change > 0 else ""
+        return (
+            f"【坊市成交】{operation}{item}×{count}\n"
+            f"灵石 {stone_change:+d}｜{item} {direction}{item_change}\n"
+            f"当前灵石：{self.state.player.spirit_stones}"
+        )
+
+    def _sect(self) -> str:
+        player = self.state.player
+        if player.sect == "散修":
+            return (
+                "【东洲宗门】\n"
+                + "\n".join(f"{sect}｜入门试炼" for sect in SECTS)
+                + "\n输入：拜入 青云宗（试炼会推进一个月，可能失败）"
+            )
+        return (
+            f"【{player.sect} · {player.sect_rank}】\n贡献：{player.sect_contribution}\n"
+            f"任务：{'、'.join(SECT_TASKS)}\n输入：宗门任务 采药"
+        )
+
+    def _join_sect(self, action: str) -> str:
+        sect = action.removeprefix("拜入").strip()
+        try:
+            success, roll, chance = EconomyEngine.join_sect(self.state, sect)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        message = f"通过入门试炼，成为{sect}外门弟子" if success else f"入门试炼落选，仍为散修"
+        self.state.remember(f"{message}；判定 {roll}/{chance}")
+        self._autosave()
+        if died_of_age:
+            return f"试炼尚未结束，你已寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{message}。\n判定：1d100={roll}，成功率 {chance}%\n\n{self._sect()}"
+
+    def _sect_task(self, action: str) -> str:
+        task = action.removeprefix("宗门任务").strip()
+        try:
+            result = EconomyEngine.sect_task(self.state, task)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        rewards = []
+        if result.spirit_stones:
+            rewards.append(f"灵石 +{result.spirit_stones}")
+        if result.contribution:
+            rewards.append(f"贡献 +{result.contribution}")
+        rewards.extend(f"{name} +{count}" for name, count in result.rewards.items())
+        if result.health_loss:
+            rewards.append(f"气血 -{result.health_loss}")
+        reward_text = "、".join(rewards) if rewards else "无"
+        verdict = "任务完成" if result.success else "任务失败"
+        self.state.remember(f"宗门{result.task}{verdict}；{reward_text}")
+        if died_of_age and not result.fatal:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if self.state.phase == "ended":
+            return f"{self.state.time_label}\n宗门任务途中陨落。\n【陨落结局】道途止于{result.task}任务。"
+        return (
+            f"{self.state.time_label}\n【宗门任务 · {result.task}】{verdict}\n"
+            f"判定：1d100={result.roll}，成功率 {result.chance}%｜结算：{reward_text}\n\n{self._status()}"
+        )
+
     def _status(self) -> str:
         p = self.state.player
         return (
             f"【状态卡 · 第 {self.state.turn} 回合 · {self.state.time_label}】\n"
             f"道号 {p.dao_name}｜姓名 {p.name}｜性别 {p.gender}｜年龄 {p.age}/{p.lifespan}\n"
-            f"境界 {p.realm}｜宗门 {p.sect}｜所在地 {p.location}\n"
+            f"境界 {p.realm}｜宗门 {p.sect}·{p.sect_rank}｜贡献 {p.sect_contribution}｜所在地 {p.location}\n"
             f"出身 {p.background}｜道途 {p.dao_path}｜体质 {p.constitution}\n"
             f"资质 {p.aptitude} 悟性 {p.comprehension} 神识 {p.spirit_sense} "
             f"遁速 {p.speed} 道心 {p.dao_heart} 仙缘 {p.fortune}\n"
@@ -298,5 +428,7 @@ class GameEngine:
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
+            "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
+            "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )
