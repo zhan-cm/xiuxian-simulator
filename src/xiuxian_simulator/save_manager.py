@@ -52,3 +52,24 @@ class SaveManager:
     def list_names(self) -> list[str]:
         return sorted(path.stem for path in self.save_dir.glob("*.json"))
 
+    def list_summaries(self) -> list[dict[str, object]]:
+        summaries: list[dict[str, object]] = []
+        for path in sorted(self.save_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            player = payload.get("player", {}) if isinstance(payload, dict) else {}
+            summaries.append(
+                {
+                    "name": path.stem,
+                    "player_name": str(player.get("name", "无名修士")),
+                    "dao_name": str(player.get("dao_name", "")),
+                    "realm": str(player.get("realm", "凡人")),
+                    "turn": int(payload.get("turn", 0)),
+                    "calendar_year": int(payload.get("calendar_year", 387)),
+                    "month": int(payload.get("month", 1)),
+                    "modified_at": int(path.stat().st_mtime),
+                }
+            )
+        return summaries

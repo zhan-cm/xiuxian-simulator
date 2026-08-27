@@ -46,6 +46,21 @@ body::before {
 h1 { margin: 0; font-family: "STKaiti", "KaiTi", serif; font-size: clamp(34px, 4vw, 54px); font-weight: 500; letter-spacing: .16em; }
 .top-status { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 10px; }
 .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.archive-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(71, 105, 89, .18);
+  border-radius: 999px;
+  color: var(--jade);
+  background: rgba(255,255,255,.55);
+  cursor: pointer;
+  font: inherit;
+}
+.archive-button span { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--jade); font: 14px/1 "STKaiti", serif; }
+.archive-button:hover { background: rgba(255,255,255,.88); box-shadow: 0 6px 16px rgba(48, 75, 62, .08); }
 
 .layout {
   position: relative;
@@ -257,13 +272,70 @@ textarea:focus { outline: 2px solid rgba(53,109,90,.18); border-color: var(--jad
 .world-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 footer { padding: 4px 20px 28px; text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
 
+.archive-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 36px));
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 26px 8px 26px 8px;
+  color: var(--ink);
+  background: #f7f5ec;
+  box-shadow: 0 30px 90px rgba(30, 45, 38, .3);
+}
+.archive-dialog::backdrop { background: rgba(33, 47, 41, .46); backdrop-filter: blur(7px); }
+.archive-shell { max-height: inherit; padding: 28px; overflow: auto; background: radial-gradient(circle at 85% 0, rgba(191, 218, 203, .35), transparent 22rem); }
+.archive-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+.archive-head h2 { margin: 0; font: 500 30px/1.3 "STKaiti", "KaiTi", serif; }
+.dialog-close { padding: 8px 12px; border: 0; border-radius: 999px; color: var(--muted); background: rgba(77, 102, 90, .08); cursor: pointer; }
+.archive-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 14px; }
+.archive-section, .save-library { padding: 19px; border-radius: 18px 6px 18px 6px; background: rgba(255,255,255,.68); box-shadow: inset 0 0 0 1px rgba(66, 96, 81, .1); }
+.archive-section-head { display: flex; gap: 12px; align-items: center; }
+.archive-section-head > span { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 14px 4px 14px 4px; color: white; background: var(--jade); font: 22px/1 "STKaiti", serif; }
+.archive-section h3, .save-library h3 { margin: 0; font: 500 21px/1.35 "STKaiti", "KaiTi", serif; }
+.archive-section p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.named-save-form { margin-top: 17px; }
+.named-save-form label { display: block; margin-bottom: 7px; color: var(--gold); font-size: 11px; letter-spacing: .12em; }
+.named-save-form > div { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.named-save-form input { min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: #fff; font: inherit; }
+.named-save-form button { border: 0; border-radius: 11px; padding: 0 15px; color: white; background: var(--jade); cursor: pointer; }
+.setting-row { display: grid; gap: 9px; margin-top: 18px; color: var(--muted); font-size: 12px; }
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 12px; background: rgba(76, 104, 91, .08); }
+.segmented button { padding: 8px 6px; border: 0; border-radius: 9px; color: var(--muted); background: transparent; cursor: pointer; }
+.segmented button.active { color: white; background: var(--jade); box-shadow: 0 5px 12px rgba(45, 84, 66, .18); }
+.setting-toggle { display: flex; align-items: center; gap: 9px; margin-top: 15px; cursor: pointer; font-size: 12px; }
+.setting-toggle input { position: absolute; opacity: 0; }
+.setting-toggle span { width: 36px; height: 20px; padding: 3px; border-radius: 99px; background: #ccd5cf; transition: background .2s; }
+.setting-toggle span::after { content: ""; display: block; width: 14px; height: 14px; border-radius: 50%; background: white; box-shadow: 0 2px 5px rgba(0,0,0,.15); transition: transform .2s; }
+.setting-toggle input:checked + span { background: var(--jade); }
+.setting-toggle input:checked + span::after { transform: translateX(16px); }
+.save-library { margin-top: 14px; }
+.library-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 13px; }
+.library-head .card-kicker { margin-bottom: 3px; }
+.library-head > span { color: var(--muted); font-size: 12px; }
+.save-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.save-entry { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px; border-radius: 14px; background: #f5f5ef; box-shadow: inset 0 0 0 1px rgba(69, 96, 82, .08); }
+.save-entry-seal { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px 4px 14px 4px; color: var(--jade); background: rgba(81, 132, 107, .11); font: 19px/1 "STKaiti", serif; }
+.save-entry-copy { min-width: 0; }
+.save-entry-copy strong, .save-entry-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-entry-copy strong { margin-bottom: 3px; font-size: 13px; }
+.save-entry-copy small { color: var(--muted); font-size: 10px; }
+.load-save { padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; color: var(--jade); background: white; cursor: pointer; font-size: 11px; }
+.load-save.confirming { color: white; border-color: #93614d; background: #93614d; }
+
+html[data-font-size="small"] .story-output, html[data-font-size="small"] .section-body { font-size: 13px; }
+html[data-font-size="large"] .story-output { font-size: 17px; }
+html[data-font-size="large"] .section-body { font-size: 15px; }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+
 @media (max-width: 1080px) {
   .layout { grid-template-columns: 230px 1fr; }
   .right-column { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 760px) {
   .topbar { padding: 20px; align-items: flex-start; gap: 12px; }
-  .top-status { display: none; }
+  .top-status > span, .top-status > .dot { display: none; }
+  .archive-button { margin: 0; }
   .layout { padding: 0 14px 22px; grid-template-columns: 1fr; }
   .side-column, .right-column { grid-column: auto; grid-template-columns: 1fr; }
   .story-column { grid-row: 1; }
@@ -274,4 +346,8 @@ footer { padding: 4px 20px 28px; text-align: center; color: var(--muted); font-s
   .event-sections { grid-template-columns: 1fr; }
   .input-row { grid-template-columns: 1fr; }
   #submitAction { min-height: 46px; }
+  .archive-shell { padding: 20px; }
+  .archive-grid, .save-list { grid-template-columns: 1fr; }
+  .named-save-form > div { grid-template-columns: 1fr; }
+  .named-save-form button { min-height: 42px; }
 }

@@ -19,6 +19,7 @@
       <span id="timeLabel">天玄历 387 年</span>
       <span class="dot"></span>
       <span id="narratorLabel">本地叙事器</span>
+      <button id="openArchive" class="archive-button" type="button"><span aria-hidden="true">卷</span> 洞天卷宗</button>
     </div>
   </header>
 
@@ -102,6 +103,43 @@
       </section>
     </aside>
   </main>
+
+  <dialog id="archiveDialog" class="archive-dialog" aria-labelledby="archiveTitle">
+    <div class="archive-shell">
+      <header class="archive-head">
+        <div><p class="card-kicker">洞天卷宗</p><h2 id="archiveTitle">存档与阅读设置</h2></div>
+        <button id="closeArchive" class="dialog-close" type="button" aria-label="关闭卷宗">关闭</button>
+      </header>
+
+      <div class="archive-grid">
+        <section class="archive-section">
+          <div class="archive-section-head"><span>存</span><div><h3>留下此刻</h3><p>为当前道途建立一个容易辨认的存档。</p></div></div>
+          <form id="namedSaveForm" class="named-save-form">
+            <label for="saveNameInput">存档名称</label>
+            <div><input id="saveNameInput" maxlength="48" placeholder="例如：筑基之前"><button type="submit">写入卷宗</button></div>
+          </form>
+        </section>
+
+        <section class="archive-section display-section">
+          <div class="archive-section-head"><span>阅</span><div><h3>阅读偏好</h3><p>这些设置只保存在当前浏览器。</p></div></div>
+          <div class="setting-row">
+            <span>文字大小</span>
+            <div class="segmented" role="group" aria-label="文字大小">
+              <button type="button" data-font-size="small">清简</button>
+              <button type="button" data-font-size="normal">标准</button>
+              <button type="button" data-font-size="large">舒展</button>
+            </div>
+          </div>
+          <label class="setting-toggle"><input id="motionToggle" type="checkbox"><span></span><strong>减少界面动效</strong></label>
+        </section>
+      </div>
+
+      <section class="save-library">
+        <div class="library-head"><div><p class="card-kicker">已有卷宗</p><h3>选择一段道途</h3></div><span id="saveCount">0 份</span></div>
+        <div id="saveLibrary" class="save-list"><p class="empty">尚无可用存档</p></div>
+      </section>
+    </div>
+  </dialog>
 
   <footer>本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算</footer>
   <script src="/app.js" defer></script>

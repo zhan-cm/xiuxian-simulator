@@ -70,6 +70,20 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertIn("读档完成", result)
             self.assertEqual(engine.state.player.cultivation, 0)
 
+    def test_save_summaries_are_safe_and_newest_first(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = SaveManager(Path(temp_dir))
+            state = GameState(phase="playing", turn=12, calendar_year=388, month=4)
+            state.player.name = "林渡"
+            state.player.dao_name = "照微"
+            manager.save("春日闭关", state)
+            summaries = manager.list_summaries()
+            self.assertEqual(len(summaries), 1)
+            self.assertEqual(summaries[0]["name"], "春日闭关")
+            self.assertEqual(summaries[0]["player_name"], "林渡")
+            self.assertEqual(summaries[0]["turn"], 12)
+            self.assertNotIn("path", summaries[0])
+
     def test_two_panel_custom_character_creation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))
@@ -1156,6 +1170,7 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertIn("text/html", content_type)
             self.assertIn("问道长生", body.decode("utf-8"))
             self.assertIn("eventHero", body.decode("utf-8"))
+            self.assertIn("archiveDialog", body.decode("utf-8"))
             status, content_type, body = app.dispatch("GET", "/api/state")
             payload = json.loads(body)
             self.assertEqual(status, 200)
@@ -1177,6 +1192,8 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(payload["presentation"]["tone"], "system")
             self.assertTrue(payload["presentation"]["sections"])
             self.assertTrue((Path(temp_dir) / "autosave.json").is_file())
+            self.assertTrue(payload["save_summaries"])
+            self.assertEqual(payload["save_summaries"][0]["name"], "autosave")
 
     def test_event_presenter_builds_state_change_components(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1209,6 +1226,13 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(result["seal"], "道")
         self.assertGreaterEqual(len(result["paragraphs"]), 2)
         self.assertFalse(result["has_details"])
+
+    def test_named_save_and_load_present_as_system_events(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        saved = present_action("存档 筑基之前", "已存档：筑基之前.json（第 3 回合）", state, state)
+        loaded = present_action("读档 筑基之前", "读档完成。\n突破冷却 0 月", state, state)
+        self.assertEqual(saved["tone"], "system")
+        self.assertEqual(loaded["tone"], "system")
 
     def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1249,6 +1273,17 @@ class SimulatorSmokeTests(unittest.TestCase):
         state = GameState.from_dict(payload)
         self.assertEqual(state.player.name, "旧档修士")
         self.assertEqual(state.version, "0.14.0")
+
+    def test_v15_save_payload_remains_compatible_with_archive_ui(self) -> None:
+        payload = {
+            "version": "0.15.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.name, "旧档修士")
+        self.assertEqual(state.version, "0.15.0")
 
 
 if __name__ == "__main__":

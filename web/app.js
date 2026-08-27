@@ -1,4 +1,5 @@
 const $ = (id) => document.getElementById(id);
+let latestSnapshot = null;
 
 const phaseActions = {
   new: ["开始游戏"],
@@ -109,7 +110,57 @@ function renderError(message) {
   });
 }
 
+function renderSaveLibrary(snapshot) {
+  const saves = snapshot.save_summaries || [];
+  $("saveCount").textContent = `${saves.length} 份`;
+  $("saveLibrary").replaceChildren(...(saves.length ? saves.map((save) => {
+    const entry = element("article", "save-entry");
+    const seal = element("span", "save-entry-seal", (save.dao_name || save.player_name || "卷").slice(0, 1));
+    const copy = element("span", "save-entry-copy");
+    copy.append(
+      element("strong", "", save.name),
+      element("small", "", `${save.dao_name || save.player_name} · ${save.realm}`),
+      element("small", "", `天玄历 ${save.calendar_year} 年 · ${save.month} 月 · 第 ${save.turn} 回合`),
+    );
+    const load = element("button", "load-save", "载入");
+    load.type = "button";
+    load.addEventListener("click", async () => {
+      if (!load.classList.contains("confirming")) {
+        load.classList.add("confirming");
+        load.textContent = "确认载入";
+        window.setTimeout(() => { load.classList.remove("confirming"); load.textContent = "载入"; }, 3500);
+        return;
+      }
+      load.disabled = true;
+      const payload = await sendAction(`读档 ${save.name}`);
+      if (payload) $("archiveDialog").close();
+    });
+    entry.append(seal, copy, load);
+    return entry;
+  }) : [element("p", "empty", "尚无可用存档")]));
+}
+
+function readPreference(key, fallback) {
+  try { return window.localStorage.getItem(key) || fallback; } catch (_) { return fallback; }
+}
+
+function writePreference(key, value) {
+  try { window.localStorage.setItem(key, value); } catch (_) { /* 浏览器禁用存储时仍可临时使用。 */ }
+}
+
+function applyReadingPreferences() {
+  const fontSize = readPreference("xiuxian-font-size", "normal");
+  const reduceMotion = readPreference("xiuxian-reduce-motion", "false") === "true";
+  document.documentElement.dataset.fontSize = fontSize;
+  document.documentElement.classList.toggle("reduce-motion", reduceMotion);
+  document.querySelectorAll("[data-font-size]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.fontSize === fontSize);
+  });
+  $("motionToggle").checked = reduceMotion;
+}
+
 function render(snapshot) {
+  latestSnapshot = snapshot;
   const state = snapshot.state;
   const p = state.player;
   $("timeLabel").textContent = `天玄历 ${state.calendar_year} 年 · ${state.month} 月`;
@@ -152,6 +203,7 @@ function render(snapshot) {
     : [Object.assign(document.createElement("li"), { className: "empty", textContent: "等待第一段经历" })]));
   $("worldEvent").textContent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
   renderPresentation(snapshot.presentation);
+  renderSaveLibrary(snapshot);
 
   const actions = phaseActions[state.phase] || ["面板", "帮助"];
   $("quickActions").replaceChildren(...actions.map((action) => {
@@ -181,8 +233,10 @@ async function sendAction(action) {
     });
     $("actionInput").value = "";
     render(payload);
+    return payload;
   } catch (error) {
     renderError(error.message);
+    return null;
   } finally {
     $("submitAction").disabled = false;
     $("actionInput").focus();
@@ -193,6 +247,34 @@ $("actionForm").addEventListener("submit", (event) => {
   event.preventDefault();
   sendAction($("actionInput").value);
 });
+
+$("openArchive").addEventListener("click", () => {
+  if (latestSnapshot) renderSaveLibrary(latestSnapshot);
+  $("archiveDialog").showModal();
+});
+$("closeArchive").addEventListener("click", () => $("archiveDialog").close());
+$("archiveDialog").addEventListener("click", (event) => {
+  if (event.target === $("archiveDialog")) $("archiveDialog").close();
+});
+$("namedSaveForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = $("saveNameInput");
+  const name = input.value.trim();
+  if (!name) { input.setCustomValidity("请先填写存档名称"); input.reportValidity(); return; }
+  input.setCustomValidity("");
+  const payload = await sendAction(`存档 ${name}`);
+  if (payload) { input.value = ""; renderSaveLibrary(payload); }
+});
+$("saveNameInput").addEventListener("input", () => $("saveNameInput").setCustomValidity(""));
+document.querySelectorAll("[data-font-size]").forEach((button) => {
+  button.addEventListener("click", () => { writePreference("xiuxian-font-size", button.dataset.fontSize); applyReadingPreferences(); });
+});
+$("motionToggle").addEventListener("change", (event) => {
+  writePreference("xiuxian-reduce-motion", String(event.target.checked));
+  applyReadingPreferences();
+});
+
+applyReadingPreferences();
 
 requestJson("/api/state")
   .then((snapshot) => render(snapshot))

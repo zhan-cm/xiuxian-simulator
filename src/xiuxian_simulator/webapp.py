@@ -32,6 +32,7 @@ class WebApplication:
             "state": self.engine.state.to_dict(),
             "narrator": self.engine.narrator.name,
             "save_names": self.engine.saves.list_names(),
+            "save_summaries": self.engine.saves.list_summaries(),
             "presentation": self._presentation,
         }
 
@@ -78,7 +79,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.15"
+        server_version = "XiuxianSimulator/0.16"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")
