@@ -16,6 +16,7 @@ from xiuxian_simulator.engine import GameEngine
 from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.arts import ArtsEngine
+from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -498,6 +499,132 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.player.known_techniques, ["聚气诀"])
         self.assertEqual(state.player.known_spells, ["流火术"])
         self.assertEqual(state.player.equipped_weapon, "")
+
+    def test_successful_alchemy_consumes_materials_and_yields_pills(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.spirit_sense = 20
+            player.resources["灵药"] = 2
+            for seed in range(1, 100):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if CraftingEngine.craft(probe, "炼丹", "聚气丹").success:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("炼丹 聚气丹")
+            self.assertIn("成功获得聚气丹×2", result)
+            self.assertNotIn("灵药", player.resources)
+            self.assertEqual(player.resources["聚气丹"], 2)
+
+    def test_failed_crafting_still_consumes_materials(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.spirit_sense = 1
+            player.resources.update({"灵药": 8, "妖兽材料": 2})
+            for seed in range(1, 300):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if not CraftingEngine.craft(probe, "炼丹", "筑基丹").success:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("炼丹 筑基丹")
+            self.assertIn("材料尽毁", result)
+            self.assertNotIn("灵药", player.resources)
+            self.assertNotIn("妖兽材料", player.resources)
+            self.assertNotIn("筑基丹", player.resources)
+
+    def test_three_successes_raise_crafting_rank(self) -> None:
+        state = GameState(phase="playing", rng_seed=9)
+        state.player.spirit_sense = 20
+        state.player.craft_successes["炼丹"] = 2
+        state.player.resources["灵药"] = 2
+        result = CraftingEngine.craft(state, "炼丹", "聚气丹")
+        self.assertTrue(result.success)
+        self.assertTrue(result.leveled_up)
+        self.assertEqual(state.player.craft_skills["炼丹"], 1)
+        self.assertEqual(CraftingEngine.skill_rank(state, "炼丹"), "熟练")
+
+    def test_study_upgrade_improves_retreat_gain(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before = ProgressionEngine.cultivation_gain(engine.state, retreat=True).total
+            engine.state.player.spirit_stones = 1000
+            engine.state.player.resources["灵铁"] = 2
+            result = engine.process("升级洞府 静室")
+            after = ProgressionEngine.cultivation_gain(engine.state, retreat=True).total
+            self.assertIn("静室已升至 1 级", result)
+            self.assertGreater(after, before)
+            self.assertEqual(engine.state.player.spirit_stones, 800)
+
+    def test_alchemy_room_adds_crafting_chance(self) -> None:
+        basic = GameState(phase="playing", rng_seed=33)
+        improved = GameState.from_dict(basic.to_dict())
+        for state in (basic, improved):
+            state.player.resources["灵药"] = 3
+        improved.cave_facilities["丹房"] = 2
+        basic_result = CraftingEngine.craft(basic, "炼丹", "疗伤丹")
+        improved_result = CraftingEngine.craft(improved, "炼丹", "疗伤丹")
+        self.assertEqual(improved_result.chance, basic_result.chance + 10)
+
+    def test_spirit_field_requires_growth_before_harvest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.cave_facilities["灵田"] = 1
+            engine.state.player.resources["灵药"] = 1
+            planted = engine.process("种植 灵药")
+            self.assertIn("还需 2 个月", planted)
+            early = engine.process("收获 灵药")
+            self.assertIn("尚未成熟", early)
+            engine.state.advance_month(2)
+            harvested = engine.process("收获 灵药")
+            self.assertIn("灵药 +4", harvested)
+            self.assertEqual(engine.state.player.resources["灵药"], 4)
+
+    def test_fireball_talisman_is_consumed_in_combat(self) -> None:
+        state = GameState(phase="playing", rng_seed=29)
+        state.player.resources["火球符"] = 1
+        CombatEngine.prepare(state, "筑基客卿")
+        CombatEngine.start(state)
+        state.combat["player_observed"] = True
+        result = CombatEngine.act(state, "用符 火球符")
+        self.assertIn("五行×1.3", result.player_text)
+        self.assertNotIn("火球符", state.player.resources)
+
+    def test_swiftness_talisman_works_from_enemy_intel_panel(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.speed = 30
+            engine.state.player.resources["神行符"] = 1
+            engine.state.rng_seed = 2
+            engine.process("挑战 山野劫修")
+            result = engine.process("遁走 神行符")
+            self.assertIn("遁走成功", result)
+            self.assertNotIn("神行符", engine.state.player.resources)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_v07_save_payload_gets_crafting_defaults(self) -> None:
+        payload = {
+            "version": "0.7.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.player.craft_skills, {})
+        self.assertEqual(state.cave_facilities, {})
+        self.assertEqual(state.spirit_crops, {})
 
 
 if __name__ == "__main__":

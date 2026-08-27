@@ -55,6 +55,8 @@ class PlayerState:
     karma: int = 0
     reputation: int = 0
     alchemy_level: int = 0
+    craft_skills: dict[str, int] = field(default_factory=dict)
+    craft_successes: dict[str, int] = field(default_factory=dict)
     initial_affinity_bonus: int = 0
     condition: str = "无"
     location: str = "东洲·青岳"
@@ -67,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.7.0"
+    version: str = "0.8.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -83,6 +85,8 @@ class GameState:
     pending_choices: list[str] = field(default_factory=list)
     combat: dict[str, Any] = field(default_factory=dict)
     pending_loot: dict[str, int] = field(default_factory=dict)
+    cave_facilities: dict[str, int] = field(default_factory=dict)
+    spirit_crops: dict[str, int] = field(default_factory=dict)
 
     @property
     def time_label(self) -> str:

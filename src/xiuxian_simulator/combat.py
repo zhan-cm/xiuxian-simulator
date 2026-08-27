@@ -158,7 +158,7 @@ class CombatEngine:
             f"蓄势 {combat['player_charge']}/2｜法术 {state.player.equipped_spell or '无'}\n"
             f"{combat['enemy_name']}：气血 {combat['enemy_health']}/{combat['enemy_health_max']}｜"
             f"境界 {cls.enemy_realm_label(state)}\n"
-            "指令：攻击／施法／防御／冷静观察／蓄势／绝技／遁走／用丹"
+            "指令：攻击／施法／防御／冷静观察／蓄势／绝技／遁走／用丹／用符 火球符"
         )
 
     @classmethod
@@ -244,13 +244,25 @@ class CombatEngine:
         defending = False
         player_text = ""
 
-        if action == "遁走":
+        if action.startswith("遁走"):
             difference = int(combat["enemy_realm_index"]) - player.realm_index
             player_speed = ArtsEngine.effective_speed(player)
-            chance = max(5, min(95, 55 + (player_speed - int(combat["enemy_speed"])) * 5 - max(0, difference) * 20))
+            talisman_bonus = 0
+            if "神行符" in action:
+                if player.resources.get("神行符", 0) < 1:
+                    raise ValueError("乾坤袋中没有神行符。")
+                player.resources["神行符"] -= 1
+                if player.resources["神行符"] <= 0:
+                    player.resources.pop("神行符", None)
+                talisman_bonus = 25
+            chance = max(
+                5,
+                min(95, 55 + (player_speed - int(combat["enemy_speed"])) * 5 - max(0, difference) * 20 + talisman_bonus),
+            )
             roll = ProgressionEngine.deterministic_roll(state, f"combat-escape:{combat['round']}")
             if roll <= chance:
-                player_text = f"遁走成功（{roll}/{chance}）"
+                aid = "，神行符化作清风" if talisman_bonus else ""
+                player_text = f"遁走成功（{roll}/{chance}）{aid}"
                 return CombatRoundResult(action, player_text, "对手未能追上。", escaped=True)
             player_text = f"遁走失败（{roll}/{chance}），被对手截住"
         elif action == "攻击":
@@ -286,8 +298,19 @@ class CombatEngine:
                 player.resources.pop("疗伤丹", None)
             player.health = min(player.health_max, player.health + 40)
             player_text = f"你服下疗伤丹，气血 +{player.health - before}"
+        elif action.startswith("用符"):
+            talisman = action.removeprefix("用符").strip()
+            if talisman != "火球符":
+                raise ValueError("当前战斗可直接使用的符箓只有火球符。")
+            if player.resources.get(talisman, 0) < 1:
+                raise ValueError("乾坤袋中没有火球符。")
+            player.resources[talisman] -= 1
+            if player.resources[talisman] <= 0:
+                player.resources.pop(talisman, None)
+            strike = cls._player_strike(state, 1.75, "talisman:fireball", "火")
+            player_text = cls._strike_text("你催动火球符", strike) + "，火球符 -1"
         else:
-            raise ValueError("战斗中请选择：攻击、施法、防御、冷静观察、蓄势、绝技、遁走或用丹。")
+            raise ValueError("战斗中请选择：攻击、施法、防御、冷静观察、蓄势、绝技、遁走、用丹或用符。")
 
         if int(combat["enemy_health"]) <= 0:
             return CombatRoundResult(action, player_text, f"{combat['enemy_name']}失去战力。", victory=True)

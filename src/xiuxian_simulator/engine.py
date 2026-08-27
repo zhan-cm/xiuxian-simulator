@@ -3,6 +3,7 @@ from __future__ import annotations
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
 from .arts import ARTIFACTS, ArtsEngine
 from .combat import ENEMIES, CombatEngine
+from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
@@ -99,6 +100,22 @@ class GameEngine:
             return self._equip_spell(action)
         if action.startswith("装备法宝"):
             return self._equip_artifact(action)
+        if action == "技艺":
+            return self._crafts()
+        if action.startswith("炼丹"):
+            return self._craft(action, "炼丹", "炼丹")
+        if action.startswith("炼器"):
+            return self._craft(action, "炼器", "炼器")
+        if action.startswith("制符"):
+            return self._craft(action, "制符", "符箓")
+        if action == "洞府":
+            return self._cave()
+        if action.startswith("升级洞府"):
+            return self._upgrade_cave(action)
+        if action.startswith("种植"):
+            return self._plant(action)
+        if action.startswith("收获"):
+            return self._harvest(action)
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -453,7 +470,7 @@ class GameEngine:
             self.state.remember(f"避开与{enemy}交手")
             self._autosave()
             return f"你没有贸然出手，转身离开了{enemy}。\n\n{self._status()}"
-        if action == "遁走":
+        if action.startswith("遁走"):
             CombatEngine.start(self.state)
             return self._combat_action(action)
         return CombatEngine.enemy_panel(self.state)
@@ -613,6 +630,102 @@ class GameEngine:
         self._autosave()
         return f"已装备{name}。\n\n{self._arts()}"
 
+    def _crafts(self) -> str:
+        skill_lines = [
+            f"{skill}：{CraftingEngine.skill_rank(self.state, skill)}（成功 {self.state.player.craft_successes.get(skill, 0)} 次）"
+            for skill in SKILL_NAMES
+        ]
+        return (
+            "【修仙百艺】\n"
+            + "\n".join(skill_lines)
+            + "\n\n【已知配方】\n"
+            + "\n".join(CraftingEngine.recipe_lines())
+            + "\n指令：炼丹 [丹药]／炼器 [法宝]／制符 [符箓]"
+        )
+
+    def _craft(self, action: str, prefix: str, craft: str) -> str:
+        name = action.removeprefix(prefix).strip()
+        try:
+            result = CraftingEngine.craft(self.state, craft, name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = f"{craft}时寿元耗尽"
+        verdict = f"成功获得{result.recipe.output}×{result.recipe.output_count}" if result.success else "失败，投入材料尽毁"
+        rank_up = f"；{craft}提升至{CraftingEngine.skill_rank(self.state, craft)}" if result.leveled_up else ""
+        self.state.remember(f"{craft}{name}：{verdict}{rank_up}")
+        self._autosave()
+        if died_of_age:
+            return f"你在{craft}途中寿元耗尽。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【{craft} · {name}】{verdict}{rank_up}\n"
+            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._crafts()}"
+        )
+
+    def _cave(self) -> str:
+        facilities = "\n".join(f"{name}：{self.state.cave_facilities.get(name, 0)} 级" for name in FACILITIES)
+        crops = []
+        for name, ready_turn in self.state.spirit_crops.items():
+            remaining = max(0, ready_turn - self.state.turn)
+            crops.append(f"{name}：{'可收获' if remaining == 0 else f'{remaining}个月后成熟'}")
+        return (
+            f"【洞府】灵气：{self.state.aura_level}\n{facilities}\n"
+            f"灵田：{'、'.join(crops) if crops else '无作物'}\n"
+            "指令：升级洞府 [设施]／种植 灵药／收获 灵药"
+        )
+
+    def _upgrade_cave(self, action: str) -> str:
+        facility = action.removeprefix("升级洞府").strip()
+        try:
+            stones, materials = CraftingEngine.upgrade_cost(self.state, facility)
+            level = CraftingEngine.upgrade_facility(self.state, facility)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "修建洞府时寿元耗尽"
+        material_text = "、".join(f"{name}×{count}" for name, count in materials.items())
+        self.state.remember(f"升级洞府{facility}至{level}级，消耗灵石{stones}、{material_text}")
+        self._autosave()
+        if died_of_age:
+            return "洞府设施尚未落成，你已寿元耗尽。\n【坐化结局】"
+        return f"{self.state.time_label}\n{facility}已升至 {level} 级。\n消耗：灵石 {stones}、{material_text}\n\n{self._cave()}"
+
+    def _plant(self, action: str) -> str:
+        crop = action.removeprefix("种植").strip()
+        try:
+            ready_turn = CraftingEngine.plant(self.state, crop)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "耕作时寿元耗尽"
+        self.state.remember(f"种下{crop}，预计第{ready_turn}回合成熟")
+        self._autosave()
+        if died_of_age:
+            return "你在灵田劳作时寿元耗尽。\n【坐化结局】"
+        return f"已种下{crop}，还需 {max(0, ready_turn - self.state.turn)} 个月成熟。\n\n{self._cave()}"
+
+    def _harvest(self, action: str) -> str:
+        crop = action.removeprefix("收获").strip()
+        try:
+            count = CraftingEngine.harvest(self.state, crop)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self.state.advance_month()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "收获时寿元耗尽"
+        self.state.remember(f"灵田收获{crop}×{count}")
+        self._autosave()
+        if died_of_age:
+            return "收获之后，你在灵田边寿元耗尽。\n【坐化结局】"
+        return f"灵田收获：{crop} +{count}。\n\n{self._cave()}"
+
     def _status(self) -> str:
         p = self.state.player
         return (
@@ -665,5 +778,6 @@ class GameEngine:
             "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
+            "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

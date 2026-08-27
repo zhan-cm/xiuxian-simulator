@@ -141,7 +141,7 @@ class ProgressionEngine:
         aura = AURA_MULTIPLIERS.get(state.aura_level, 1.0)
         mindset = cls.mindset_multiplier(player)
         constitution = player.modifiers.get("cultivation_multiplier", 1.0)
-        retreat_multiplier = 2.0 if retreat else 1.0
+        retreat_multiplier = 2.0 * (1 + state.cave_facilities.get("静室", 0) * 0.1) if retreat else 1.0
         total = max(1, round(base * aptitude * spiritual_root * technique * aura * mindset * constitution * retreat_multiplier))
         return CultivationBreakdown(
             base=base,
