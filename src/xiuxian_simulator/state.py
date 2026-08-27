@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.16.0"
+    version: str = "0.17.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -89,6 +89,9 @@ class GameState:
     spirit_crops: dict[str, int] = field(default_factory=dict)
     npc_relations: dict[str, dict[str, Any]] = field(default_factory=dict)
     dao_partners: list[str] = field(default_factory=list)
+    relationship_tension: int = 0
+    relationship_events: list[str] = field(default_factory=list)
+    pending_heart_trial: dict[str, Any] = field(default_factory=dict)
     adventure: dict[str, Any] = field(default_factory=dict)
     npc_world: dict[str, dict[str, Any]] = field(default_factory=dict)
     npc_invitations: dict[str, dict[str, Any]] = field(default_factory=dict)

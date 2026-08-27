@@ -709,6 +709,61 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertGreater(engine.state.player.cultivation, before)
             self.assertEqual(RelationshipEngine.affinity(engine.state, "洛浅浅"), 83)
 
+    def test_multiple_romantic_bonds_raise_relationship_tension(self) -> None:
+        state = GameState(phase="playing")
+        RelationshipEngine.relation(state, "顾清玄")["affinity"] = 70
+        RelationshipEngine.relation(state, "云栖")["affinity"] = 65
+        tension = RelationshipEngine.refresh_tension(state)
+        self.assertEqual(RelationshipEngine.romantic_names(state), ["顾清玄", "云栖"])
+        self.assertGreaterEqual(tension, 25)
+
+    def test_heart_trial_requires_entangled_relationships(self) -> None:
+        state = GameState(phase="playing")
+        with self.assertRaisesRegex(ValueError, "至少需要两段"):
+            RelationshipEngine.begin_heart_trial(state)
+
+    def test_heart_trial_choice_resolves_and_persists_event(self) -> None:
+        state = GameState(phase="playing", rng_seed=44)
+        for name in ("顾清玄", "云栖"):
+            RelationshipEngine.relation(state, name)["affinity"] = 80
+        names, tension = RelationshipEngine.begin_heart_trial(state)
+        self.assertEqual(names, ["顾清玄", "云栖"])
+        self.assertGreaterEqual(tension, 25)
+        result = RelationshipEngine.resolve_heart_trial(state, "暂避锋芒")
+        self.assertEqual(result.choice, "暂避锋芒")
+        self.assertEqual(state.phase, "playing")
+        self.assertTrue(state.relationship_events)
+        self.assertFalse(state.pending_heart_trial)
+
+    def test_single_minded_heart_trial_ends_all_partner_bonds(self) -> None:
+        state = GameState(phase="playing")
+        state.dao_partners = ["顾清玄", "云栖"]
+        for name in state.dao_partners:
+            RelationshipEngine.relation(state, name)["affinity"] = 90
+        before_dao_heart = state.player.dao_heart
+        RelationshipEngine.begin_heart_trial(state)
+        result = RelationshipEngine.resolve_heart_trial(state, "一心问道")
+        self.assertEqual(result.tension, 0)
+        self.assertEqual(state.dao_partners, [])
+        self.assertEqual(state.player.dao_heart, before_dao_heart + 2)
+        self.assertEqual(state.npc_relations["顾清玄"]["path"], "旧缘")
+
+    def test_engine_heart_trial_advances_exactly_one_month(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            for name in ("顾清玄", "云栖"):
+                RelationshipEngine.relation(engine.state, name)["affinity"] = 80
+            before = engine.state.turn
+            opened = engine.process("情劫")
+            self.assertIn("情劫抉择", opened)
+            self.assertEqual(engine.state.phase, "heart_trial_choice")
+            resolved = engine.process("情劫 暂避锋芒")
+            self.assertIn("情劫 · 暂避锋芒", resolved)
+            self.assertEqual(engine.state.turn, before + 1)
+            self.assertEqual(engine.state.phase, "playing")
+
     def test_dao_discussion_is_reproducible(self) -> None:
         left = GameState(phase="playing", rng_seed=303)
         right = GameState.from_dict(left.to_dict())
@@ -1284,6 +1339,18 @@ class SimulatorSmokeTests(unittest.TestCase):
         state = GameState.from_dict(payload)
         self.assertEqual(state.player.name, "旧档修士")
         self.assertEqual(state.version, "0.15.0")
+
+    def test_v16_save_payload_gets_heart_trial_defaults(self) -> None:
+        payload = {
+            "version": "0.16.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.relationship_tension, 0)
+        self.assertEqual(state.relationship_events, [])
+        self.assertEqual(state.pending_heart_trial, {})
 
 
 if __name__ == "__main__":

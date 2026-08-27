@@ -13,6 +13,7 @@ const phaseActions = {
   adventure: ["谨慎探索", "强行探索", "退出秘境"],
   breakthrough_talent_choice: ["选择 1", "选择 2", "选择 3"],
   sect_defection_ready: ["确认叛宗", "取消"],
+  heart_trial_choice: ["情劫 坦诚相告", "情劫 暂避锋芒", "情劫 一心问道"],
   ended: ["开始游戏"],
 };
 
@@ -185,6 +186,11 @@ function render(snapshot) {
     : [Object.assign(document.createElement("span"), { className: "empty", textContent: "空空如也" })]));
 
   const relations = Object.entries(state.npc_relations || {});
+  const tension = Math.max(0, Math.min(100, state.relationship_tension || 0));
+  $("tensionMeter").hidden = tension <= 0;
+  $("tensionValue").textContent = `${tension}/100`;
+  $("tensionBar").style.width = `${tension}%`;
+  $("tensionHint").textContent = tension >= 60 ? "情劫将至" : (tension >= 30 ? "数段心意正在交汇" : "风波初起");
   $("relationList").replaceChildren(...(relations.length
     ? relations.slice(0, 8).map(([name, relation]) => {
         const item = document.createElement("div"); item.className = "relation-item";
@@ -205,7 +211,8 @@ function render(snapshot) {
   renderPresentation(snapshot.presentation);
   renderSaveLibrary(snapshot);
 
-  const actions = phaseActions[state.phase] || ["面板", "帮助"];
+  const actions = [...(phaseActions[state.phase] || ["面板", "帮助"] )];
+  if (state.phase === "playing" && tension >= 30 && !actions.includes("情劫")) actions.splice(8, 0, "情劫");
   $("quickActions").replaceChildren(...actions.map((action) => {
     const button = document.createElement("button");
     button.type = "button"; button.textContent = action; button.addEventListener("click", () => sendAction(action));

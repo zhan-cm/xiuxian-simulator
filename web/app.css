@@ -264,6 +264,12 @@ textarea:focus { outline: 2px solid rgba(53,109,90,.18); border-color: var(--jad
 #submitAction:disabled { opacity: .55; cursor: wait; }
 .form-tip { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
 .relation-list { display: grid; gap: 8px; }
+.tension-meter { margin: -3px 0 13px; padding: 11px 12px; border-radius: 13px 4px 13px 4px; background: linear-gradient(120deg, rgba(170, 100, 118, .1), rgba(255,255,255,.45)); }
+.tension-meter > div:first-child { display: flex; justify-content: space-between; color: #8f5263; font-size: 11px; }
+.tension-meter strong { font-variant-numeric: tabular-nums; }
+.tension-track { height: 5px; margin: 8px 0 6px; overflow: hidden; border-radius: 99px; background: rgba(149, 94, 108, .14); }
+.tension-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #c6929f, #925266); transition: width .4s ease; }
+.tension-meter small { color: var(--muted); font-size: 10px; }
 .relation-item { padding: 10px 0; border-top: 1px solid var(--line); }
 .relation-item:first-child { border-top: 0; }
 .relation-item div { display: flex; justify-content: space-between; font-size: 13px; }

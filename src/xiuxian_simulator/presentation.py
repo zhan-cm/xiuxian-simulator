@@ -29,7 +29,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "战", "combat", "斗法交锋"
     if action_text.startswith("突破") or action_text.startswith("选择 "):
         return "破", "breakthrough", "破境问道"
-    if any(action_text.startswith(word) for word in ("情缘", "对话", "交谈", "送礼", "论道", "结为道侣", "双修", "确立关系", "回应")):
+    if any(action_text.startswith(word) for word in ("情缘", "情劫", "对话", "交谈", "送礼", "论道", "结为道侣", "双修", "确立关系", "回应")):
         return "缘", "relation", "红尘一念"
     if any(action_text.startswith(word) for word in ("秘境", "探索", "确认进入", "谨慎探索", "强行探索", "退出秘境")):
         return "游", "adventure", "山河游历"

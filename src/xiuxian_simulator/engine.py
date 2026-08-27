@@ -16,7 +16,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 天下 战斗 技艺 情缘 世情 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -65,6 +65,8 @@ class GameEngine:
             return self._adventure_action(action)
         if self.state.phase == "sect_defection_ready":
             return self._sect_defection_ready(action)
+        if self.state.phase == "heart_trial_choice":
+            return self._heart_trial_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -142,6 +144,8 @@ class GameEngine:
             return self._harvest(action)
         if action in {"情缘", "人物"}:
             return self._relationships()
+        if action == "情劫":
+            return self._prepare_heart_trial()
         if action in {"世情", "人物动态"}:
             return self._npc_world()
         if action.startswith("回应"):
@@ -965,10 +969,51 @@ class GameEngine:
                 f"{npc.name}｜{npc.gender}｜{npc.identity}｜{npc.age + elapsed_years}岁｜"
                 f"{npc.realm}｜好感 {affinity}（{bond}）｜所在地 {world['location']}"
             )
+        recent_trial = self.state.relationship_events[-1] if self.state.relationship_events else "尚无情劫记录"
         return (
             "【人物与情缘】\n"
             + "\n".join(lines)
+            + f"\n\n【尘缘波澜】{self.state.relationship_tension}/100｜{recent_trial}"
             + "\n指令：对话/论道 [姓名]／送礼 [姓名] [物品]／确立关系 [姓名] [类型]／结为道侣/双修 [姓名]"
+        )
+
+    def _prepare_heart_trial(self) -> str:
+        try:
+            names, tension = RelationshipEngine.begin_heart_trial(self.state)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"情劫浮现：{'、'.join(names)}，波澜{tension}")
+        self._autosave()
+        return (
+            "【情劫浮现】\n"
+            f"牵涉之人：{'、'.join(names) if names else '旧缘未散'}\n"
+            f"尘缘波澜：{tension}/100\n"
+            "几段心意在同一刻交汇，你必须亲自选择面对之法。\n\n"
+            "【情劫抉择】\n"
+            "坦诚相告：以道心和诚意承担风险，成功可修复关系。\n"
+            "暂避锋芒：降低风波，但所有相关人物的好感略有下降。\n"
+            "一心问道：主动斩断所有暧昧与道侣之契，换取道心成长。\n"
+            "请选择：情劫 坦诚相告／情劫 暂避锋芒／情劫 一心问道"
+        )
+
+    def _heart_trial_choice(self, action: str) -> str:
+        choice = action.removeprefix("情劫").strip()
+        try:
+            result = RelationshipEngine.resolve_heart_trial(self.state, choice)
+        except ValueError as exc:
+            return str(exc)
+        died = self._advance_time()
+        self.state.remember(f"情劫选择{result.choice}，波澜降至{result.tension}")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "情劫后寿元耗尽"
+        self._autosave()
+        if died:
+            return f"{result.description}\n【坐化结局】你在情劫落幕后走完此生。"
+        verdict = "" if result.chance == 100 else f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+        return (
+            f"{self.state.time_label}\n【情劫 · {result.choice}】\n{result.description}{verdict}\n"
+            f"尘缘波澜：{result.tension}/100\n\n{self._relationships()}"
         )
 
     def _npc_world(self) -> str:
@@ -1097,6 +1142,7 @@ class GameEngine:
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
+            f"尘缘波澜：{self.state.relationship_tension}/100｜情劫记录 {len(self.state.relationship_events)}\n"
             f"人物动态：{self.state.last_npc_event or '众生各循其道'}\n"
             f"天下大势：{self.state.last_world_event or '灵气潮汐尚在暗中酝酿'}｜局势 {self.state.world_tension}\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
@@ -1148,6 +1194,7 @@ class GameEngine:
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
             "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"
+            "情劫｜当两段以上暧昧或道侣关系交汇时，可选择坦诚相告、暂避锋芒或一心问道\n"
             "世情｜回应 [姓名] 接受/婉拒｜确立关系 [姓名] [纯友谊/结义/师徒/宿敌]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )
