@@ -7,6 +7,7 @@ from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
+from .ecology import NpcEcologyEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
 from .rules import RuleBook
@@ -14,7 +15,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 战斗 技艺 情缘 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 战斗 技艺 情缘 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -128,6 +129,12 @@ class GameEngine:
             return self._harvest(action)
         if action in {"情缘", "人物"}:
             return self._relationships()
+        if action in {"世情", "人物动态"}:
+            return self._npc_world()
+        if action.startswith("回应"):
+            return self._respond_invitation(action)
+        if action.startswith("确立关系"):
+            return self._set_relation_path(action)
         if action.startswith("对话"):
             return self._talk(action)
         if action.startswith("送礼"):
@@ -210,7 +217,7 @@ class GameEngine:
         gain, breakdown, months_used = ProgressionEngine.cultivate(self.state, months=months, retreat=retreat)
         if months_used == 0:
             return f"修为已圆满：{player.cultivation}/{player.cultivation_required}。请先尝试突破。"
-        died_of_age = self.state.advance_month(months_used)
+        died_of_age = self._advance_time(months_used)
         mode = "闭关" if retreat else "吐纳"
         self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}")
         if died_of_age:
@@ -231,7 +238,7 @@ class GameEngine:
         )
 
     def _free_action(self, action: str) -> str:
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.remember("寿元耗尽，坐化")
@@ -265,7 +272,7 @@ class GameEngine:
                 result = ProgressionEngine.major_breakthrough(self.state, route)
             except ValueError as exc:
                 return str(exc)
-            self.state.advance_month()
+            self._advance_time()
             if result.success:
                 choices = ProgressionEngine.destiny_choices(self.state)
                 self.state.pending_choices = choices
@@ -297,7 +304,7 @@ class GameEngine:
             result = ProgressionEngine.small_breakthrough(self.state)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.remember("突破期间寿元耗尽，坐化")
@@ -350,7 +357,7 @@ class GameEngine:
             result = EconomyEngine.explore(self.state, area)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         rewards = [f"灵石 +{result.spirit_stones}"] if result.spirit_stones else []
         rewards.extend(f"{name} +{count}" for name, count in result.rewards.items())
         if result.health_loss:
@@ -430,7 +437,7 @@ class GameEngine:
             return "秘境中只能选择“谨慎探索”“强行探索”或“退出秘境”。"
         stage_name = AdventureEngine.STAGE_NAMES[int(self.state.adventure.get("stage", 0))]
         result = AdventureEngine.resolve(self.state, action)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age and not result.fatal:
             self.state.phase = "ended"
             self.state.player.condition = "寿元耗尽"
@@ -503,7 +510,7 @@ class GameEngine:
             success, roll, chance = EconomyEngine.join_sect(self.state, sect)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "寿元耗尽"
@@ -520,7 +527,7 @@ class GameEngine:
             result = EconomyEngine.sect_task(self.state, task)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         rewards = []
         if result.spirit_stones:
             rewards.append(f"灵石 +{result.spirit_stones}")
@@ -590,7 +597,7 @@ class GameEngine:
     def _advance_combat_time(self) -> bool:
         if self.state.combat.get("source") == "challenge" and not self.state.combat.get("time_advanced"):
             self.state.combat["time_advanced"] = True
-            return self.state.advance_month()
+            return self._advance_time()
         return False
 
     def _combat_action(self, action: str) -> str:
@@ -685,7 +692,7 @@ class GameEngine:
             result = ArtsEngine.learn(self.state, name)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "参悟中寿元耗尽"
@@ -761,7 +768,7 @@ class GameEngine:
             result = CraftingEngine.craft(self.state, craft, name)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = f"{craft}时寿元耗尽"
@@ -795,7 +802,7 @@ class GameEngine:
             level = CraftingEngine.upgrade_facility(self.state, facility)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "修建洞府时寿元耗尽"
@@ -812,7 +819,7 @@ class GameEngine:
             ready_turn = CraftingEngine.plant(self.state, crop)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "耕作时寿元耗尽"
@@ -828,7 +835,7 @@ class GameEngine:
             count = CraftingEngine.harvest(self.state, crop)
         except ValueError as exc:
             return str(exc)
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "收获时寿元耗尽"
@@ -843,19 +850,64 @@ class GameEngine:
         elapsed_years = max(0, self.state.calendar_year - 387)
         for npc in NPCS.values():
             affinity = RelationshipEngine.affinity(self.state, npc.name)
-            bond = RelationshipEngine.bond_label(affinity, npc.name in self.state.dao_partners)
+            relation = RelationshipEngine.relation(self.state, npc.name)
+            bond = RelationshipEngine.bond_label(
+                affinity, npc.name in self.state.dao_partners, str(relation.get("path", ""))
+            )
+            world = NpcEcologyEngine.world_record(self.state, npc.name)
             lines.append(
                 f"{npc.name}｜{npc.gender}｜{npc.identity}｜{npc.age + elapsed_years}岁｜"
-                f"{npc.realm}｜好感 {affinity}（{bond}）｜所在地 {npc.location}"
+                f"{npc.realm}｜好感 {affinity}（{bond}）｜所在地 {world['location']}"
             )
         return (
             "【人物与情缘】\n"
             + "\n".join(lines)
-            + "\n指令：对话 [姓名]／送礼 [姓名] [物品]／论道 [姓名]／结为道侣 [姓名]／双修 [姓名]"
+            + "\n指令：对话/论道 [姓名]／送礼 [姓名] [物品]／确立关系 [姓名] [类型]／结为道侣/双修 [姓名]"
         )
 
+    def _npc_world(self) -> str:
+        lines = []
+        for name in NPCS:
+            world = NpcEcologyEngine.world_record(self.state, name)
+            invitation = self.state.npc_invitations.get(name)
+            invite_text = f"｜待回应：{invitation['kind']}" if invitation else ""
+            injury = "负伤" if world.get("wounded") else "安然"
+            lines.append(f"{name}｜{world['location']}｜{world['activity']}｜{injury}{invite_text}")
+        recent = "\n".join(self.state.npc_event_log[-5:]) or "尚无人物动态"
+        return (
+            "【九州人物动态】\n" + "\n".join(lines) + "\n\n【最近动态】\n" + recent
+            + "\n指令：回应 [姓名] 接受／回应 [姓名] 婉拒"
+        )
+
+    def _respond_invitation(self, action: str) -> str:
+        parts = action.removeprefix("回应").strip().split()
+        if len(parts) != 2:
+            return "格式：回应 [姓名] 接受／回应 [姓名] 婉拒。"
+        name, decision = parts
+        try:
+            kind, affinity, text = NpcEcologyEngine.respond(self.state, name, decision)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"回应{name}的{kind}邀约：{decision}，好感{affinity}")
+        if died:
+            return "赴约归来后，你的寿元走到尽头。\n【坐化结局】"
+        return f"{self.state.time_label}\n{text}\n\n{self._relationships()}"
+
+    def _set_relation_path(self, action: str) -> str:
+        parts = action.removeprefix("确立关系").strip().split()
+        if len(parts) != 2:
+            return "格式：确立关系 [姓名] [纯友谊/结义/师徒/宿敌]。"
+        name, path = parts
+        try:
+            path, affinity = NpcEcologyEngine.set_relation_path(self.state, name, path)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"与{name}确立{path}关系")
+        self._autosave()
+        return f"你与{name}正式确立【{path}】关系，当前好感 {affinity}。\n\n{self._relationships()}"
+
     def _finish_social_action(self, event: str) -> bool:
-        died_of_age = self.state.advance_month()
+        died_of_age = self._advance_time()
         self.state.remember(event)
         if died_of_age:
             self.state.phase = "ended"
@@ -939,6 +991,7 @@ class GameEngine:
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
+            f"人物动态：{self.state.last_npc_event or '众生各循其道'}\n"
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 
@@ -965,6 +1018,13 @@ class GameEngine:
     def _autosave(self) -> None:
         self.saves.save(self.autosave_name, self.state)
 
+    def _advance_time(self, months: int = 1) -> bool:
+        died_of_age = False
+        for _ in range(months):
+            died_of_age = self.state.advance_month() or died_of_age
+            NpcEcologyEngine.tick(self.state)
+        return died_of_age
+
     @staticmethod
     def _help() -> str:
         return (
@@ -979,5 +1039,6 @@ class GameEngine:
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
             "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"
+            "世情｜回应 [姓名] 接受/婉拒｜确立关系 [姓名] [纯友谊/结义/师徒/宿敌]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

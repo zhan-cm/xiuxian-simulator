@@ -32,11 +32,13 @@ NPCS = {
 
 class RelationshipEngine:
     @staticmethod
-    def bond_label(affinity: int, partnered: bool = False) -> str:
+    def bond_label(affinity: int, partnered: bool = False, path: str = "") -> str:
         if partnered and affinity >= 100:
             return "生死相许"
         if partnered:
             return "道侣"
+        if path:
+            return path
         if affinity >= 80:
             return "可结道侣"
         if affinity >= 60:

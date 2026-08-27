@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.10.0"
+    version: str = "0.11.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -90,6 +90,10 @@ class GameState:
     npc_relations: dict[str, dict[str, Any]] = field(default_factory=dict)
     dao_partners: list[str] = field(default_factory=list)
     adventure: dict[str, Any] = field(default_factory=dict)
+    npc_world: dict[str, dict[str, Any]] = field(default_factory=dict)
+    npc_invitations: dict[str, dict[str, Any]] = field(default_factory=dict)
+    npc_event_log: list[str] = field(default_factory=list)
+    last_npc_event: str = ""
 
     @property
     def time_label(self) -> str:

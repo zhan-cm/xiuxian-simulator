@@ -19,6 +19,7 @@ from xiuxian_simulator.arts import ArtsEngine
 from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
+from xiuxian_simulator.ecology import NpcEcologyEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -863,6 +864,97 @@ class SimulatorSmokeTests(unittest.TestCase):
         }
         state = GameState.from_dict(payload)
         self.assertEqual(state.adventure, {})
+
+    def test_npc_ecology_tick_is_reproducible(self) -> None:
+        left = GameState(phase="playing", turn=12, rng_seed=515)
+        right = GameState.from_dict(left.to_dict())
+        left_event = NpcEcologyEngine.tick(left)
+        right_event = NpcEcologyEngine.tick(right)
+        self.assertEqual(left_event, right_event)
+        self.assertEqual(left.npc_world, right.npc_world)
+        self.assertEqual(left.npc_event_log, right.npc_event_log)
+
+    def test_regular_month_advances_npc_world(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            result = engine.process("在洞府门前观云")
+            self.assertTrue(engine.state.last_npc_event)
+            self.assertTrue(engine.state.npc_event_log)
+            self.assertIn("人物动态：", result)
+
+    def test_npc_can_autonomously_send_invitation(self) -> None:
+        found = None
+        for seed in range(1, 1000):
+            state = GameState(phase="playing", turn=20, rng_seed=seed)
+            for name in ("顾清玄", "云栖", "谢无咎", "白凝霜", "墨尘", "洛浅浅"):
+                RelationshipEngine.relation(state, name)["affinity"] = 20
+            event = NpcEcologyEngine.tick(state)
+            if event.invitation:
+                found = (state, event)
+                break
+        self.assertIsNotNone(found)
+        state, event = found
+        self.assertIn(event.npc, state.npc_invitations)
+        self.assertIn("主动传信", event.description)
+
+    def test_accepting_invitation_grants_reward_and_affinity(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            RelationshipEngine.relation(engine.state, "顾清玄")["affinity"] = 20
+            engine.state.npc_invitations["顾清玄"] = {
+                "kind": "委托",
+                "expires_turn": engine.state.turn + 6,
+            }
+            before_turn = engine.state.turn
+            before_stones = engine.state.player.spirit_stones
+            result = engine.process("回应 顾清玄 接受")
+            self.assertIn("灵石 +40", result)
+            self.assertEqual(RelationshipEngine.affinity(engine.state, "顾清玄"), 25)
+            self.assertEqual(engine.state.player.spirit_stones, before_stones + 40)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            self.assertNotIn("顾清玄", engine.state.npc_invitations)
+
+    def test_relation_paths_are_gated_and_persisted(self) -> None:
+        state = GameState(phase="playing")
+        with self.assertRaisesRegex(ValueError, "需要好感 40"):
+            NpcEcologyEngine.set_relation_path(state, "顾清玄", "结义")
+        RelationshipEngine.relation(state, "顾清玄")["affinity"] = 40
+        path, affinity = NpcEcologyEngine.set_relation_path(state, "顾清玄", "师徒")
+        self.assertEqual((path, affinity), ("师徒", 40))
+        self.assertEqual(RelationshipEngine.relation(state, "顾清玄")["path"], "师徒")
+        NpcEcologyEngine.set_relation_path(state, "顾清玄", "宿敌")
+        self.assertLessEqual(RelationshipEngine.affinity(state, "顾清玄"), -40)
+
+    def test_npc_travel_changes_persist_in_world_record(self) -> None:
+        found = None
+        for seed in range(1, 1000):
+            state = GameState(phase="playing", turn=33, rng_seed=seed)
+            event = NpcEcologyEngine.tick(state)
+            if event.action == "外出游历":
+                found = (state, event)
+                break
+        self.assertIsNotNone(found)
+        state, event = found
+        location = state.npc_world[event.npc]["location"]
+        restored = GameState.from_dict(state.to_dict())
+        self.assertEqual(restored.npc_world[event.npc]["location"], location)
+
+    def test_v10_save_payload_gets_npc_ecology_defaults(self) -> None:
+        payload = {
+            "version": "0.10.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.npc_world, {})
+        self.assertEqual(state.npc_invitations, {})
+        self.assertEqual(state.npc_event_log, [])
+        self.assertEqual(state.last_npc_event, "")
 
 
 if __name__ == "__main__":
