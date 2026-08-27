@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from .choices import DecisionCatalog
 from .engine import GameEngine
 from .presentation import present_action, welcome_presentation
 
@@ -21,9 +22,10 @@ CONTENT_TYPES = {
 
 
 class WebApplication:
-    def __init__(self, engine: GameEngine, web_root: Path) -> None:
+    def __init__(self, engine: GameEngine, web_root: Path, decisions: DecisionCatalog | None = None) -> None:
         self.engine = engine
         self.web_root = web_root.resolve()
+        self.decisions = decisions or DecisionCatalog.load(self.web_root.parent / "data" / "content" / "decision_choices.json")
         self._lock = threading.Lock()
         self._presentation = welcome_presentation()
 
@@ -34,6 +36,7 @@ class WebApplication:
             "save_names": self.engine.saves.list_names(),
             "save_summaries": self.engine.saves.list_summaries(),
             "presentation": self._presentation,
+            "decision": self.decisions.for_state(self.engine.state),
         }
 
     @staticmethod
@@ -79,7 +82,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.17"
+        server_version = "XiuxianSimulator/0.18"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

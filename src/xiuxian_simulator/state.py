@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.17.0"
+    version: str = "0.18.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387

@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "phases": {
+    "new": {
+      "eyebrow": "轮回之始",
+      "title": "是否踏入仙途？",
+      "hint": "这会开启一段新的修仙人生。",
+      "exclusive": true,
+      "choices": [
+        {
+          "label": "踏入仙途",
+          "action": "开始游戏",
+          "description": "开启世界并进入创角。",
+          "tone": "primary"
+        }
+      ]
+    },
+    "character_creation_basic": {
+      "eyebrow": "创角选择",
+      "title": "快速试玩或自行落笔",
+      "hint": "使用默认角色可立即开始；自定义角色请在下方输入完整的第一面资料。",
+      "exclusive": true,
+      "choices": [
+        {
+          "label": "使用默认角色",
+          "action": "确认默认创角",
+          "description": "以沈砚·清微的默认配置进入九州。",
+          "tone": "primary"
+        }
+      ]
+    },
+    "combat_ready": {
+      "eyebrow": "临阵决意",
+      "title": "如何面对眼前之敌？",
+      "hint": "开战后将进入逐轮结算；探索遭遇无法直接离开。",
+      "exclusive": true,
+      "choices": [
+        {
+          "label": "拔剑开战",
+          "action": "开战",
+          "description": "正面迎敌，进入第一轮斗法。",
+          "tone": "danger"
+        },
+        {
+          "label": "尝试遁走",
+          "action": "遁走",
+          "description": "以遁速争取脱身，失败仍会承受攻击。",
+          "tone": "quiet"
+        },
+        {
+          "label": "审慎离开",
+          "action": "离开",
+          "description": "仅主动挑战时可不战而退。",
+          "tone": "safe",
+          "requires": "challenge_source"
+        }
+      ]
+    },
+    "combat": {
+      "eyebrow": "斗法回合",
+      "title": "选择本轮行动",
+      "hint": "每次点击只结算一个战斗回合。",
+      "exclusive": true,
+      "choices": [
+        {"label": "攻击", "action": "攻击", "description": "以当前武器发动普通攻击。", "tone": "danger"},
+        {"label": "施展法术", "action": "施法", "description": "消耗灵力施展当前装备法术。", "tone": "primary"},
+        {"label": "稳守心神", "action": "防御", "description": "本轮减轻受到的伤害。", "tone": "safe"},
+        {"label": "冷静观察", "action": "冷静观察", "description": "洞察敌势，提高下一击的命中把握。", "tone": "quiet"},
+        {"label": "蓄势", "action": "蓄势", "description": "积蓄一层绝技之势。", "tone": "primary"},
+        {"label": "施展绝技", "action": "绝技", "description": "需要两层蓄势，爆发强力一击。", "tone": "danger"},
+        {"label": "遁走", "action": "遁走", "description": "尝试脱离战斗。", "tone": "quiet"}
+      ]
+    },
+    "combat_loot": {
+      "eyebrow": "战后取舍",
+      "title": "如何处置战利品？",
+      "hint": "选择后才会离开战场。",
+      "exclusive": true,
+      "choices": [
+        {"label": "收起全部", "action": "拾取全部", "description": "将列出的战利品收入乾坤袋。", "tone": "primary"},
+        {"label": "不取而去", "action": "离开", "description": "放弃所有战利品，保持克制。", "tone": "quiet"}
+      ]
+    },
+    "adventure_ready": {
+      "eyebrow": "秘境入口",
+      "title": "是否越过入口？",
+      "hint": "进入后每次探索都会推进一个月，也可能重伤或陨落。",
+      "exclusive": true,
+      "choices": [
+        {"label": "确认进入", "action": "确认进入", "description": "接受风险，踏入秘境第一阶段。", "tone": "danger"},
+        {"label": "暂且离开", "action": "离开", "description": "不推进时间，返回当前地点。", "tone": "safe"}
+      ]
+    },
+    "adventure": {
+      "eyebrow": "秘境抉择",
+      "title": "如何探索下一阶段？",
+      "hint": "已有收获在离开或通关后才会安全入袋。",
+      "exclusive": true,
+      "choices": [
+        {"label": "谨慎探索", "action": "谨慎探索", "description": "成功率较高，获得标准奖励。", "tone": "safe"},
+        {"label": "强行探索", "action": "强行探索", "description": "风险更高，但阶段奖励翻倍。", "tone": "danger"},
+        {"label": "带着收获退出", "action": "退出秘境", "description": "结束本次秘境，保住当前积累。", "tone": "quiet"}
+      ]
+    },
+    "sect_defection_ready": {
+      "eyebrow": "宗门因果",
+      "title": "是否承担叛宗后果？",
+      "hint": "确认后会清空贡献、损失声望并留下追杀标记。",
+      "exclusive": true,
+      "choices": [
+        {"label": "确认叛宗", "action": "确认叛宗", "description": "斩断宗门身份，承担全部后果。", "tone": "danger"},
+        {"label": "收回此念", "action": "取消", "description": "取消叛宗，不推进时间。", "tone": "safe"}
+      ]
+    },
+    "heart_trial_choice": {
+      "eyebrow": "红尘一念",
+      "title": "亲自决定情劫走向",
+      "hint": "这不是说明文字；点击任一选项便会立即结算一个月。",
+      "exclusive": true,
+      "choices": [
+        {"label": "坦诚相告", "action": "情劫 坦诚相告", "description": "以道心和诚意承担判定，成功可修复关系。", "tone": "primary"},
+        {"label": "暂避锋芒", "action": "情劫 暂避锋芒", "description": "降低风波，但相关人物好感都会略降。", "tone": "quiet"},
+        {"label": "一心问道", "action": "情劫 一心问道", "description": "斩断所有暧昧和道侣之契，换取道心成长。", "tone": "danger"}
+      ]
+    },
+    "ended": {
+      "eyebrow": "轮回再启",
+      "title": "是否开启新的一世？",
+      "hint": "旧存档仍会保留；开始游戏会建立新的自动存档。",
+      "exclusive": true,
+      "choices": [
+        {"label": "再入轮回", "action": "开始游戏", "description": "结束此世记录，重新创角。", "tone": "primary"}
+      ]
+    }
+  }
+}

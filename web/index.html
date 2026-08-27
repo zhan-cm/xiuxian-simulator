@@ -69,6 +69,15 @@
         <div id="changeRibbon" class="change-ribbon" aria-label="本回合变化"></div>
         <div id="eventSections" class="event-sections"></div>
 
+        <section id="decisionPanel" class="decision-panel" aria-labelledby="decisionTitle" hidden>
+          <header class="decision-head">
+            <div><p id="decisionEyebrow" class="card-kicker">当前抉择</p><h3 id="decisionTitle">请选择下一步</h3></div>
+            <span class="decision-badge">点击即选择</span>
+          </header>
+          <div id="decisionChoices" class="decision-choices"></div>
+          <p id="decisionHint" class="decision-hint"></p>
+        </section>
+
         <details id="eventDetails" class="event-details" hidden>
           <summary><span>查看完整推演记录</span><i aria-hidden="true"></i></summary>
           <pre id="eventDetailsText"></pre>

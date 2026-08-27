@@ -57,6 +57,8 @@ class GameEngine:
             return self._combat_action(action)
         if self.state.phase == "combat_loot":
             return self._combat_loot(action)
+        if self.state.phase == "major_breakthrough_choice":
+            return self._major_breakthrough_choice(action)
         if self.state.phase == "breakthrough_talent_choice":
             return self._handle_destiny_choice(action)
         if self.state.phase == "adventure_ready":
@@ -283,6 +285,8 @@ class GameEngine:
                     requirements = ProgressionEngine.major_requirements(player, route)
                     needs = "、".join(f"{name}×{count}" for name, count in requirements.items())
                     lines.append(f"{route}：{needs}")
+                self.state.phase = "major_breakthrough_choice"
+                self._autosave()
                 return "【大境界突破路线】\n" + "\n".join(lines) + "\n输入：突破 人道／突破 地道／突破 天道"
             route = parts[1].strip()
             try:
@@ -334,6 +338,16 @@ class GameEngine:
         self.state.remember(f"{message} 掷骰 {result.roll}/{result.chance}")
         self._autosave()
         return f"{self.state.time_label}\n{message}\n判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._status()}"
+
+    def _major_breakthrough_choice(self, action: str) -> str:
+        if action == "取消突破":
+            self.state.phase = "playing"
+            self._autosave()
+            return "你暂且收拢灵力，没有消耗任何破境资源。\n\n" + self._status()
+        if action not in {"突破 人道", "突破 地道", "突破 天道"}:
+            return "请选择人道、地道或天道路线，也可选择“取消突破”。"
+        self.state.phase = "playing"
+        return self._breakthrough(action)
 
     def _handle_destiny_choice(self, action: str) -> str:
         text = action.strip()

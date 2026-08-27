@@ -15,6 +15,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from xiuxian_simulator.engine import GameEngine
+from xiuxian_simulator.choices import DecisionCatalog
 from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.arts import ArtsEngine
@@ -201,6 +202,22 @@ class SimulatorSmokeTests(unittest.TestCase):
             result = engine.process("突破 人道")
             self.assertIn("筑基丹×1", result)
             self.assertEqual(engine.state.player.realm_index, 0)
+
+    def test_major_breakthrough_route_opens_button_backed_choice_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.stage_index = 3
+            engine.state.player.cultivation = engine.state.player.cultivation_required
+            result = engine.process("突破")
+            self.assertIn("大境界突破路线", result)
+            self.assertEqual(engine.state.phase, "major_breakthrough_choice")
+            decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(engine.state)
+            self.assertEqual([choice["action"] for choice in decision["choices"][:3]], ["突破 人道", "突破 地道", "突破 天道"])
+            cancelled = engine.process("取消突破")
+            self.assertIn("没有消耗", cancelled)
+            self.assertEqual(engine.state.phase, "playing")
 
     def test_major_breakthrough_success_and_destiny_choice(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -993,6 +1010,14 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(engine.state.turn, before_turn + 1)
             self.assertNotIn("顾清玄", engine.state.npc_invitations)
 
+    def test_pending_invitation_becomes_clickable_decision_pair(self) -> None:
+        state = GameState(phase="playing")
+        state.npc_invitations["顾清玄"] = {"kind": "论道", "expires_turn": 8}
+        decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(state)
+        actions = [choice["action"] for choice in decision["choices"]]
+        self.assertEqual(actions, ["回应 顾清玄 接受", "回应 顾清玄 婉拒"])
+        self.assertFalse(decision["exclusive"])
+
     def test_relation_paths_are_gated_and_persisted(self) -> None:
         state = GameState(phase="playing")
         with self.assertRaisesRegex(ValueError, "需要好感 40"):
@@ -1233,6 +1258,8 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(payload["state"]["phase"], "new")
             self.assertIn("Narrator", payload["narrator"])
             self.assertEqual(payload["presentation"]["title"], "灵气潮汐将至")
+            self.assertTrue(payload["decision"]["exclusive"])
+            self.assertEqual(payload["decision"]["choices"][0]["action"], "开始游戏")
 
     def test_web_action_endpoint_drives_same_game_engine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1246,6 +1273,7 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(payload["state"]["phase"], "character_creation_basic")
             self.assertEqual(payload["presentation"]["tone"], "system")
             self.assertTrue(payload["presentation"]["sections"])
+            self.assertEqual(payload["decision"]["choices"][0]["action"], "确认默认创角")
             self.assertTrue((Path(temp_dir) / "autosave.json").is_file())
             self.assertTrue(payload["save_summaries"])
             self.assertEqual(payload["save_summaries"][0]["name"], "autosave")
@@ -1307,6 +1335,20 @@ class SimulatorSmokeTests(unittest.TestCase):
                 status, _, _ = app.dispatch("GET", path)
                 self.assertEqual(status, 404)
 
+    def test_combat_decision_hides_impossible_leave_button(self) -> None:
+        catalog = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json")
+        state = GameState(phase="playing")
+        CombatEngine.prepare(state, "山野劫修", source="exploration")
+        actions = [choice["action"] for choice in catalog.for_state(state)["choices"]]
+        self.assertEqual(actions, ["开战", "遁走"])
+
+    def test_destiny_traits_are_named_clickable_choices(self) -> None:
+        state = GameState(phase="breakthrough_talent_choice", pending_choices=["剑心通明", "气运如虹", "天眼通"])
+        catalog = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json")
+        decision = catalog.for_state(state)
+        self.assertEqual([choice["label"] for choice in decision["choices"]], state.pending_choices)
+        self.assertEqual([choice["action"] for choice in decision["choices"]], ["选择 1", "选择 2", "选择 3"])
+
     def test_v13_save_payload_remains_compatible_with_web_version(self) -> None:
         payload = {
             "version": "0.13.0",
@@ -1351,6 +1393,18 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.relationship_tension, 0)
         self.assertEqual(state.relationship_events, [])
         self.assertEqual(state.pending_heart_trial, {})
+
+    def test_v17_save_payload_remains_compatible_with_decision_ui(self) -> None:
+        payload = {
+            "version": "0.17.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(state)
+        self.assertEqual(decision["choices"], [])
+        self.assertEqual(state.player.name, "旧档修士")
 
 
 if __name__ == "__main__":

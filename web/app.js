@@ -111,6 +111,34 @@ function renderError(message) {
   });
 }
 
+function renderDecision(decision) {
+  const panel = $("decisionPanel");
+  const choices = decision?.choices || [];
+  panel.hidden = choices.length === 0;
+  if (!choices.length) {
+    $("decisionChoices").replaceChildren();
+    return;
+  }
+  $("decisionEyebrow").textContent = decision.eyebrow || "当前抉择";
+  $("decisionTitle").textContent = decision.title || "请选择下一步";
+  $("decisionHint").textContent = decision.hint || "点击任一按钮即可提交选择。";
+  $("decisionChoices").replaceChildren(...choices.map((choice) => {
+    const button = element("button", "decision-choice");
+    button.type = "button";
+    button.dataset.tone = choice.tone || "primary";
+    button.setAttribute("aria-label", `选择：${choice.label}`);
+    const seal = element("span", "decision-choice-seal", (choice.label || "选").slice(0, 1));
+    const copy = element("span", "decision-choice-copy");
+    copy.append(
+      element("strong", "", choice.label),
+      element("small", "", choice.description || "点击选择此项。"),
+    );
+    button.append(seal, copy, element("span", "decision-choice-action", "选择此项"));
+    button.addEventListener("click", () => sendAction(choice.action));
+    return button;
+  }));
+}
+
 function renderSaveLibrary(snapshot) {
   const saves = snapshot.save_summaries || [];
   $("saveCount").textContent = `${saves.length} 份`;
@@ -209,9 +237,10 @@ function render(snapshot) {
     : [Object.assign(document.createElement("li"), { className: "empty", textContent: "等待第一段经历" })]));
   $("worldEvent").textContent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
   renderPresentation(snapshot.presentation);
+  renderDecision(snapshot.decision);
   renderSaveLibrary(snapshot);
 
-  const actions = [...(phaseActions[state.phase] || ["面板", "帮助"] )];
+  const actions = snapshot.decision?.exclusive ? [] : [...(phaseActions[state.phase] || ["面板", "帮助"] )];
   if (state.phase === "playing" && tension >= 30 && !actions.includes("情劫")) actions.splice(8, 0, "情劫");
   $("quickActions").replaceChildren(...actions.map((action) => {
     const button = document.createElement("button");
@@ -231,6 +260,7 @@ async function sendAction(action) {
   const trimmed = action.trim();
   if (!trimmed) return;
   $("submitAction").disabled = true;
+  document.querySelectorAll("#decisionChoices button").forEach((button) => { button.disabled = true; });
   renderLoading();
   try {
     const payload = await requestJson("/api/action", {
@@ -243,6 +273,7 @@ async function sendAction(action) {
     return payload;
   } catch (error) {
     renderError(error.message);
+    renderDecision(latestSnapshot?.decision);
     return null;
   } finally {
     $("submitAction").disabled = false;
