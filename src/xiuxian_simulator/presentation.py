@@ -108,7 +108,7 @@ def _section_kind(title: str) -> str:
 
 
 PEOPLE_SECTION_TITLES = ("人物与情缘", "九州人物动态")
-PASSIVE_SECTION_TITLES = ("尘缘波澜", "最近动态")
+PASSIVE_SECTION_TITLES = ("最近动态",)
 BUTTON_BACKED_SECTION_TITLES = ("情劫抉择", "大境界突破路线", "逆天改命 · 三选一")
 COLLECTION_SECTION_TITLES = (
     "东洲宗门",
@@ -165,14 +165,31 @@ def _person_items(lines: list[str], priority_names: set[str]) -> list[dict[str, 
     for line in lines:
         parts = [part.strip() for part in line.split("｜") if part.strip()]
         if len(parts) < 2:
-            people.append({"name": line, "role": "", "realm": "", "relation": "", "affinity": "", "location": ""})
+            people.append(
+                {
+                    "name": line,
+                    "gender": "",
+                    "age": "",
+                    "identity": "",
+                    "descriptor": "",
+                    "realm": "",
+                    "relation": "",
+                    "affinity": "",
+                    "location": "",
+                }
+            )
             continue
         affinity = next((part for part in parts if part.startswith("好感 ")), "")
         affinity_match = re.search(r"好感\s*(-?\d+)(?:（([^）]+)）)?", affinity)
+        role = parts[2] if len(parts) > 2 else ""
+        identity, _, descriptor = role.partition("·")
         people.append(
             {
                 "name": parts[0],
-                "role": parts[2] if len(parts) > 2 else "",
+                "gender": parts[1] if len(parts) > 1 else "",
+                "age": next((part for part in parts if part.endswith("岁")), ""),
+                "identity": identity,
+                "descriptor": descriptor,
                 "realm": next((part for part in parts if any(word in part for word in ("炼气", "筑基", "金丹", "元婴", "化神"))), ""),
                 "relation": affinity_match.group(2) if affinity_match and affinity_match.group(2) else "缘分未定",
                 "affinity": affinity_match.group(1) if affinity_match else "",
@@ -180,6 +197,21 @@ def _person_items(lines: list[str], priority_names: set[str]) -> list[dict[str, 
             }
         )
     return sorted(people, key=lambda person: (person["name"] not in priority_names, -int(person["affinity"] or 0)))
+
+
+def _meter_block(title: str, line: str) -> dict[str, Any] | None:
+    match = re.search(r"(-?\d+)\s*/\s*(\d+)", line)
+    if not match:
+        return None
+    summary = line.split("｜", 1)[1].strip() if "｜" in line else ""
+    return {
+        "type": "meter",
+        "mark": title[:1] or "势",
+        "title": title,
+        "value": int(match.group(1)),
+        "max": max(1, int(match.group(2))),
+        "summary": summary,
+    }
 
 
 def _default_summary(action: str, tone: str) -> str:
@@ -212,6 +244,7 @@ def _semantic_blocks(
         if change.get("label", "").endswith("好感")
     }
     first_consumed = False
+    has_tension_section = any(section["title"].startswith("尘缘波澜") for section in sections[1:])
     if sections:
         first = sections[0]
         first_title = first["title"]
@@ -221,9 +254,14 @@ def _semantic_blocks(
             if not paragraphs and narrative:
                 paragraphs = narrative[:2]
             technical = [line for line in first_lines if line not in narrative]
-            facts = _fact_items(technical)
+            tension_lines = [line for line in technical if line.startswith("尘缘波澜")]
+            facts = _fact_items([line for line in technical if line not in tension_lines])
             if facts:
-                blocks.append({"type": "facts", "title": "本次判定", "items": facts})
+                blocks.append({"type": "facts", "mark": "判", "title": "本次判定", "items": facts})
+            if tension_lines and not has_tension_section:
+                meter = _meter_block("尘缘波澜", tension_lines[0])
+                if meter:
+                    blocks.append(meter)
             first_consumed = True
 
     if not paragraphs:
@@ -236,18 +274,24 @@ def _semantic_blocks(
         lines = _section_lines(section)
         if not lines or any(title.startswith(word) for word in PASSIVE_SECTION_TITLES + BUTTON_BACKED_SECTION_TITLES):
             continue
+        if title.startswith("尘缘波澜"):
+            meter = _meter_block(title, lines[0])
+            if meter:
+                blocks.append(meter)
+            continue
         if _is_people_section(title):
             named_in_action = {line.split("｜", 1)[0].strip() for line in lines if line.split("｜", 1)[0].strip() in action}
             items = _person_items(lines, priority_names | named_in_action)
-            blocks.append({"type": "people", "title": "相关人物", "items": items, "preview": 2})
+            blocks.append({"type": "people", "mark": "人", "title": "相关人物", "items": items, "preview": 2})
             continue
         facts = _fact_items(lines)
         if facts and len(facts) >= min(2, len(lines)):
-            blocks.append({"type": "facts", "title": title, "items": facts})
+            blocks.append({"type": "facts", "mark": title[:1], "title": title, "items": facts})
             continue
         blocks.append(
             {
                 "type": "list",
+                "mark": title[:1],
                 "title": title,
                 "items": [{"text": line} for line in lines],
                 "preview": 3,

@@ -1415,9 +1415,13 @@ class SimulatorSmokeTests(unittest.TestCase):
         )
         view = present_action("情劫 坦诚相告", output, before, after)
         self.assertEqual(view["paragraphs"], ["言语未能解开心结，旧日细节反而化作新刺，几段缘分同时蒙上阴影。"])
-        self.assertEqual([block["type"] for block in view["blocks"]], ["facts", "people"])
+        self.assertEqual([block["type"] for block in view["blocks"]], ["facts", "people", "meter"])
         self.assertEqual(view["blocks"][1]["items"][0]["name"], "云栖")
-        self.assertNotIn("尘缘波澜", [block["title"] for block in view["blocks"]])
+        self.assertEqual(view["blocks"][1]["items"][0]["gender"], "女")
+        self.assertEqual(view["blocks"][1]["items"][0]["age"], "27岁")
+        self.assertEqual(view["blocks"][1]["items"][0]["identity"], "天机坊市老板娘")
+        self.assertEqual(view["blocks"][2]["value"], 69)
+        self.assertEqual(view["blocks"][2]["max"], 100)
 
     def test_world_collections_become_compact_semantic_blocks(self) -> None:
         state = GameState(phase="playing").to_dict()
@@ -1438,7 +1442,8 @@ class SimulatorSmokeTests(unittest.TestCase):
             "一心问道：斩断情缘"
         )
         view = present_action("情劫", output, state, state)
-        self.assertEqual([block["title"] for block in view["blocks"]], ["本次判定"])
+        self.assertEqual([block["title"] for block in view["blocks"]], ["尘缘波澜"])
+        self.assertEqual(view["blocks"][0]["type"], "meter")
         self.assertIn("必须亲自选择", view["paragraphs"][1])
 
     def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:

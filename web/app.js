@@ -34,9 +34,12 @@ function element(tag, className, text) {
   return node;
 }
 
-function semanticHead(title, meta = "") {
+function semanticHead(title, meta = "", mark = "") {
   const head = element("header", "semantic-head");
-  head.append(element("h4", "", title || "相关信息"));
+  const identity = element("div", "semantic-identity");
+  if (mark) identity.append(element("span", "module-mark", mark));
+  identity.append(element("h4", "", title || "相关信息"));
+  head.append(identity);
   if (meta) head.append(element("span", "", meta));
   return head;
 }
@@ -49,16 +52,33 @@ function factItem(item) {
 
 function personItem(person) {
   const row = element("article", "person-summary");
+  const main = element("header", "person-main");
   const avatar = element("span", "person-avatar", (person.name || "人").slice(0, 1));
   const copy = element("span", "person-copy");
   copy.append(
     element("strong", "", person.name || "未知道友"),
-    element("small", "", [person.role, person.realm, person.location].filter(Boolean).join(" · ")),
+    element("small", "", person.descriptor || person.identity || "身份未明"),
   );
   const bond = element("span", "person-bond");
   bond.append(element("small", "", person.relation || "缘分未定"));
-  if (person.affinity !== "") bond.append(element("strong", "", `好感 ${person.affinity}`));
-  row.append(avatar, copy, bond);
+  main.append(avatar, copy, bond);
+
+  const tags = element("div", "person-tags");
+  [person.gender, person.age, person.realm, person.identity, person.location ? `身在 ${person.location}` : ""]
+    .filter(Boolean)
+    .forEach((value) => tags.append(element("span", "", value)));
+
+  row.append(main, tags);
+  if (person.affinity !== "") {
+    const value = Math.max(-100, Math.min(100, Number(person.affinity) || 0));
+    const affinity = element("div", "person-affinity");
+    const track = element("span", "affinity-track");
+    const fill = element("i", "");
+    fill.style.width = `${Math.max(0, value)}%`;
+    track.append(fill);
+    affinity.append(element("small", "", "好感"), track, element("strong", "", String(value)));
+    row.append(affinity);
+  }
   return row;
 }
 
@@ -78,7 +98,7 @@ function renderSemanticBlock(block, index) {
   const items = block.items || [];
 
   if (type === "facts") {
-    card.append(semanticHead(block.title, `${items.length} 项`));
+    card.append(semanticHead(block.title, `${items.length} 项`, block.mark || "判"));
     const grid = element("div", "fact-grid");
     grid.append(...items.slice(0, 6).map(factItem));
     card.append(grid);
@@ -88,7 +108,7 @@ function renderSemanticBlock(block, index) {
 
   if (type === "people") {
     const preview = Math.max(1, block.preview || 2);
-    card.append(semanticHead(block.title, `${items.length} 人`));
+    card.append(semanticHead(block.title, `${items.length} 人`, block.mark || "人"));
     const list = element("div", "person-summaries");
     list.append(...items.slice(0, preview).map(personItem));
     card.append(list);
@@ -96,8 +116,25 @@ function renderSemanticBlock(block, index) {
     return card;
   }
 
+  if (type === "meter") {
+    const max = Math.max(1, Number(block.max) || 100);
+    const value = Math.max(0, Math.min(max, Number(block.value) || 0));
+    const percentValue = Math.round(value * 100 / max);
+    card.dataset.level = percentValue >= 70 ? "high" : (percentValue >= 40 ? "medium" : "low");
+    card.append(semanticHead(block.title, `${value}/${max}`, block.mark || "势"));
+    const meter = element("div", "module-meter");
+    const track = element("span", "module-meter-track");
+    const fill = element("i", "");
+    fill.style.width = `${percentValue}%`;
+    track.append(fill);
+    meter.append(track, element("strong", "", `${percentValue}%`));
+    card.append(meter);
+    if (block.summary) card.append(element("p", "module-summary", block.summary));
+    return card;
+  }
+
   const preview = block.collapsed ? 0 : Math.max(1, block.preview || 3);
-  card.append(semanticHead(block.title, `${items.length} 条`));
+  card.append(semanticHead(block.title, `${items.length} 条`, block.mark || (block.title || "录").slice(0, 1)));
   if (preview) {
     const list = element("ul", "semantic-list");
     list.append(...items.slice(0, preview).map((item) => element("li", "", item.text || "")));
@@ -143,6 +180,7 @@ function renderPresentation(presentation) {
 
   const fallbackBlocks = (view.sections || []).map((section) => ({
     type: "list",
+    mark: section.title.slice(0, 1),
     title: section.title,
     items: (section.body || "").split("\n").filter(Boolean).map((text) => ({ text })),
     preview: 3,
