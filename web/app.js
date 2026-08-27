@@ -316,7 +316,20 @@ $("motionToggle").addEventListener("change", (event) => {
   applyReadingPreferences();
 });
 
+function openGuide() { $("guideDialog").showModal(); }
+function closeGuide(markSeen = false) {
+  if (markSeen) writePreference("xiuxian-guide-seen", "true");
+  $("guideDialog").close();
+}
+$("openGuide").addEventListener("click", openGuide);
+$("closeGuide").addEventListener("click", () => closeGuide(false));
+$("finishGuide").addEventListener("click", () => closeGuide(true));
+$("guideDialog").addEventListener("click", (event) => {
+  if (event.target === $("guideDialog")) closeGuide(false);
+});
+
 applyReadingPreferences();
+if (readPreference("xiuxian-guide-seen", "false") !== "true") window.setTimeout(openGuide, 180);
 
 requestJson("/api/state")
   .then((snapshot) => render(snapshot))

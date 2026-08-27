@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from .config import Settings
+from .diagnostics import diagnostics_text
 from .engine import GameEngine
 from .narrator import FallbackNarrator, LocalNarrator, OpenAINarrator
 from .rules import RuleBook
@@ -45,7 +46,12 @@ def main() -> None:
     parser.add_argument("--web", action="store_true", help="启动本地网页界面")
     parser.add_argument("--port", type=int, default=8765, help="网页界面端口，默认 8765")
     parser.add_argument("--no-open-browser", action="store_true", help="启动网页服务但不自动打开浏览器")
+    parser.add_argument("--check", action="store_true", help="检查本地运行环境后退出")
     args = parser.parse_args()
+    if args.check:
+        passed, report = diagnostics_text(find_project_root())
+        print(report)
+        raise SystemExit(0 if passed else 1)
     try:
         engine = build_engine()
     except Exception as exc:
@@ -63,7 +69,7 @@ def main() -> None:
         )
         return
 
-    print("问道长生 V0.20 本地基线版")
+    print("问道长生 V0.21 本地验收版")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

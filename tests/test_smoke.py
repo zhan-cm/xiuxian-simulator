@@ -26,6 +26,7 @@ from xiuxian_simulator.ecology import NpcEcologyEngine
 from xiuxian_simulator.world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from xiuxian_simulator.webapp import WebApplication
 from xiuxian_simulator.config import Settings
+from xiuxian_simulator.diagnostics import diagnostics_text, run_diagnostics
 from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
 from xiuxian_simulator.presentation import present_action, welcome_presentation
 from xiuxian_simulator.progression import ProgressionEngine
@@ -1509,6 +1510,41 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn("东洲", state.regional_prosperity)
         self.assertEqual(state.world_milestones, [])
         self.assertEqual(state.world_interventions, {})
+
+    def test_release_tree_passes_environment_diagnostics(self) -> None:
+        items = run_diagnostics(ROOT)
+        self.assertTrue(all(item.passed for item in items), [item.detail for item in items])
+        passed, report = diagnostics_text(ROOT)
+        self.assertTrue(passed)
+        self.assertIn("可以启动网页版", report)
+
+    def test_acceptance_guides_and_first_run_dialog_are_packaged(self) -> None:
+        launcher = (ROOT / "启动网页版.bat").read_text(encoding="utf-8")
+        page = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("--check", launcher)
+        self.assertTrue((ROOT / "检查环境.bat").is_file())
+        self.assertTrue((ROOT / "首次游玩指南.md").is_file())
+        self.assertIn('id="guideDialog"', page)
+        self.assertIn("xiuxian-guide-seen", script)
+
+    def test_fifty_year_world_simulation_is_bounded_and_reproducible(self) -> None:
+        left = GameState(phase="playing", rng_seed=991)
+        right = GameState.from_dict(left.to_dict())
+        for _ in range(600):
+            left.advance_month()
+            right.advance_month()
+            WorldTimelineEngine.tick(left)
+            WorldTimelineEngine.tick(right)
+
+        self.assertEqual(left.faction_strengths, right.faction_strengths)
+        self.assertEqual(left.regional_prosperity, right.regional_prosperity)
+        self.assertEqual(left.world_events, right.world_events)
+        self.assertTrue(all(0 <= strength <= 100 for strength in left.faction_strengths.values()))
+        self.assertTrue(all(0 <= prosperity <= 100 for prosperity in left.regional_prosperity.values()))
+        self.assertLessEqual(len(left.world_events), 100)
+        self.assertLessEqual(len(left.world_milestones), 50)
+        self.assertLessEqual(len(left.sect_war_history), 30)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@
       <span id="timeLabel">天玄历 387 年</span>
       <span class="dot"></span>
       <span id="narratorLabel">本地叙事器</span>
+      <button id="openGuide" class="guide-button" type="button">游玩指引</button>
       <button id="openArchive" class="archive-button" type="button"><span aria-hidden="true">卷</span> 洞天卷宗</button>
     </div>
   </header>
@@ -152,6 +153,21 @@
         <div class="library-head"><div><p class="card-kicker">已有卷宗</p><h3>选择一段道途</h3></div><span id="saveCount">0 份</span></div>
         <div id="saveLibrary" class="save-list"><p class="empty">尚无可用存档</p></div>
       </section>
+    </div>
+  </dialog>
+
+  <dialog id="guideDialog" class="guide-dialog" aria-labelledby="guideTitle">
+    <div class="guide-shell">
+      <header class="guide-head">
+        <div><p class="card-kicker">初入九州</p><h2 id="guideTitle">三步开始问道长生</h2></div>
+        <button id="closeGuide" class="dialog-close" type="button" aria-label="关闭游玩指引">关闭</button>
+      </header>
+      <div class="guide-steps">
+        <article><span>一</span><div><h3>点击事件内按钮</h3><p>必须决定的事件会出现带后果说明的按钮；点击即选择，不必复制文字。</p></div></article>
+        <article><span>二</span><div><h3>自由行动仍然开放</h3><p>没有强制抉择时，可以修炼、探索、交谈，也可以直接描述任何合理行动。</p></div></article>
+        <article><span>三</span><div><h3>重要节点留下卷宗</h3><p>游戏会自动存档；突破、入秘境或重大关系选择前，可在洞天卷宗另存一份。</p></div></article>
+      </div>
+      <button id="finishGuide" class="guide-start" type="button">我已明白，踏入仙途</button>
     </div>
   </dialog>
 

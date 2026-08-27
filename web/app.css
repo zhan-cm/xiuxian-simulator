@@ -46,7 +46,7 @@ body::before {
 h1 { margin: 0; font-family: "STKaiti", "KaiTi", serif; font-size: clamp(34px, 4vw, 54px); font-weight: 500; letter-spacing: .16em; }
 .top-status { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 10px; }
 .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
-.archive-button {
+.archive-button, .guide-button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -59,6 +59,7 @@ h1 { margin: 0; font-family: "STKaiti", "KaiTi", serif; font-size: clamp(34px, 4
   cursor: pointer;
   font: inherit;
 }
+.guide-button { padding: 8px 11px; }
 .archive-button span { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--jade); font: 14px/1 "STKaiti", serif; }
 .archive-button:hover { background: rgba(255,255,255,.88); box-shadow: 0 6px 16px rgba(48, 75, 62, .08); }
 
@@ -335,6 +336,17 @@ footer { padding: 4px 20px 28px; text-align: center; color: var(--muted); font-s
   box-shadow: 0 30px 90px rgba(30, 45, 38, .3);
 }
 .archive-dialog::backdrop { background: rgba(33, 47, 41, .46); backdrop-filter: blur(7px); }
+.guide-dialog { width: min(720px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 26px 8px 26px 8px; color: var(--ink); background: #f7f5ec; box-shadow: 0 30px 90px rgba(30,45,38,.3); }
+.guide-dialog::backdrop { background: rgba(33,47,41,.46); backdrop-filter: blur(7px); }
+.guide-shell { padding: 28px; background: radial-gradient(circle at 90% 0, rgba(191,218,203,.4), transparent 24rem); }
+.guide-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.guide-head h2 { margin: 0; font: 500 30px/1.3 "STKaiti", "KaiTi", serif; }
+.guide-steps { display: grid; gap: 11px; margin: 22px 0; }
+.guide-steps article { display: grid; grid-template-columns: 46px 1fr; align-items: center; gap: 13px; padding: 15px; border-radius: 17px 5px 17px 5px; background: rgba(255,255,255,.68); box-shadow: inset 0 0 0 1px rgba(66,96,81,.1); }
+.guide-steps article > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px 4px 14px 4px; color: white; background: var(--jade); font: 21px/1 "STKaiti", serif; }
+.guide-steps h3 { margin: 0 0 4px; font: 500 19px/1.3 "STKaiti", serif; }
+.guide-steps p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.guide-start { width: 100%; min-height: 48px; border: 0; border-radius: 14px 5px 14px 5px; color: white; background: var(--jade); cursor: pointer; font-weight: 700; letter-spacing: .06em; }
 .archive-shell { max-height: inherit; padding: 28px; overflow: auto; background: radial-gradient(circle at 85% 0, rgba(191, 218, 203, .35), transparent 22rem); }
 .archive-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
 .archive-head h2 { margin: 0; font: 500 30px/1.3 "STKaiti", "KaiTi", serif; }
