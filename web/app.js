@@ -34,6 +34,84 @@ function element(tag, className, text) {
   return node;
 }
 
+function semanticHead(title, meta = "") {
+  const head = element("header", "semantic-head");
+  head.append(element("h4", "", title || "相关信息"));
+  if (meta) head.append(element("span", "", meta));
+  return head;
+}
+
+function factItem(item) {
+  const node = element("div", "fact-item");
+  node.append(element("small", "", item.label || "信息"), element("strong", "", item.value || "—"));
+  return node;
+}
+
+function personItem(person) {
+  const row = element("article", "person-summary");
+  const avatar = element("span", "person-avatar", (person.name || "人").slice(0, 1));
+  const copy = element("span", "person-copy");
+  copy.append(
+    element("strong", "", person.name || "未知道友"),
+    element("small", "", [person.role, person.realm, person.location].filter(Boolean).join(" · ")),
+  );
+  const bond = element("span", "person-bond");
+  bond.append(element("small", "", person.relation || "缘分未定"));
+  if (person.affinity !== "") bond.append(element("strong", "", `好感 ${person.affinity}`));
+  row.append(avatar, copy, bond);
+  return row;
+}
+
+function overflowDetails(label, nodes) {
+  const details = element("details", "semantic-more");
+  details.append(element("summary", "", label));
+  const body = element("div", "semantic-more-body");
+  body.append(...nodes);
+  details.append(body);
+  return details;
+}
+
+function renderSemanticBlock(block, index) {
+  const type = block.type || "list";
+  const card = element("section", `semantic-block ${type}-block`);
+  card.style.setProperty("--block-order", index);
+  const items = block.items || [];
+
+  if (type === "facts") {
+    card.append(semanticHead(block.title, `${items.length} 项`));
+    const grid = element("div", "fact-grid");
+    grid.append(...items.slice(0, 6).map(factItem));
+    card.append(grid);
+    if (items.length > 6) card.append(overflowDetails(`查看其余 ${items.length - 6} 项`, items.slice(6).map(factItem)));
+    return card;
+  }
+
+  if (type === "people") {
+    const preview = Math.max(1, block.preview || 2);
+    card.append(semanticHead(block.title, `${items.length} 人`));
+    const list = element("div", "person-summaries");
+    list.append(...items.slice(0, preview).map(personItem));
+    card.append(list);
+    if (items.length > preview) card.append(overflowDetails(`查看其余 ${items.length - preview} 位人物`, items.slice(preview).map(personItem)));
+    return card;
+  }
+
+  const preview = block.collapsed ? 0 : Math.max(1, block.preview || 3);
+  card.append(semanticHead(block.title, `${items.length} 条`));
+  if (preview) {
+    const list = element("ul", "semantic-list");
+    list.append(...items.slice(0, preview).map((item) => element("li", "", item.text || "")));
+    card.append(list);
+  }
+  if (items.length > preview) {
+    card.append(overflowDetails(
+      preview ? `查看其余 ${items.length - preview} 条` : `展开查看 ${items.length} 条`,
+      items.slice(preview).map((item) => element("p", "semantic-detail-line", item.text || "")),
+    ));
+  }
+  return card;
+}
+
 function renderPresentation(presentation) {
   const view = presentation || {
     title: "天道推演",
@@ -63,19 +141,13 @@ function renderPresentation(presentation) {
     return card;
   }));
 
-  $("eventSections").replaceChildren(...(view.sections || []).map((section, index) => {
-    const card = element("article", "event-section");
-    card.dataset.kind = section.kind || "note";
-    card.style.setProperty("--section-order", index);
-    const head = element("div", "section-head");
-    head.append(element("span", "section-mark", section.title.slice(0, 1)), element("h4", "", section.title));
-    const body = element("div", "section-body");
-    for (const line of (section.body || "").split("\n").filter(Boolean).slice(0, 8)) {
-      body.append(element("p", "", line));
-    }
-    card.append(head, body);
-    return card;
+  const fallbackBlocks = (view.sections || []).map((section) => ({
+    type: "list",
+    title: section.title,
+    items: (section.body || "").split("\n").filter(Boolean).map((text) => ({ text })),
+    preview: 3,
   }));
+  $("eventSections").replaceChildren(...(view.blocks || fallbackBlocks).map(renderSemanticBlock));
 
   const details = $("eventDetails");
   details.hidden = !view.has_details;

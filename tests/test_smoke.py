@@ -1396,6 +1396,51 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(saved["tone"], "system")
         self.assertEqual(loaded["tone"], "system")
 
+    def test_relation_event_promotes_summary_and_uses_people_component(self) -> None:
+        before = GameState(phase="playing").to_dict()
+        before["npc_relations"] = {
+            "顾清玄": {"affinity": 74, "path": "道侣"},
+            "云栖": {"affinity": 66, "path": "暧昧"},
+        }
+        after = json.loads(json.dumps(before, ensure_ascii=False))
+        after["npc_relations"]["云栖"]["affinity"] = 60
+        output = (
+            "【情劫 · 坦诚相告】\n"
+            "言语未能解开心结，旧日细节反而化作新刺，几段缘分同时蒙上阴影。\n"
+            "判定：1d100=97，成功率 47%\n尘缘波澜：69/100\n\n"
+            "【人物与情缘】\n"
+            "顾清玄｜男｜青云宗真传·温润剑修｜24岁｜筑基·后期｜好感 74（道侣）｜所在地 青云宗\n"
+            "云栖｜女｜天机坊市老板娘·聪慧狡黠｜27岁｜筑基·中期｜好感 60（暧昧）｜所在地 天机坊市\n\n"
+            "【尘缘波澜】69/100｜情劫·坦诚相告：言语未能解开心结。"
+        )
+        view = present_action("情劫 坦诚相告", output, before, after)
+        self.assertEqual(view["paragraphs"], ["言语未能解开心结，旧日细节反而化作新刺，几段缘分同时蒙上阴影。"])
+        self.assertEqual([block["type"] for block in view["blocks"]], ["facts", "people"])
+        self.assertEqual(view["blocks"][1]["items"][0]["name"], "云栖")
+        self.assertNotIn("尘缘波澜", [block["title"] for block in view["blocks"]])
+
+    def test_world_collections_become_compact_semantic_blocks(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = (
+            "【势力盛衰】\n青云宗 72｜血魔宗 41｜天机阁 65\n"
+            "【近期大事记】\n东洲灵脉复苏\n南疆宗门交战\n西漠商路重开\n北原雪灾"
+        )
+        view = present_action("天下", output, state, state)
+        self.assertEqual(view["paragraphs"], ["九州局势已经更新，重要变化已归纳如下。"])
+        self.assertEqual(view["blocks"][0]["type"], "facts")
+        self.assertTrue(view["blocks"][1]["collapsed"])
+
+    def test_button_backed_choice_copy_is_not_repeated_as_a_block(self) -> None:
+        state = GameState(phase="heart_trial_choice").to_dict()
+        output = (
+            "【情劫浮现】\n牵涉之人：顾清玄、云栖\n几段心意在同一刻交汇，你必须亲自选择面对之法。\n"
+            "尘缘波澜：69/100\n【情劫抉择】\n坦诚相告：承担判定风险\n暂避锋芒：降低风波\n"
+            "一心问道：斩断情缘"
+        )
+        view = present_action("情劫", output, state, state)
+        self.assertEqual([block["title"] for block in view["blocks"]], ["本次判定"])
+        self.assertIn("必须亲自选择", view["paragraphs"][1])
+
     def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             app = WebApplication(self.make_engine(Path(temp_dir)), ROOT / "web")

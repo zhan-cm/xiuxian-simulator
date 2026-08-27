@@ -82,7 +82,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.21.1"
+        server_version = "XiuxianSimulator/0.22"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

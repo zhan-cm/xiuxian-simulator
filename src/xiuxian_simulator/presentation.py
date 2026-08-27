@@ -107,6 +107,156 @@ def _section_kind(title: str) -> str:
     return "note"
 
 
+PEOPLE_SECTION_TITLES = ("人物与情缘", "九州人物动态")
+PASSIVE_SECTION_TITLES = ("尘缘波澜", "最近动态")
+BUTTON_BACKED_SECTION_TITLES = ("情劫抉择", "大境界突破路线", "逆天改命 · 三选一")
+COLLECTION_SECTION_TITLES = (
+    "东洲宗门",
+    "九州秘境",
+    "东洲探索地图",
+    "可交手目标",
+    "道法构筑",
+    "修仙百艺",
+    "已知配方",
+    "近期大事记",
+    "势力盛衰",
+    "五域民生",
+    "指令大全",
+)
+TECHNICAL_PREFIXES = ("判定", "结算", "成功率", "尘缘波澜", "当前好感", "贡献：", "权限：")
+
+
+def _section_lines(section: dict[str, str]) -> list[str]:
+    return [line.strip() for line in section.get("body", "").splitlines() if line.strip()]
+
+
+def _is_people_section(title: str) -> bool:
+    return any(word in title for word in PEOPLE_SECTION_TITLES)
+
+
+def _is_collection_section(title: str) -> bool:
+    return any(title.startswith(word) for word in COLLECTION_SECTION_TITLES)
+
+
+def _is_technical_line(line: str) -> bool:
+    return line.startswith(TECHNICAL_PREFIXES) or bool(CHANGE_LINE_PATTERN.match(line))
+
+
+def _fact_items(lines: list[str]) -> list[dict[str, str]]:
+    facts: list[dict[str, str]] = []
+    for line in lines:
+        for token in (part.strip() for part in line.split("｜") if part.strip()):
+            colon = re.match(r"^([^：:]{1,14})[：:]\s*(.+)$", token)
+            if colon:
+                facts.append({"label": colon.group(1).strip(), "value": colon.group(2).strip()})
+                continue
+            verdict = re.match(r"^(判定)\s+(.+)$", token)
+            if verdict:
+                facts.append({"label": verdict.group(1), "value": verdict.group(2).strip()})
+                continue
+            metric = re.match(r"^(.{1,12}?)\s+([+-]?\d+(?:/\d+)?%?)$", token)
+            if metric:
+                facts.append({"label": metric.group(1).strip(), "value": metric.group(2)})
+    return facts[:12]
+
+
+def _person_items(lines: list[str], priority_names: set[str]) -> list[dict[str, str]]:
+    people: list[dict[str, str]] = []
+    for line in lines:
+        parts = [part.strip() for part in line.split("｜") if part.strip()]
+        if len(parts) < 2:
+            people.append({"name": line, "role": "", "realm": "", "relation": "", "affinity": "", "location": ""})
+            continue
+        affinity = next((part for part in parts if part.startswith("好感 ")), "")
+        affinity_match = re.search(r"好感\s*(-?\d+)(?:（([^）]+)）)?", affinity)
+        people.append(
+            {
+                "name": parts[0],
+                "role": parts[2] if len(parts) > 2 else "",
+                "realm": next((part for part in parts if any(word in part for word in ("炼气", "筑基", "金丹", "元婴", "化神"))), ""),
+                "relation": affinity_match.group(2) if affinity_match and affinity_match.group(2) else "缘分未定",
+                "affinity": affinity_match.group(1) if affinity_match else "",
+                "location": next((part.removeprefix("所在地 ") for part in parts if part.startswith("所在地 ")), ""),
+            }
+        )
+    return sorted(people, key=lambda person: (person["name"] not in priority_names, -int(person["affinity"] or 0)))
+
+
+def _default_summary(action: str, tone: str) -> str:
+    if tone == "relation":
+        return "人物关系已经更新，与你此刻相关的信息已整理如下。"
+    if tone == "combat":
+        return "本轮交锋已经结算，战局变化已记录。"
+    if tone == "cultivation":
+        return "本次修行已经结束，修炼所得已计入道途。"
+    if tone == "trade":
+        return "本次坊市往来已经结算。"
+    if tone == "sect":
+        return "宗门事务已经推进，相关影响已记录。"
+    if action.startswith(("天下", "世情", "干预天下")):
+        return "九州局势已经更新，重要变化已归纳如下。"
+    return "本次行动已经结算，重要信息已整理如下。"
+
+
+def _semantic_blocks(
+    action: str,
+    tone: str,
+    paragraphs: list[str],
+    sections: list[dict[str, str]],
+    changes: list[dict[str, str]],
+) -> tuple[list[str], list[dict[str, Any]]]:
+    blocks: list[dict[str, Any]] = []
+    priority_names = {
+        change["label"].removesuffix("好感")
+        for change in changes
+        if change.get("label", "").endswith("好感")
+    }
+    first_consumed = False
+    if sections:
+        first = sections[0]
+        first_title = first["title"]
+        first_lines = _section_lines(first)
+        if not _is_people_section(first_title) and not _is_collection_section(first_title):
+            narrative = [line for line in first_lines if not _is_technical_line(line)]
+            if not paragraphs and narrative:
+                paragraphs = narrative[:2]
+            technical = [line for line in first_lines if line not in narrative]
+            facts = _fact_items(technical)
+            if facts:
+                blocks.append({"type": "facts", "title": "本次判定", "items": facts})
+            first_consumed = True
+
+    if not paragraphs:
+        paragraphs = [_default_summary(action, tone)]
+
+    for index, section in enumerate(sections):
+        if index == 0 and first_consumed:
+            continue
+        title = section["title"]
+        lines = _section_lines(section)
+        if not lines or any(title.startswith(word) for word in PASSIVE_SECTION_TITLES + BUTTON_BACKED_SECTION_TITLES):
+            continue
+        if _is_people_section(title):
+            named_in_action = {line.split("｜", 1)[0].strip() for line in lines if line.split("｜", 1)[0].strip() in action}
+            items = _person_items(lines, priority_names | named_in_action)
+            blocks.append({"type": "people", "title": "相关人物", "items": items, "preview": 2})
+            continue
+        facts = _fact_items(lines)
+        if facts and len(facts) >= min(2, len(lines)):
+            blocks.append({"type": "facts", "title": title, "items": facts})
+            continue
+        blocks.append(
+            {
+                "type": "list",
+                "title": title,
+                "items": [{"text": line} for line in lines],
+                "preview": 3,
+                "collapsed": title.startswith(("近期大事记", "指令大全", "已知配方")),
+            }
+        )
+    return paragraphs[:3], blocks[:5]
+
+
 def _change(label: str, seal: str, value: int, tone: str) -> dict[str, str]:
     return {
         "label": label,
@@ -155,6 +305,8 @@ def present_action(
 ) -> dict[str, Any]:
     seal, tone, default_title = _classify(action, output)
     paragraphs, sections, hidden_details = _split_output(output)
+    changes = _state_changes(before, after)
+    paragraphs, blocks = _semantic_blocks(action, tone, paragraphs, sections, changes)
     title = sections[0]["title"] if sections and len(sections[0]["title"]) <= 18 else default_title
     details = hidden_details or output.strip()
     return {
@@ -164,8 +316,9 @@ def present_action(
         "seal": seal,
         "tone": tone,
         "paragraphs": paragraphs,
-        "changes": _state_changes(before, after),
+        "changes": changes,
         "sections": sections,
+        "blocks": blocks,
         "details": details,
         "has_details": bool(details),
     }
@@ -181,6 +334,7 @@ def welcome_presentation() -> dict[str, Any]:
         "paragraphs": ["九州云海未定，你的长生路尚待落笔。", "点击下方的“开始游戏”，踏入这方修真世界。"],
         "changes": [],
         "sections": [],
+        "blocks": [],
         "details": "",
         "has_details": False,
     }
