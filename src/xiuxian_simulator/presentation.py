@@ -37,7 +37,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "市", "trade", "坊市往来"
     if any(action_text.startswith(word) for word in ("修炼", "闭关", "参悟")):
         return "修", "cultivation", "静修问心"
-    if any(action_text.startswith(word) for word in ("宗门", "加入", "宗门任务", "申请晋升", "宗门大比", "叛宗", "确认叛宗")):
+    if any(action_text.startswith(word) for word in ("宗门", "加入", "宗门任务", "申请晋升", "宗门大比", "护宗战", "驰援前线", "固守山门", "闭关不出", "叛宗", "确认叛宗")):
         return "宗", "sect", "宗门因果"
     if (
         action_text in {"开始游戏", "确认默认创角", "面板", "帮助"}

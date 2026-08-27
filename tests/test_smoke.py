@@ -23,7 +23,7 @@ from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
-from xiuxian_simulator.world import SectProgressionEngine, WorldTimelineEngine
+from xiuxian_simulator.world import SectProgressionEngine, SectWarEngine, WorldTimelineEngine
 from xiuxian_simulator.webapp import WebApplication
 from xiuxian_simulator.config import Settings
 from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
@@ -1158,6 +1158,47 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(player.karma, 5)
             self.assertTrue(any("叛离丹霞谷" in tag for tag in player.tags))
 
+    def test_sect_war_participation_changes_momentum_and_rewards(self) -> None:
+        state = GameState(phase="playing", rng_seed=731)
+        state.player.sect = "青云宗"
+        state.player.sect_rank = "内门弟子"
+        SectWarEngine.start(state, "血煞盟", "青云宗")
+        before_contribution = state.player.sect_contribution
+        result = SectWarEngine.participate(state, "固守山门")
+        self.assertEqual(result.choice, "固守山门")
+        self.assertTrue(state.active_sect_war["player_acted"])
+        self.assertGreater(state.player.sect_contribution, before_contribution)
+
+    def test_sect_war_can_destroy_faction_and_displace_player(self) -> None:
+        state = GameState(phase="playing")
+        state.player.sect = "丹霞谷"
+        state.player.sect_rank = "外门弟子"
+        state.faction_strengths["丹霞谷"] = 20
+        SectWarEngine.start(state, "玄剑门", "丹霞谷")
+        state.active_sect_war.update({"months": 5, "momentum": 4})
+        conclusion = SectWarEngine.advance(state)
+        self.assertIn("覆灭", conclusion)
+        self.assertIn("丹霞谷", state.fallen_factions)
+        self.assertEqual(state.player.sect, "散修")
+        self.assertFalse(state.active_sect_war)
+
+    def test_engine_exposes_clickable_sect_war_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.sect = "青云宗"
+            engine.state.player.sect_rank = "外门弟子"
+            SectWarEngine.start(engine.state, "血煞盟", "青云宗")
+            opened = engine.process("护宗战")
+            self.assertIn("护宗战", opened)
+            self.assertEqual(engine.state.phase, "sect_war_choice")
+            decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(engine.state)
+            self.assertEqual([choice["action"] for choice in decision["choices"]], ["驰援前线", "固守山门", "闭关不出"])
+            resolved = engine.process("固守山门")
+            self.assertIn("护宗战 · 固守山门", resolved)
+            self.assertEqual(engine.state.phase, "playing")
+
     def test_v11_save_payload_gets_world_and_sect_defaults(self) -> None:
         payload = {
             "version": "0.11.0",
@@ -1405,6 +1446,19 @@ class SimulatorSmokeTests(unittest.TestCase):
         decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(state)
         self.assertEqual(decision["choices"], [])
         self.assertEqual(state.player.name, "旧档修士")
+
+    def test_v18_save_payload_gets_sect_war_defaults(self) -> None:
+        payload = {
+            "version": "0.18.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertIn("青云宗", state.faction_strengths)
+        self.assertEqual(state.active_sect_war, {})
+        self.assertEqual(state.sect_war_history, [])
+        self.assertEqual(state.fallen_factions, [])
 
 
 if __name__ == "__main__":

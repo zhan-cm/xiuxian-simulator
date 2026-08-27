@@ -123,6 +123,17 @@
         {"label": "一心问道", "action": "情劫 一心问道", "description": "斩断所有暧昧和道侣之契，换取道心成长。", "tone": "danger"}
       ]
     },
+    "sect_war_choice": {
+      "eyebrow": "山门烽火",
+      "title": "你将如何面对护宗之战？",
+      "hint": "这项决定会推进一个月，并永久影响宗门战局与个人声望。",
+      "exclusive": true,
+      "choices": [
+        {"label": "驰援前线", "action": "驰援前线", "description": "风险最高；胜利可大幅推动战局并获得贡献。", "tone": "danger"},
+        {"label": "固守山门", "action": "固守山门", "description": "借助阵法稳守后方，风险和收益较为平衡。", "tone": "safe"},
+        {"label": "闭关不出", "action": "闭关不出", "description": "避开直接伤亡，但宗门声势与个人声望都会受损。", "tone": "quiet"}
+      ]
+    },
     "ended": {
       "eyebrow": "轮回再启",
       "title": "是否开启新的一世？",

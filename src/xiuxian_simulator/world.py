@@ -40,6 +40,16 @@ class TournamentResult:
     reward: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class SectWarActionResult:
+    choice: str
+    success: bool
+    roll: int
+    chance: int
+    momentum: int
+    description: str
+
+
 class SectProgressionEngine:
     @staticmethod
     def next_rank(state: GameState) -> str:
@@ -133,6 +143,125 @@ class SectProgressionEngine:
         return old_sect
 
 
+class SectWarEngine:
+    FACTIONS = ("青云宗", "丹霞谷", "玄剑门", "血煞盟")
+
+    @staticmethod
+    def _number(state: GameState, purpose: str, maximum: int) -> int:
+        material = f"sect-war:{state.rng_seed}:{state.calendar_year}:{state.month}:{purpose}".encode("utf-8")
+        return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % maximum
+
+    @classmethod
+    def ensure_strengths(cls, state: GameState) -> None:
+        defaults = {"青云宗": 70, "丹霞谷": 64, "玄剑门": 68, "血煞盟": 66}
+        for name, strength in defaults.items():
+            state.faction_strengths.setdefault(name, strength)
+
+    @classmethod
+    def start(cls, state: GameState, attacker: str, defender: str) -> str:
+        cls.ensure_strengths(state)
+        if attacker == defender or attacker not in cls.FACTIONS or defender not in cls.FACTIONS:
+            raise ValueError("宗门战争双方无效。")
+        if attacker in state.fallen_factions or defender in state.fallen_factions:
+            raise ValueError("已经覆灭的势力不能发动宗门战争。")
+        state.active_sect_war = {
+            "attacker": attacker,
+            "defender": defender,
+            "momentum": 0,
+            "months": 0,
+            "started_year": state.calendar_year,
+            "started_month": state.month,
+            "player_acted": False,
+        }
+        state.world_tension = min(100, state.world_tension + 8)
+        return f"{attacker}向{defender}宣战，灵舟与护山大阵同时升起。"
+
+    @classmethod
+    def maybe_start(cls, state: GameState) -> str:
+        if state.active_sect_war or state.month != 3 or (state.calendar_year - 387) % 4 != 0:
+            return ""
+        alive = [name for name in cls.FACTIONS if name not in state.fallen_factions]
+        if len(alive) < 2:
+            return ""
+        attacker_index = cls._number(state, "attacker", len(alive))
+        defender_index = cls._number(state, "defender", len(alive) - 1)
+        attacker = alive[attacker_index]
+        defenders = [name for name in alive if name != attacker]
+        defender = defenders[defender_index]
+        return cls.start(state, attacker, defender)
+
+    @classmethod
+    def participate(cls, state: GameState, choice: str) -> SectWarActionResult:
+        war = state.active_sect_war
+        if not war or state.player.sect not in {war.get("attacker"), war.get("defender")}:
+            raise ValueError("你的宗门当前并未卷入战争。")
+        if war.get("player_acted"):
+            raise ValueError("你已经为本次宗门战争作出过选择。")
+        if choice not in {"驰援前线", "固守山门", "闭关不出"}:
+            raise ValueError("请选择驰援前线、固守山门或闭关不出。")
+        direction = 1 if state.player.sect == war["attacker"] else -1
+        roll = cls._number(state, f"player:{choice}:{state.turn}", 100) + 1
+        chance = 100
+        success = True
+        effect = 0
+        if choice == "驰援前线":
+            chance = max(20, min(95, 48 + state.player.realm_index * 10 + state.player.reputation // 5))
+            success = roll <= chance
+            effect = 2 if success else -1
+            state.player.sect_contribution += 100 if success else 20
+            state.player.reputation += 8 if success else 1
+            if not success:
+                state.player.health = max(1, state.player.health - 25)
+                state.player.condition = "护宗战负伤"
+            description = "你率同门破开敌阵，宗门声势大振。" if success else "你在前线受挫，负伤退回山门。"
+        elif choice == "固守山门":
+            chance = max(30, min(95, 62 + state.player.dao_heart + state.cave_facilities.get("禁制", 0) * 5))
+            success = roll <= chance
+            effect = 1 if success else 0
+            state.player.sect_contribution += 60 if success else 15
+            description = "你稳住护山阵眼，为宗门守住最后退路。" if success else "阵眼几度动摇，你勉强保全自身。"
+        else:
+            state.player.reputation -= 8
+            effect = -1
+            description = "你闭门不出，避开杀劫，也让同门记住了你的缺席。"
+        war["momentum"] = int(war.get("momentum", 0)) + direction * effect
+        war["player_acted"] = True
+        return SectWarActionResult(choice, success, roll, chance, int(war["momentum"]), description)
+
+    @classmethod
+    def advance(cls, state: GameState) -> str:
+        war = state.active_sect_war
+        if not war:
+            return ""
+        war["months"] = int(war.get("months", 0)) + 1
+        swing = cls._number(state, f"front:{war['attacker']}:{war['defender']}:{war['months']}", 3) - 1
+        war["momentum"] = int(war.get("momentum", 0)) + swing
+        if int(war["months"]) < 6 and abs(int(war["momentum"])) < 3:
+            return f"{war['attacker']}与{war['defender']}鏖战未休，战局声势 {war['momentum']:+d}。"
+
+        attacker_wins = int(war["momentum"]) >= 0
+        winner = str(war["attacker"] if attacker_wins else war["defender"])
+        loser = str(war["defender"] if attacker_wins else war["attacker"])
+        state.faction_strengths[winner] = min(100, int(state.faction_strengths.get(winner, 50)) + 5)
+        state.faction_strengths[loser] = max(0, int(state.faction_strengths.get(loser, 50)) - 14)
+        conclusion = f"{winner}赢得宗门战争，{loser}山门受创、势力大损。"
+        if state.faction_strengths[loser] <= 15:
+            state.faction_strengths[loser] = 0
+            if loser not in state.fallen_factions:
+                state.fallen_factions.append(loser)
+            conclusion = f"{winner}攻破{loser}山门，{loser}自九州势力谱中覆灭。"
+            if state.player.sect == loser:
+                state.player.tags.append(f"故宗覆灭·{loser}")
+                state.player.sect = "散修"
+                state.player.sect_rank = "无"
+                state.player.sect_contribution = 0
+        state.sect_war_history.append(f"天玄历{state.calendar_year}年{state.month}月｜{conclusion}")
+        state.sect_war_history = state.sect_war_history[-30:]
+        state.active_sect_war = {}
+        state.world_tension = max(0, state.world_tension - 3)
+        return conclusion
+
+
 class WorldTimelineEngine:
     @staticmethod
     def next_year(current: int, interval: int, anchor: int) -> int:
@@ -153,6 +282,12 @@ class WorldTimelineEngine:
             return []
         events = []
         year = state.calendar_year
+        war_started = SectWarEngine.maybe_start(state)
+        if war_started:
+            events.append(war_started)
+        war_update = SectWarEngine.advance(state)
+        if war_update:
+            events.append(war_update)
         if state.month == 1:
             if year >= 390 and (year - 390) % 5 == 0:
                 events.append("五年一度的升仙大会开幕，各地炼气修士汇聚东洲。")

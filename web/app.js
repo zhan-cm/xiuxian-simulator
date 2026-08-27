@@ -242,6 +242,10 @@ function render(snapshot) {
 
   const actions = snapshot.decision?.exclusive ? [] : [...(phaseActions[state.phase] || ["面板", "帮助"] )];
   if (state.phase === "playing" && tension >= 30 && !actions.includes("情劫")) actions.splice(8, 0, "情劫");
+  const war = state.active_sect_war || {};
+  if (state.phase === "playing" && [war.attacker, war.defender].includes(p.sect) && !war.player_acted && !actions.includes("护宗战")) {
+    actions.splice(8, 0, "护宗战");
+  }
   $("quickActions").replaceChildren(...actions.map((action) => {
     const button = document.createElement("button");
     button.type = "button"; button.textContent = action; button.addEventListener("click", () => sendAction(action));

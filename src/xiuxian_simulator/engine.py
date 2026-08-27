@@ -8,7 +8,7 @@ from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
-from .world import SectProgressionEngine, WorldTimelineEngine
+from .world import SectProgressionEngine, SectWarEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
 from .rules import RuleBook
@@ -16,7 +16,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -69,6 +69,8 @@ class GameEngine:
             return self._sect_defection_ready(action)
         if self.state.phase == "heart_trial_choice":
             return self._heart_trial_choice(action)
+        if self.state.phase == "sect_war_choice":
+            return self._sect_war_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -110,6 +112,8 @@ class GameEngine:
             return self._sect_tournament()
         if action == "叛宗":
             return self._prepare_defection()
+        if action in {"护宗战", "宗门战"}:
+            return self._prepare_sect_war()
         if action.startswith("拜入"):
             return self._join_sect(action)
         if action.startswith("宗门任务"):
@@ -623,10 +627,54 @@ class GameEngine:
     def _world_timeline(self) -> str:
         schedule = "\n".join(WorldTimelineEngine.schedule_lines(self.state))
         recent = "\n".join(self.state.world_events[-8:]) or "尚无足以载入史册的大事"
+        factions = "｜".join(
+            f"{name} {strength}{'（覆灭）' if name in self.state.fallen_factions else ''}"
+            for name, strength in self.state.faction_strengths.items()
+        )
+        war = self.state.active_sect_war
+        war_text = (
+            f"{war['attacker']} 对 {war['defender']}｜持续 {war['months']} 月｜声势 {war['momentum']:+d}"
+            if war
+            else "当前无大规模宗门战争"
+        )
         return (
             f"【九州天下 · 局势 {self.state.world_tension}】\n{schedule}\n\n"
+            f"【势力盛衰】\n{factions}\n【宗门战局】{war_text}\n\n"
             f"【近期大事记】\n{recent}"
         )
+
+    def _prepare_sect_war(self) -> str:
+        war = self.state.active_sect_war
+        if not war:
+            return "当前九州并无正在进行的大规模宗门战争。"
+        if self.state.player.sect not in {war.get("attacker"), war.get("defender")}:
+            return f"{war['attacker']}与{war['defender']}正在交战，但你的宗门并非参战方。"
+        if war.get("player_acted"):
+            return "你已经为本次宗门战争作出过选择。"
+        self.state.phase = "sect_war_choice"
+        self._autosave()
+        return (
+            f"【护宗战 · {war['attacker']} 对 {war['defender']}】\n"
+            f"战事已持续 {war['months']} 月，当前声势 {war['momentum']:+d}。\n"
+            "你可以驰援前线、固守山门，或闭关不出避开杀劫。"
+        )
+
+    def _sect_war_choice(self, action: str) -> str:
+        try:
+            result = SectWarEngine.participate(self.state, action)
+        except ValueError as exc:
+            return str(exc)
+        self.state.phase = "playing"
+        died = self._advance_time()
+        self.state.remember(f"护宗战选择{result.choice}，战局声势{result.momentum:+d}")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "护宗战后寿元耗尽"
+        self._autosave()
+        if died:
+            return result.description + "\n【坐化结局】战火落幕后，你也走完了此生。"
+        verdict = "" if result.chance == 100 else f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+        return f"{self.state.time_label}\n【护宗战 · {result.choice}】\n{result.description}{verdict}\n\n{self._world_timeline()}"
 
     def _join_sect(self, action: str) -> str:
         sect = action.removeprefix("拜入").strip()
@@ -1202,7 +1250,7 @@ class GameEngine:
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
-            "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜叛宗\n"
+            "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
             "天下｜查看升仙大会、宗门大比、猎魔大会、拍卖会与灵气潮汐时间线\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
