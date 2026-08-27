@@ -23,7 +23,7 @@ from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
-from xiuxian_simulator.world import SectProgressionEngine, SectWarEngine, WorldTimelineEngine
+from xiuxian_simulator.world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from xiuxian_simulator.webapp import WebApplication
 from xiuxian_simulator.config import Settings
 from xiuxian_simulator.narrator import FallbackNarrator, LocalNarrator, NarrationError, OpenAINarrator
@@ -1199,6 +1199,43 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertIn("护宗战 · 固守山门", resolved)
             self.assertEqual(engine.state.phase, "playing")
 
+    def test_annual_world_evolution_is_reproducible(self) -> None:
+        left = GameState(phase="playing", calendar_year=420, month=1, rng_seed=882)
+        right = GameState.from_dict(left.to_dict())
+        self.assertEqual(WorldEvolutionEngine.annual_tick(left), WorldEvolutionEngine.annual_tick(right))
+        self.assertEqual(left.faction_strengths, right.faction_strengths)
+        self.assertEqual(left.regional_prosperity, right.regional_prosperity)
+        self.assertEqual(WorldEvolutionEngine.annual_tick(left), [])
+
+    def test_world_intervention_changes_persistent_world_state(self) -> None:
+        state = GameState(phase="playing", world_tension=35)
+        state.player.realm_index = 1
+        state.player.spirit_stones = 200
+        result = WorldEvolutionEngine.intervene(state, "赈济苍生")
+        self.assertEqual(result.choice, "赈济苍生")
+        self.assertEqual(state.player.spirit_stones, 100)
+        self.assertEqual(state.player.merit, 12)
+        self.assertEqual(state.world_tension, 25)
+        with self.assertRaisesRegex(ValueError, "本年已经"):
+            WorldEvolutionEngine.intervene(state, "探查灵脉")
+
+    def test_engine_world_intervention_uses_clickable_choices(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.realm_index = 1
+            engine.state.player.spirit_stones = 200
+            opened = engine.process("干预天下")
+            self.assertIn("干预天下", opened)
+            self.assertEqual(engine.state.phase, "world_intervention_choice")
+            decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(engine.state)
+            self.assertEqual(len(decision["choices"]), 4)
+            before = engine.state.turn
+            resolved = engine.process("赈济苍生")
+            self.assertIn("干预天下 · 赈济苍生", resolved)
+            self.assertEqual(engine.state.turn, before + 1)
+
     def test_v11_save_payload_gets_world_and_sect_defaults(self) -> None:
         payload = {
             "version": "0.11.0",
@@ -1459,6 +1496,19 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.active_sect_war, {})
         self.assertEqual(state.sect_war_history, [])
         self.assertEqual(state.fallen_factions, [])
+
+    def test_v19_save_payload_gets_world_evolution_defaults(self) -> None:
+        payload = {
+            "version": "0.19.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.world_era, "灵潮前夜")
+        self.assertIn("东洲", state.regional_prosperity)
+        self.assertEqual(state.world_milestones, [])
+        self.assertEqual(state.world_interventions, {})
 
 
 if __name__ == "__main__":

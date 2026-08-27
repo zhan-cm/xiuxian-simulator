@@ -50,6 +50,14 @@ class SectWarActionResult:
     description: str
 
 
+@dataclass(frozen=True, slots=True)
+class WorldInterventionResult:
+    choice: str
+    description: str
+    tension_change: int = 0
+    merit_change: int = 0
+
+
 class SectProgressionEngine:
     @staticmethod
     def next_rank(state: GameState) -> str:
@@ -262,6 +270,96 @@ class SectWarEngine:
         return conclusion
 
 
+class WorldEvolutionEngine:
+    REGIONS = ("东洲", "南疆", "西漠", "北原", "中州")
+
+    @staticmethod
+    def _number(state: GameState, purpose: str, maximum: int) -> int:
+        material = f"world-evolution:{state.rng_seed}:{state.calendar_year}:{purpose}".encode("utf-8")
+        return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % maximum
+
+    @classmethod
+    def _era(cls, state: GameState) -> str:
+        if len(state.fallen_factions) >= 2 or state.world_tension >= 65:
+            return "宗门乱世"
+        if state.aura_level in {"福地", "洞天"}:
+            return "灵潮盛世"
+        if state.world_tension <= 15 and min(state.regional_prosperity.values(), default=0) >= 60:
+            return "承平仙世"
+        return "灵潮前夜"
+
+    @classmethod
+    def annual_tick(cls, state: GameState) -> list[str]:
+        if state.month != 1 or state.last_world_evolution_year == state.calendar_year:
+            return []
+        state.last_world_evolution_year = state.calendar_year
+        SectWarEngine.ensure_strengths(state)
+        for faction in SectWarEngine.FACTIONS:
+            if faction in state.fallen_factions:
+                continue
+            drift = cls._number(state, f"faction:{faction}", 5) - 2
+            state.faction_strengths[faction] = max(1, min(100, int(state.faction_strengths[faction]) + drift))
+        for region in cls.REGIONS:
+            current = int(state.regional_prosperity.setdefault(region, 50))
+            drift = cls._number(state, f"region:{region}", 7) - 3
+            if state.world_tension >= 50:
+                drift -= 1
+            state.regional_prosperity[region] = max(0, min(100, current + drift))
+        natural_tension = cls._number(state, "tension", 5) - 2
+        state.world_tension = max(0, min(100, state.world_tension + natural_tension))
+        old_era = state.world_era
+        state.world_era = cls._era(state)
+        events = [f"九州年度演化完成：天下处于【{state.world_era}】，各方势力与五域民生均有消长。"]
+        if old_era != state.world_era:
+            milestone = f"天玄历{state.calendar_year}年｜时代由【{old_era}】转入【{state.world_era}】。"
+            state.world_milestones.append(milestone)
+            events.append(milestone)
+        state.world_milestones = state.world_milestones[-50:]
+        return events
+
+    @classmethod
+    def intervene(cls, state: GameState, choice: str) -> WorldInterventionResult:
+        if state.player.realm_index < 1:
+            raise ValueError("至少达到筑基境，才有能力干预天下局势。")
+        key = str(state.calendar_year)
+        if key in state.world_interventions:
+            raise ValueError("你本年已经干预过一次天下局势。")
+        if choice == "扶持宗门":
+            if state.player.sect == "散修" or state.player.sect in state.fallen_factions:
+                raise ValueError("你当前没有可以扶持的所属宗门。")
+            if state.player.spirit_stones < 150:
+                raise ValueError("扶持宗门需要 150 灵石。")
+            state.player.spirit_stones -= 150
+            state.faction_strengths[state.player.sect] = min(100, int(state.faction_strengths.get(state.player.sect, 50)) + 10)
+            state.player.sect_contribution += 80
+            description = f"你拿出灵石与人脉扶持{state.player.sect}，宗门实力 +10。"
+            result = WorldInterventionResult(choice, description)
+        elif choice == "赈济苍生":
+            if state.player.spirit_stones < 100:
+                raise ValueError("赈济苍生需要 100 灵石。")
+            state.player.spirit_stones -= 100
+            state.player.merit += 12
+            state.world_tension = max(0, state.world_tension - 10)
+            state.regional_prosperity["东洲"] = min(100, int(state.regional_prosperity.get("东洲", 50)) + 8)
+            result = WorldInterventionResult(choice, "你开仓赈济东洲百姓，民生渐复，天下戾气稍退。", -10, 12)
+        elif choice == "探查灵脉":
+            roll = cls._number(state, f"vein:{state.turn}", 100) + 1
+            if roll <= 60 + state.player.fortune:
+                state.player.resources["道韵"] = state.player.resources.get("道韵", 0) + 1
+                state.regional_prosperity["东洲"] = min(100, int(state.regional_prosperity.get("东洲", 50)) + 4)
+                description = f"你寻得一处新生灵脉，道韵 +1；判定 1d100={roll}。"
+            else:
+                state.world_tension = min(100, state.world_tension + 3)
+                description = f"灵脉下方竟连着魔气裂隙，天下局势 +3；判定 1d100={roll}。"
+            result = WorldInterventionResult(choice, description)
+        else:
+            raise ValueError("请选择扶持宗门、赈济苍生或探查灵脉。")
+        state.world_interventions[key] = choice
+        state.world_milestones.append(f"天玄历{state.calendar_year}年｜{state.player.dao_name}选择{choice}。")
+        state.world_milestones = state.world_milestones[-50:]
+        return result
+
+
 class WorldTimelineEngine:
     @staticmethod
     def next_year(current: int, interval: int, anchor: int) -> int:
@@ -282,6 +380,7 @@ class WorldTimelineEngine:
             return []
         events = []
         year = state.calendar_year
+        events.extend(WorldEvolutionEngine.annual_tick(state))
         war_started = SectWarEngine.maybe_start(state)
         if war_started:
             events.append(war_started)

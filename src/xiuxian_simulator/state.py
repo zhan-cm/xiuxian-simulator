@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.19.0"
+    version: str = "0.20.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -109,6 +109,13 @@ class GameState:
     active_sect_war: dict[str, Any] = field(default_factory=dict)
     sect_war_history: list[str] = field(default_factory=list)
     fallen_factions: list[str] = field(default_factory=list)
+    regional_prosperity: dict[str, int] = field(
+        default_factory=lambda: {"东洲": 65, "南疆": 52, "西漠": 46, "北原": 48, "中州": 72}
+    )
+    world_era: str = "灵潮前夜"
+    world_milestones: list[str] = field(default_factory=list)
+    last_world_evolution_year: int = 0
+    world_interventions: dict[str, str] = field(default_factory=dict)
 
     @property
     def time_label(self) -> str:

@@ -5,7 +5,7 @@ const phaseActions = {
   new: ["开始游戏"],
   character_creation_basic: ["确认默认创角"],
   character_creation_traits: [],
-  playing: ["面板", "修炼", "闭关3月", "地图", "秘境", "坊市", "宗门", "情缘", "世情", "天下", "存档"],
+  playing: ["面板", "修炼", "闭关3月", "地图", "秘境", "坊市", "宗门", "情缘", "世情", "天下", "干预天下", "存档"],
   combat_ready: ["开战", "离开", "遁走"],
   combat: ["攻击", "防御", "施法 流火术", "蓄势", "绝技", "遁走"],
   combat_loot: ["拾取全部", "离开"],

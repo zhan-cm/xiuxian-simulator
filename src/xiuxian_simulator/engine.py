@@ -8,7 +8,7 @@ from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
-from .world import SectProgressionEngine, SectWarEngine, WorldTimelineEngine
+from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
 from .rules import RuleBook
@@ -16,7 +16,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -71,6 +71,8 @@ class GameEngine:
             return self._heart_trial_choice(action)
         if self.state.phase == "sect_war_choice":
             return self._sect_war_choice(action)
+        if self.state.phase == "world_intervention_choice":
+            return self._world_intervention_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -120,6 +122,8 @@ class GameEngine:
             return self._sect_task(action)
         if action in {"天下", "大事记"}:
             return self._world_timeline()
+        if action == "干预天下":
+            return self._prepare_world_intervention()
         if action in {"道法", "功法", "法术", "法宝"}:
             return self._arts()
         if action.startswith("参悟"):
@@ -638,10 +642,40 @@ class GameEngine:
             else "当前无大规模宗门战争"
         )
         return (
-            f"【九州天下 · 局势 {self.state.world_tension}】\n{schedule}\n\n"
+            f"【九州天下 · {self.state.world_era} · 局势 {self.state.world_tension}】\n{schedule}\n\n"
             f"【势力盛衰】\n{factions}\n【宗门战局】{war_text}\n\n"
+            f"【五域民生】\n" + "｜".join(f"{name} {value}" for name, value in self.state.regional_prosperity.items()) + "\n\n"
             f"【近期大事记】\n{recent}"
         )
+
+    def _prepare_world_intervention(self) -> str:
+        if self.state.player.realm_index < 1:
+            return "至少达到筑基境，才有能力干预天下局势。"
+        if str(self.state.calendar_year) in self.state.world_interventions:
+            return "你本年已经干预过一次天下局势。"
+        self.state.phase = "world_intervention_choice"
+        self._autosave()
+        return (
+            f"【干预天下 · {self.state.world_era}】\n"
+            "你已不再是只能随波逐流的无名修士。此番可以扶持宗门、赈济苍生，或探查新生灵脉。"
+        )
+
+    def _world_intervention_choice(self, action: str) -> str:
+        if action == "暂不干预":
+            self.state.phase = "playing"
+            self._autosave()
+            return "你暂且按下此念，继续观察九州局势。\n\n" + self._world_timeline()
+        try:
+            result = WorldEvolutionEngine.intervene(self.state, action)
+        except ValueError as exc:
+            return str(exc)
+        self.state.phase = "playing"
+        died = self._advance_time()
+        self.state.remember(f"干预天下：{result.choice}")
+        if died:
+            self.state.phase = "ended"
+        self._autosave()
+        return f"{self.state.time_label}\n【干预天下 · {result.choice}】\n{result.description}\n\n{self._world_timeline()}"
 
     def _prepare_sect_war(self) -> str:
         war = self.state.active_sect_war
@@ -1251,7 +1285,7 @@ class GameEngine:
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
-            "天下｜查看升仙大会、宗门大比、猎魔大会、拍卖会与灵气潮汐时间线\n"
+            "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"

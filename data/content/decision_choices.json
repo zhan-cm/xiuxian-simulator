@@ -134,6 +134,18 @@
         {"label": "闭关不出", "action": "闭关不出", "description": "避开直接伤亡，但宗门声势与个人声望都会受损。", "tone": "quiet"}
       ]
     },
+    "world_intervention_choice": {
+      "eyebrow": "一念动九州",
+      "title": "如何干预天下局势？",
+      "hint": "每年只能主动干预一次；除暂不干预外，选择会推进一个月。",
+      "exclusive": true,
+      "choices": [
+        {"label": "扶持宗门", "action": "扶持宗门", "description": "消耗 150 灵石，提高所属宗门实力与个人贡献。", "tone": "primary"},
+        {"label": "赈济苍生", "action": "赈济苍生", "description": "消耗 100 灵石，提高功德和东洲民生，降低天下局势。", "tone": "safe"},
+        {"label": "探查灵脉", "action": "探查灵脉", "description": "凭仙缘寻找道韵，也可能惊动地下魔气。", "tone": "danger"},
+        {"label": "暂不干预", "action": "暂不干预", "description": "保留资源，本次不推进时间。", "tone": "quiet"}
+      ]
+    },
     "ended": {
       "eyebrow": "轮回再启",
       "title": "是否开启新的一世？",
