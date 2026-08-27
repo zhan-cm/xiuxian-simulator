@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
+from .adventures import AdventureEngine, SECRET_REALMS
 from .arts import ARTIFACTS, ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
@@ -13,7 +14,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 背包 坊市 宗门 战斗 技艺 情缘 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 战斗 技艺 情缘 对话 存档 帮助"
 
 
 class GameEngine:
@@ -54,6 +55,10 @@ class GameEngine:
             return self._combat_loot(action)
         if self.state.phase == "breakthrough_talent_choice":
             return self._handle_destiny_choice(action)
+        if self.state.phase == "adventure_ready":
+            return self._adventure_ready(action)
+        if self.state.phase == "adventure":
+            return self._adventure_action(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -78,6 +83,10 @@ class GameEngine:
             return self._map()
         if action.startswith("探索"):
             return self._explore(action)
+        if action == "秘境":
+            return self._secret_realms()
+        if action.startswith("进入秘境"):
+            return self._prepare_adventure(action)
         trade = EconomyEngine.parse_trade(action)
         if trade is not None:
             return self._trade(*trade)
@@ -229,9 +238,13 @@ class GameEngine:
             self._autosave()
             return f"{self.state.time_label}\n你在行动途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
         narrative = self.narrator.narrate(action, self.state)
-        self.state.remember(action)
+        encounter = AdventureEngine.random_encounter(self.state, action)
+        event_text = ""
+        if encounter.triggered:
+            event_text = f"\n\n【随机奇遇 · {encounter.title}】\n{encounter.description}\n判定：1d100={encounter.roll}（20%触发）"
+        self.state.remember(action + (f"；奇遇：{encounter.title}" if encounter.triggered else ""))
         self._autosave()
-        return f"{self.state.time_label}\n{narrative}\n\n{self._status()}"
+        return f"{self.state.time_label}\n{narrative}{event_text}\n\n{self._status()}"
 
     def _breakthrough(self, action: str) -> str:
         player = self.state.player
@@ -361,6 +374,92 @@ class GameEngine:
         return (
             f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
             f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}"
+        )
+
+    @staticmethod
+    def _secret_realms() -> str:
+        return (
+            "【九州秘境】\n"
+            + "\n".join(AdventureEngine.list_lines())
+            + "\n输入：进入秘境 通灵秘境。进入前会再次显示危险并要求确认。"
+        )
+
+    def _prepare_adventure(self, action: str) -> str:
+        name = action.removeprefix("进入秘境").strip()
+        try:
+            realm = AdventureEngine.prepare(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"抵达{realm.name}入口，尚待决定是否进入")
+        self._autosave()
+        return (
+            f"【秘境入口 · {realm.name}】\n{realm.description}\n"
+            f"危险度 {realm.danger}｜共三阶段：外围、阵法核心、传承深处。\n"
+            "进入后每次探索推进一个月；失败会重伤或陨落，强行探索奖励更高但成功率更低。\n"
+            "输入“确认进入”踏入秘境，或输入“离开”返回。"
+        )
+
+    def _adventure_ready(self, action: str) -> str:
+        if action == "离开":
+            name = self.state.adventure.get("name", "秘境")
+            AdventureEngine.cancel(self.state)
+            self.state.remember(f"在{name}入口选择离开")
+            self._autosave()
+            return "你审慎退离秘境入口，本次没有推进时间。\n\n" + self._status()
+        if action != "确认进入":
+            return "秘境入口尚待抉择：输入“确认进入”或“离开”。"
+        name = self.state.adventure["name"]
+        AdventureEngine.confirm(self.state)
+        self.state.remember(f"确认进入{name}")
+        self._autosave()
+        return (
+            f"你踏入{name}，身后的入口随即闭合。\n"
+            f"当前阶段：{AdventureEngine.STAGE_NAMES[0]}。\n"
+            "输入“谨慎探索”“强行探索”或“退出秘境”。"
+        )
+
+    def _adventure_action(self, action: str) -> str:
+        name = self.state.adventure.get("name", "秘境")
+        if action == "退出秘境":
+            rewards, stones = AdventureEngine.leave(self.state)
+            reward_text = "、".join(f"{item}×{count}" for item, count in rewards.items()) or "无"
+            self.state.remember(f"从{name}中途退出，带回{reward_text}与灵石{stones}")
+            self._autosave()
+            return f"你激活退路离开{name}。\n带回：{reward_text}｜灵石 +{stones}。\n\n{self._status()}"
+        if action not in {"谨慎探索", "强行探索"}:
+            return "秘境中只能选择“谨慎探索”“强行探索”或“退出秘境”。"
+        stage_name = AdventureEngine.STAGE_NAMES[int(self.state.adventure.get("stage", 0))]
+        result = AdventureEngine.resolve(self.state, action)
+        died_of_age = self.state.advance_month()
+        if died_of_age and not result.fatal:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        if result.success:
+            reward_text = "、".join(f"{item}+{count}" for item, count in result.rewards.items())
+            event = f"{name}{stage_name}{action}成功，获得{reward_text}与灵石{result.spirit_stones}"
+        else:
+            event = f"{name}{stage_name}{action}失败，气血-{result.health_loss}"
+        self.state.remember(event)
+        self._autosave()
+        if died_of_age and not result.fatal:
+            return f"{self.state.time_label}\n你在秘境中耗尽寿元。\n【坐化结局】"
+        if not result.success:
+            ending = "\n【陨落结局】秘境吞没了你的道途。" if result.fatal else "\n你被秘境排斥而出，尚可养伤再来。"
+            return (
+                f"{self.state.time_label}\n【{stage_name} · 失败】判定 {result.roll}/{result.chance}\n"
+                f"气血 -{result.health_loss}，当前 {self.state.player.health}/{self.state.player.health_max}。{ending}"
+            )
+        reward_text = "、".join(f"{item}+{count}" for item, count in result.rewards.items())
+        if result.completed:
+            return (
+                f"{self.state.time_label}\n【{stage_name} · 秘境通关】判定 {result.roll}/{result.chance}\n"
+                f"本阶段：{reward_text}、灵石 +{result.spirit_stones}；全部积累已安全收入乾坤袋。\n\n{self._status()}"
+            )
+        next_stage = AdventureEngine.STAGE_NAMES[result.stage]
+        return (
+            f"{self.state.time_label}\n【{stage_name} · 成功】判定 {result.roll}/{result.chance}\n"
+            f"本阶段暂存：{reward_text}、灵石 +{result.spirit_stones}。\n"
+            f"下一阶段：{next_stage}。可继续谨慎/强行探索，或退出秘境带走已有收获。"
         )
 
     @staticmethod
@@ -874,6 +973,7 @@ class GameEngine:
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
+            "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"

@@ -18,6 +18,7 @@ from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.arts import ArtsEngine
 from xiuxian_simulator.crafting import CraftingEngine
 from xiuxian_simulator.relationships import RelationshipEngine
+from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -705,6 +706,163 @@ class SimulatorSmokeTests(unittest.TestCase):
         state = GameState.from_dict(payload)
         self.assertEqual(state.npc_relations, {})
         self.assertEqual(state.dao_partners, [])
+
+    def test_secret_realm_rejects_underleveled_player_with_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            result = engine.process("进入秘境 心魔幻境")
+            self.assertIn("致命危险", result)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_secret_realm_requires_confirmation_and_can_cancel(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before_turn = engine.state.turn
+            entrance = engine.process("进入秘境 通灵秘境")
+            self.assertIn("确认进入", entrance)
+            self.assertEqual(engine.state.phase, "adventure_ready")
+            left = engine.process("离开")
+            self.assertIn("没有推进时间", left)
+            self.assertEqual(engine.state.turn, before_turn)
+            self.assertEqual(engine.state.adventure, {})
+
+    def test_secret_realm_resolution_is_reproducible(self) -> None:
+        left = GameState(phase="playing", rng_seed=414)
+        AdventureEngine.prepare(left, "通灵秘境")
+        AdventureEngine.confirm(left)
+        right = GameState.from_dict(left.to_dict())
+        left_result = AdventureEngine.resolve(left, "谨慎探索")
+        right_result = AdventureEngine.resolve(right, "谨慎探索")
+        self.assertEqual(left_result, right_result)
+        self.assertEqual(left.adventure, right.adventure)
+        self.assertEqual(left.player.health, right.player.health)
+
+    def test_force_exploration_has_lower_chance_and_higher_reward(self) -> None:
+        base = GameState(phase="playing")
+        base.player.fortune = 30
+        AdventureEngine.prepare(base, "通灵秘境")
+        AdventureEngine.confirm(base)
+        self.assertGreater(
+            AdventureEngine.chance(base, "谨慎探索"),
+            AdventureEngine.chance(base, "强行探索"),
+        )
+        for seed in range(1, 500):
+            cautious = GameState.from_dict(base.to_dict())
+            forceful = GameState.from_dict(base.to_dict())
+            cautious.rng_seed = forceful.rng_seed = seed
+            cautious_result = AdventureEngine.resolve(cautious, "谨慎探索")
+            forceful_result = AdventureEngine.resolve(forceful, "强行探索")
+            if cautious_result.success and forceful_result.success:
+                break
+        else:
+            self.fail("未找到两种策略均成功的确定性种子")
+        self.assertGreater(
+            forceful_result.rewards["灵药"],
+            cautious_result.rewards["灵药"],
+        )
+        self.assertGreater(forceful_result.spirit_stones, cautious_result.spirit_stones)
+
+    def test_leaving_secret_realm_secures_pending_rewards(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.fortune = 30
+            engine.process("进入秘境 通灵秘境")
+            engine.process("确认进入")
+            for seed in range(1, 300):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if AdventureEngine.resolve(probe, "谨慎探索").success:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("谨慎探索")
+            self.assertIn("暂存", result)
+            before_stones = engine.state.player.spirit_stones
+            left = engine.process("退出秘境")
+            self.assertIn("带回", left)
+            self.assertGreater(engine.state.player.spirit_stones, before_stones)
+            self.assertGreater(engine.state.player.resources.get("灵药", 0), 0)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_secret_realm_failure_can_be_fatal(self) -> None:
+        base = GameState(phase="playing")
+        base.player.health = 10
+        base.player.fortune = 1
+        AdventureEngine.prepare(base, "通灵秘境")
+        AdventureEngine.confirm(base)
+        for seed in range(1, 300):
+            state = GameState.from_dict(base.to_dict())
+            state.rng_seed = seed
+            result = AdventureEngine.resolve(state, "强行探索")
+            if not result.success:
+                break
+        else:
+            self.fail("未找到确定性失败种子")
+        self.assertTrue(result.fatal)
+        self.assertEqual(state.player.health, 0)
+        self.assertEqual(state.phase, "ended")
+
+    def test_three_secret_realm_stages_grant_final_inheritance(self) -> None:
+        base = GameState(phase="playing")
+        base.player.fortune = 100
+        for seed in range(1, 500):
+            state = GameState.from_dict(base.to_dict())
+            state.rng_seed = seed
+            AdventureEngine.prepare(state, "通灵秘境")
+            AdventureEngine.confirm(state)
+            results = []
+            for _ in range(3):
+                result = AdventureEngine.resolve(state, "谨慎探索")
+                results.append(result)
+                if not result.success:
+                    break
+            if len(results) == 3 and all(item.success for item in results):
+                break
+        else:
+            self.fail("未找到三阶段全部成功的确定性种子")
+        self.assertTrue(results[-1].completed)
+        self.assertEqual(state.phase, "playing")
+        self.assertEqual(state.adventure, {})
+        self.assertEqual(state.player.resources["通灵秘境传承"], 1)
+        self.assertGreater(state.player.spirit_stones, 100)
+
+    def test_random_encounter_uses_twenty_percent_threshold(self) -> None:
+        triggered = None
+        ordinary = None
+        for seed in range(1, 500):
+            state = GameState(phase="playing", rng_seed=seed)
+            result = AdventureEngine.random_encounter(state, "云游")
+            if result.triggered and triggered is None:
+                triggered = result
+            if not result.triggered and ordinary is None:
+                ordinary = result
+            if triggered and ordinary:
+                break
+        self.assertIsNotNone(triggered)
+        self.assertIsNotNone(ordinary)
+        self.assertLessEqual(triggered.roll, 20)
+        self.assertGreater(ordinary.roll, 20)
+        left = GameState(phase="playing", rng_seed=77)
+        right = GameState.from_dict(left.to_dict())
+        self.assertEqual(
+            AdventureEngine.random_encounter(left, "云游"),
+            AdventureEngine.random_encounter(right, "云游"),
+        )
+
+    def test_v09_save_payload_gets_adventure_default(self) -> None:
+        payload = {
+            "version": "0.9.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.adventure, {})
 
 
 if __name__ == "__main__":
