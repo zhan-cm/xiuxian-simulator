@@ -9,6 +9,7 @@ from .state import GameState
 
 MARKET_PRICES = {
     "聚气丹": 20,
+    "疗伤丹": 60,
     "筑基丹": 500,
     "凝晶丹": 1200,
     "结丹灵药": 3000,
@@ -51,6 +52,7 @@ class ExplorationResult:
     spirit_stones: int = 0
     health_loss: int = 0
     fatal: bool = False
+    encounter: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,17 +135,16 @@ class EconomyEngine:
         stones = 0
         health_loss = 0
         fatal = False
+        encounter = ""
 
         if score <= danger:
-            escape_roll = ProgressionEngine.deterministic_roll(state, f"explore-escape:{area}:{state.turn}")
-            escape_chance = max(10, min(95, 45 + player.speed + player.spirit_sense + player.realm_index * 5 - danger))
-            if escape_roll <= escape_chance:
-                event = f"遭遇妖兽后及时退走（遁逃 {escape_roll}/{escape_chance}）"
-            else:
-                health_loss = 18 + danger + player.realm_index * 4
-                player.health = max(0, player.health - health_loss)
-                fatal = player.health <= 0
-                event = "遭妖兽伏击，重伤而退" if not fatal else "遭妖兽伏击，陨落荒野"
+            encounter = {
+                "青岳山麓": "噬灵獾",
+                "百草谷": "铁甲妖狼",
+                "迷雾山谷": "雾隐妖蟒",
+                "古战场外围": "阴煞尸傀",
+            }[area]
+            event = f"遭遇{encounter}拦路，必须判断战或逃"
         elif score < 58:
             count = 1 + score % 3
             rewards = {"灵药": count}
@@ -168,10 +169,7 @@ class EconomyEngine:
         player.location = f"东洲·{area}"
         player.spirit_stones += stones
         cls.add_resources(state, rewards)
-        if fatal:
-            player.condition = "陨落于野外探索"
-            state.phase = "ended"
-        return ExplorationResult(area, roll, event, rewards, stones, health_loss, fatal)
+        return ExplorationResult(area, roll, event, rewards, stones, health_loss, fatal, encounter)
 
     @staticmethod
     def join_sect(state: GameState, sect: str) -> tuple[bool, int, int]:

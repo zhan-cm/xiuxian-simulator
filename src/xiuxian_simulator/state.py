@@ -61,7 +61,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.5.0"
+    version: str = "0.6.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -75,6 +75,8 @@ class GameState:
     rng_seed: int = 20260827
     rng_counter: int = 0
     pending_choices: list[str] = field(default_factory=list)
+    combat: dict[str, Any] = field(default_factory=dict)
+    pending_loot: dict[str, int] = field(default_factory=dict)
 
     @property
     def time_label(self) -> str:

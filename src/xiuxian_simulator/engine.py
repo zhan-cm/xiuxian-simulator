@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
+from .combat import ENEMIES, CombatEngine
 from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .narrator import Narrator
 from .progression import ProgressionEngine
@@ -9,7 +10,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 背包 坊市 宗门 技艺 情缘 对话 存档 帮助"
+COMMANDS = "面板 修炼 突破 悟道 洞府 地图 背包 坊市 宗门 战斗 技艺 情缘 对话 存档 帮助"
 
 
 class GameEngine:
@@ -42,6 +43,12 @@ class GameEngine:
         if action.startswith("读档"):
             return self._load(action)
 
+        if self.state.phase == "combat_ready":
+            return self._combat_ready(action)
+        if self.state.phase == "combat":
+            return self._combat_action(action)
+        if self.state.phase == "combat_loot":
+            return self._combat_loot(action)
         if self.state.phase == "breakthrough_talent_choice":
             return self._handle_destiny_choice(action)
 
@@ -79,6 +86,12 @@ class GameEngine:
             return self._join_sect(action)
         if action.startswith("宗门任务"):
             return self._sect_task(action)
+        if action == "战斗":
+            return self._combatants()
+        if action.startswith("挑战"):
+            return self._prepare_combat(action, "生死")
+        if action.startswith("切磋"):
+            return self._prepare_combat(action, "切磋")
 
         return self._free_action(action)
 
@@ -291,6 +304,13 @@ class GameEngine:
         if died_of_age and not result.fatal:
             self.state.phase = "ended"
             self.state.player.condition = "寿元耗尽"
+        if result.encounter and self.state.phase != "ended":
+            CombatEngine.prepare(self.state, result.encounter, mode="生死", source="exploration")
+            self._autosave()
+            return (
+                f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
+                f"判定：1d100={result.roll}\n\n{CombatEngine.enemy_panel(self.state)}"
+            )
         self._autosave()
         if self.state.phase == "ended":
             ending = "寿元耗尽，坐化荒野" if died_of_age and not result.fatal else result.event
@@ -381,6 +401,124 @@ class GameEngine:
             f"判定：1d100={result.roll}，成功率 {result.chance}%｜结算：{reward_text}\n\n{self._status()}"
         )
 
+    @staticmethod
+    def _combatants() -> str:
+        lines = []
+        for enemy in ENEMIES.values():
+            lines.append(f"{enemy.name}｜{enemy.realm_index + 1}境·{enemy.stage_index + 1}阶｜五行 {enemy.element}")
+        return (
+            "【可交手目标】\n"
+            + "\n".join(lines)
+            + "\n输入：挑战 山野劫修（生死）／切磋 青云宗外门弟子"
+        )
+
+    def _prepare_combat(self, action: str, mode: str) -> str:
+        prefix = "挑战" if mode == "生死" else "切磋"
+        enemy_name = action.removeprefix(prefix).strip()
+        if not enemy_name:
+            return self._combatants()
+        try:
+            CombatEngine.prepare(self.state, enemy_name, mode=mode, source="challenge")
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"遭遇{enemy_name}，等待决定是否{mode}")
+        self._autosave()
+        return CombatEngine.enemy_panel(self.state)
+
+    def _combat_ready(self, action: str) -> str:
+        if action == "开战":
+            panel = CombatEngine.start(self.state)
+            self.state.remember(f"与{self.state.combat['enemy_name']}开战")
+            self._autosave()
+            return panel
+        if action == "离开":
+            if self.state.combat.get("source") != "challenge":
+                return "这是探索途中被拦截的遭遇，无法直接离开；可选择“遁走”或“开战”。"
+            enemy = str(self.state.combat["enemy_name"])
+            self.state.combat = {}
+            self.state.phase = "playing"
+            self.state.remember(f"避开与{enemy}交手")
+            self._autosave()
+            return f"你没有贸然出手，转身离开了{enemy}。\n\n{self._status()}"
+        if action == "遁走":
+            CombatEngine.start(self.state)
+            return self._combat_action(action)
+        return CombatEngine.enemy_panel(self.state)
+
+    def _advance_combat_time(self) -> bool:
+        if self.state.combat.get("source") == "challenge" and not self.state.combat.get("time_advanced"):
+            self.state.combat["time_advanced"] = True
+            return self.state.advance_month()
+        return False
+
+    def _combat_action(self, action: str) -> str:
+        round_number = int(self.state.combat["round"])
+        try:
+            result = CombatEngine.act(self.state, action)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + CombatEngine.combat_panel(self.state)
+        enemy = str(self.state.combat["enemy_name"])
+        self.state.remember(f"对战{enemy}：{result.player_text}；{result.enemy_text}")
+
+        if result.escaped:
+            died_of_age = self._advance_combat_time()
+            self.state.combat = {}
+            self.state.phase = "ended" if died_of_age else "playing"
+            if died_of_age:
+                self.state.player.condition = "逃出生天后寿元耗尽"
+            self._autosave()
+            if died_of_age:
+                return "你甩开追兵，却在归途中寿元耗尽。\n【坐化结局】"
+            return f"{result.player_text}。\n{result.enemy_text}\n\n{self._status()}"
+
+        if result.victory:
+            died_of_age = self._advance_combat_time()
+            if died_of_age:
+                self.state.phase = "ended"
+                self.state.player.condition = "战后寿元耗尽"
+                self._autosave()
+                return f"你击败了{enemy}，却在战后寿元耗尽。\n【坐化结局】"
+            CombatEngine.finish_victory(self.state)
+            self._autosave()
+            if self.state.phase == "combat_loot":
+                loot = "、".join(f"{name}×{count}" for name, count in self.state.pending_loot.items()) or "无"
+                return (
+                    f"【胜利】{result.player_text}\n{result.enemy_text}\n"
+                    f"杀伐业力 +5\n【待取战利品】{loot}\n选择：拾取全部／离开"
+                )
+            return f"【切磋获胜】声望 +3\n{result.player_text}\n{result.enemy_text}\n\n{self._status()}"
+
+        if result.defeat:
+            died_of_age = self._advance_combat_time()
+            fatal = result.fatal or died_of_age
+            self.state.phase = "ended" if fatal else "playing"
+            if not fatal:
+                self.state.combat = {}
+            self._autosave()
+            ending = "【陨落结局】" if fatal else "你侥幸留得性命，但已身受重伤。"
+            return f"【战败】{result.player_text}\n{result.enemy_text}\n{ending}"
+
+        self._autosave()
+        return (
+            f"【战斗 · 第 {round_number} 轮结算】\n{result.player_text}\n{result.enemy_text}\n\n"
+            + CombatEngine.combat_panel(self.state)
+        )
+
+    def _combat_loot(self, action: str) -> str:
+        if action == "拾取全部":
+            loot = CombatEngine.collect_loot(self.state)
+            text = "、".join(f"{name} +{count}" for name, count in loot.items()) or "无"
+            self.state.remember(f"拾取战利品：{text}")
+            self._autosave()
+            return f"已拾取：{text}\n\n{self._status()}"
+        if action == "离开":
+            CombatEngine.leave_loot(self.state)
+            self.state.remember("放弃战利品，离开战场")
+            self._autosave()
+            return f"你没有触碰尸身，径直离开。\n\n{self._status()}"
+        loot = "、".join(f"{name}×{count}" for name, count in self.state.pending_loot.items()) or "无"
+        return f"【待取战利品】{loot}\n请选择：拾取全部／离开"
+
     def _status(self) -> str:
         p = self.state.player
         return (
@@ -430,5 +568,6 @@ class GameEngine:
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
             "宗门｜拜入 [宗门]｜宗门任务 [采药/巡逻/猎妖/护送/镇守]\n"
+            "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

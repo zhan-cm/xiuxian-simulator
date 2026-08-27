@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
 
 from xiuxian_simulator.engine import GameEngine
 from xiuxian_simulator.economy import EconomyEngine
+from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.narrator import LocalNarrator
 from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
@@ -305,6 +306,101 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.player.sect_rank, "无")
         self.assertEqual(state.player.sect_contribution, 0)
         self.assertEqual(state.version, "0.4.0")
+
+    def test_enemy_intel_warns_about_higher_realm(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            panel = engine.process("挑战 筑基客卿")
+            self.assertIn("胜算极低", panel)
+            self.assertEqual(engine.state.phase, "combat_ready")
+            left = engine.process("离开")
+            self.assertIn("没有贸然出手", left)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_realm_suppression_matches_document_rules(self) -> None:
+        self.assertEqual(CombatEngine.realm_multiplier(0, 3, 1, 0), 0.4)
+        self.assertEqual(CombatEngine.realm_multiplier(0, 3, 2, 0), 0.05)
+        self.assertEqual(CombatEngine.realm_multiplier(2, 0, 0, 3), 3.5)
+
+    def test_combat_round_is_reproducible(self) -> None:
+        with tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+            left = self.make_engine(Path(left_dir))
+            right = self.make_engine(Path(right_dir))
+            for engine in (left, right):
+                engine.process("开始游戏")
+                engine.process("确认默认创角")
+                engine.state.rng_seed = 612
+                engine.process("挑战 山野劫修")
+                engine.process("开战")
+            left_result = left.process("攻击")
+            right_result = right.process("攻击")
+            self.assertEqual(left_result, right_result)
+            self.assertEqual(left.state.player.health, right.state.player.health)
+            self.assertEqual(left.state.combat["enemy_health"], right.state.combat["enemy_health"])
+
+    def test_defense_halves_incoming_damage(self) -> None:
+        guarded = GameState(phase="playing", rng_seed=88)
+        exposed = GameState(phase="playing", rng_seed=88)
+        for state in (guarded, exposed):
+            CombatEngine.prepare(state, "山野劫修")
+            CombatEngine.start(state)
+        CombatEngine.act(guarded, "防御")
+        CombatEngine.act(exposed, "冷静观察")
+        guarded_loss = guarded.player.health_max - guarded.player.health
+        exposed_loss = exposed.player.health_max - exposed.player.health
+        self.assertLessEqual(guarded_loss, (exposed_loss + 1) // 2)
+
+    def test_victory_waits_for_loot_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.speed = 30
+            engine.state.player.fortune = 30
+            engine.state.rng_seed = 5
+            engine.process("挑战 噬灵獾")
+            engine.process("开战")
+            engine.state.combat["enemy_health"] = 1
+            won = engine.process("攻击")
+            self.assertIn("待取战利品", won)
+            self.assertEqual(engine.state.phase, "combat_loot")
+            self.assertNotIn("妖兽材料", engine.state.player.resources)
+            self.assertEqual(engine.state.player.karma, 5)
+            looted = engine.process("拾取全部")
+            self.assertIn("妖兽材料 +1", looted)
+            self.assertEqual(engine.state.player.resources["妖兽材料"], 1)
+            self.assertEqual(engine.state.phase, "playing")
+
+    def test_exploration_can_open_combat_encounter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            for seed in range(1, 500):
+                probe = GameState.from_dict(engine.state.to_dict())
+                probe.rng_seed = seed
+                if EconomyEngine.explore(probe, "青岳山麓").encounter:
+                    engine.state.rng_seed = seed
+                    break
+            result = engine.process("探索 青岳山麓")
+            self.assertIn("敌情面板", result)
+            self.assertEqual(engine.state.phase, "combat_ready")
+            self.assertEqual(engine.state.combat["source"], "exploration")
+            refused = engine.process("离开")
+            self.assertIn("无法直接离开", refused)
+
+    def test_v05_save_payload_gets_combat_defaults(self) -> None:
+        payload = {
+            "version": "0.5.0",
+            "phase": "playing",
+            "player": {"name": "旧档修士"},
+            "rule_sha256": self.rules.sha256,
+        }
+        state = GameState.from_dict(payload)
+        self.assertEqual(state.combat, {})
+        self.assertEqual(state.pending_loot, {})
 
 
 if __name__ == "__main__":
