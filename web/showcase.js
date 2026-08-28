@@ -98,7 +98,7 @@
     {
       label: "04 · 探索地图",
       description: "检查地点风险、境界锁定、响应式网格和探索按钮。",
-      checks: ["难度颜色与 Tooltip", "锁定地点是否明确", "地图卡片是否自然换行"],
+      checks: ["难度颜色与 Tooltip", "锁定地点是否明确", "标题固定、数据区独立滚动"],
       build(source) {
         const snapshot = demoBase(source);
         snapshot.presentation = presentation({ title: "东洲探索地图", eyebrow: "山河游历", seal: "图", tone: "adventure", paragraphs: ["东洲山河已展开，请根据境界与当前状态选择去处。"], blocks: [{ type: "locations", mark: "图", title: "东洲探索地图", legend: "危险度表示遭遇强敌与不利事件的风险，不是奖励点数；境界不足的地点会自动锁定。", items: [
@@ -106,6 +106,8 @@
           { name: "百草谷", requirement_label: "炼气境", accessible: true, visited: true, danger: 18, danger_label: "寻常", tone: "normal", help: "灵药繁盛，也常有妖兽出没。", danger_help: "危险度 18：存在明确风险与收益。" },
           { name: "迷雾山谷", requirement_label: "筑基境", accessible: false, locked_reason: "需要达到筑基境才可进入", danger: 28, danger_label: "高危", tone: "warning", help: "雾中神识受阻，容易遭遇强敌。", danger_help: "危险度 28：高风险区域，建议筑基后进入。" },
           { name: "古战场外围", requirement_label: "结晶境", accessible: false, locked_reason: "需要达到结晶境才可进入", danger: 38, danger_label: "绝境", tone: "danger", help: "阴煞汇聚，准备不足可能丧命。", danger_help: "危险度 38：可能触发致命事件。" },
+          { name: "丹霞古道", requirement_label: "炼气境", accessible: true, danger: 22, danger_label: "寻常", tone: "normal", help: "商旅与散修往来频繁，也有劫修窥伺。", danger_help: "危险度 22：收益有所提高，也更容易遭遇争斗。" },
+          { name: "断魂崖", requirement_label: "金丹境", accessible: false, locked_reason: "需要达到金丹境才可进入", danger: 46, danger_label: "绝境", tone: "danger", help: "罡风终年不息，低阶修士难以立足。", danger_help: "危险度 46：远超当前承受范围。" },
         ] }] });
         return snapshot;
       },
@@ -113,7 +115,8 @@
     {
       label: "05 · 坊市交易",
       description: "检查货币、价格、物品信息和交易结果的结构化展示。",
-      checks: ["灵石变化是否直观", "商品价格是否易比较", "低频记录是否降权"],
+      checks: ["灵石变化是否直观", "商品价格是否易比较", "物品详情与获得提示是否可见"],
+      toast: { message: "宝物已入袋 · 聚气丹 +1", tone: "treasure" },
       build(source) {
         const snapshot = demoBase(source);
         snapshot.presentation = presentation({ title: "青岳坊市", eyebrow: "坊市往来", seal: "市", tone: "trade", paragraphs: ["檐下铜铃轻响，各家摊位已经开张。", "买卖会由规则引擎核对灵石与持有数量。"], changes: [{ label: "灵石", seal: "石", value: "-20", tone: "wealth" }, { label: "聚气丹", seal: "物", value: "+1", tone: "item" }], blocks: [{ type: "facts", mark: "易", title: "本次成交", items: [{ label: "物品", value: "聚气丹 ×1" }, { label: "单价", value: "20 灵石" }, { label: "成交后", value: "266 灵石" }] }, { type: "list", mark: "货", title: "坊市货架", items: [{ text: "聚气丹｜买 20／卖 12 灵石" }, { text: "疗伤丹｜买 60／卖 36 灵石" }, { text: "青锋剑｜买 180／卖 108 灵石" }, { text: "护身法袍｜买 220／卖 132 灵石" }], preview: 3 }] });
@@ -179,11 +182,12 @@
         snapshot.state.phase = "major_breakthrough_choice";
         snapshot.state.player.realm = "炼气·圆满";
         snapshot.state.player.cultivation = 100;
+        snapshot.state.player.resources["筑基丹"] = 1;
         snapshot.presentation = presentation({ title: "筑基之门", eyebrow: "破境问道", seal: "破", tone: "breakthrough", paragraphs: ["周天灵力已经圆满，道基将由你此刻的选择定形。"], blocks: [{ type: "facts", mark: "基", title: "突破准备", items: [{ label: "当前境界", value: "炼气·圆满" }, { label: "修为", value: "100 / 100" }, { label: "道心", value: "14" }, { label: "冷却", value: "无" }] }] });
         snapshot.decision = { eyebrow: "破境路线", title: "选择此番道基", hint: "路线越高，风险与未来潜力越大。", exclusive: true, choices: [
-          { label: "人道筑基", action: "突破 人道", description: "需要筑基丹×1；成功率最高，道基潜力平稳。", tone: "safe" },
-          { label: "地道筑基", action: "突破 地道", description: "需要五行灵珠×1；风险与潜力均衡。", tone: "primary" },
-          { label: "天道筑基", action: "突破 天道", description: "需要道韵×1；风险最高，潜力也最强。", tone: "danger" },
+          { label: "人道筑基", action: "突破 人道", summary: "筑基丹×1 · 心魔 97% / 雷劫 97%", description: "成功率最高，道基潜力平稳。", tooltip: "风险最低，成功后气血与灵力小幅增长。", tone: "safe" },
+          { label: "地道筑基", action: "突破 地道", summary: "天材地宝×1 · 当前材料不足", description: "风险与潜力均衡。", disabled: true, disabled_reason: "缺少天材地宝×1", tone: "primary" },
+          { label: "天道筑基", action: "突破 天道", summary: "三类天材 · 当前材料不足", description: "风险最高，潜力也最强。", disabled: true, disabled_reason: "缺少天材地宝×1、五行灵珠×1、道韵×1", tone: "danger" },
           { label: "暂缓突破", action: "取消突破", description: "保留当前状态，稍后再作决定。", tone: "quiet" },
         ] };
         return snapshot;
@@ -231,14 +235,14 @@
   ];
 
   function closePreviewDialogs() {
-    [byId("archiveDialog"), byId("guideDialog")].forEach((dialog) => {
+    [byId("archiveDialog"), byId("guideDialog"), byId("detailDialog")].forEach((dialog) => {
       if (dialog.open) dialog.close();
       dialog.classList.remove("showcase-preview");
     });
   }
 
   function lockGameControls() {
-    document.querySelectorAll(".layout button, .action-card textarea, .top-status button:not(#openShowcase), dialog button, dialog input").forEach((control) => {
+    document.querySelectorAll(".layout button:not([data-showcase-readonly]), .action-card textarea, .top-status button:not(#openShowcase), dialog:not(#detailDialog) button, dialog:not(#detailDialog) input").forEach((control) => {
       control.dataset.showcaseLocked = "true";
       control.setAttribute("aria-disabled", "true");
     });
@@ -270,7 +274,7 @@
     currentIndex = Math.max(0, Math.min(scenes.length - 1, index));
     const scene = scenes[currentIndex];
     closePreviewDialogs();
-    ui.renderSnapshot(scene.build(liveSnapshot));
+    ui.renderSnapshot(scene.build(liveSnapshot), { suppressNotices: true });
     document.body.classList.add("showcase-mode");
     lockGameControls();
     if (scene.dialog) {
@@ -279,6 +283,7 @@
       dialog.show();
     }
     updateController(scene);
+    if (scene.toast) ui.notify(scene.toast.message, scene.toast.tone);
     document.querySelector(".story-column")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -297,7 +302,7 @@
     document.body.classList.remove("showcase-mode");
     byId("showcasePanel").hidden = true;
     byId("openShowcase").setAttribute("aria-pressed", "false");
-    ui.renderSnapshot(liveSnapshot);
+    ui.renderSnapshot(liveSnapshot, { suppressNotices: true });
     unlockStaticControls();
     liveSnapshot = null;
   }
@@ -330,8 +335,21 @@
     if (!document.body.classList.contains("showcase-mode")) return;
     const target = event.target.closest(".layout button, .action-card textarea, .top-status button:not(#openShowcase), dialog button, dialog input");
     if (!target) return;
+    if (target.dataset.showcaseReadonly === "true" || target.closest("#detailDialog")) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (target.classList.contains("decision-choice") && !target.disabled) {
+      document.querySelectorAll("#decisionChoices .decision-choice").forEach((choice) => {
+        choice.classList.remove("is-selected");
+        choice.setAttribute("aria-pressed", "false");
+        const label = choice.querySelector(".decision-choice-action");
+        if (label) label.textContent = choice.disabled ? "条件不足" : "选择此项";
+      });
+      target.classList.add("is-selected");
+      target.setAttribute("aria-pressed", "true");
+      const label = target.querySelector(".decision-choice-action");
+      if (label) label.textContent = "已选择预览";
+    }
   }, true);
   document.addEventListener("submit", (event) => {
     if (!document.body.classList.contains("showcase-mode")) return;

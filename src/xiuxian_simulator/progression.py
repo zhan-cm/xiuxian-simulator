@@ -220,6 +220,16 @@ class ProgressionEngine:
             return {"天材地宝": 1}
         return {"天材地宝": 1, "五行灵珠": 1, "道韵": 1}
 
+    @staticmethod
+    def major_chances(player: PlayerState, route: str) -> tuple[int, int]:
+        if route not in MAJOR_BASE_RATES:
+            raise ValueError("破境路线必须是人道、地道或天道。")
+        base_rate = MAJOR_BASE_RATES[route][player.realm_index]
+        gate = math.sqrt(base_rate * 100)
+        heart_chance = round(gate + (player.dao_heart - 10) * 1.2)
+        thunder_chance = round(gate + (player.fortune - 10) * 0.8 + player.merit * 0.15 - player.karma * 0.25)
+        return max(5, min(99, heart_chance)), max(5, min(99, thunder_chance))
+
     @classmethod
     def major_breakthrough(cls, state: GameState, route: str) -> MajorBreakthroughResult:
         player = state.player
@@ -241,12 +251,7 @@ class ProgressionEngine:
             if player.resources[name] <= 0:
                 player.resources.pop(name, None)
 
-        base_rate = MAJOR_BASE_RATES[route][player.realm_index]
-        gate = math.sqrt(base_rate * 100)
-        heart_chance = round(gate + (player.dao_heart - 10) * 1.2)
-        thunder_chance = round(gate + (player.fortune - 10) * 0.8 + player.merit * 0.15 - player.karma * 0.25)
-        heart_chance = max(5, min(99, heart_chance))
-        thunder_chance = max(5, min(99, thunder_chance))
+        heart_chance, thunder_chance = cls.major_chances(player, route)
         old_realm = player.realm
         heart_roll = cls.deterministic_roll(state, f"heart-demon:{route}:{player.realm_index}")
         thunder_roll = cls.deterministic_roll(state, f"thunder:{route}:{player.realm_index}")

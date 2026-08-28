@@ -1,5 +1,7 @@
 const $ = (id) => document.getElementById(id);
 let latestSnapshot = null;
+let previousSnapshot = null;
+const seenContentKeys = new Set();
 
 const phaseActions = {
   new: ["开始游戏"],
@@ -33,6 +35,46 @@ const actionMeta = {
   "情劫": { label: "面对情劫", icon: "people" },
   "护宗战": { label: "护宗战", icon: "foundation" },
 };
+
+const termHelp = [
+  ["成功率", "成功率是本次判定通过的概率；仍可能因随机判定成功或失败。"],
+  ["历练", "历练反映探索与实战积累，可影响部分成长与事件判断。"],
+  ["宗门贡献", "宗门贡献用于晋升身份、兑换资源和参与宗门事务。"],
+  ["贡献", "贡献用于宗门晋升、资源兑换与特定事务。"],
+  ["声望", "声望反映你在修仙界的名望，会影响人物、宗门与事件判定。"],
+  ["好感", "好感范围通常为 -100 至 120；提高后可解锁更深关系与邀约。"],
+  ["五行", "五行存在生克关系；克制敌方属性时可提高伤害。"],
+  ["威胁", "威胁综合敌方境界、气血与攻击能力，越高越危险。"],
+  ["弱点", "使用对应五行或战术攻击弱点，通常能取得更高收益。"],
+  ["境界", "境界决定基础实力、寿元、可进入区域与可学习内容。"],
+  ["道心", "道心会影响突破、心魔与部分重大选择的判定。"],
+  ["冷却", "突破失败后需要休养，冷却结束前不能再次尝试。"],
+  ["灵石", "灵石是修仙界通用货币，用于购买丹药、法器与材料。"],
+];
+
+const itemGuide = {
+  "聚气丹": { kind: "丹药", rarity: "凡品", effect: "辅助炼气期修炼，提高当前修为。", description: "以温和灵药炼制，适合日常吐纳后服用。" },
+  "疗伤丹": { kind: "丹药", rarity: "良品", effect: "在战斗或受伤后恢复气血。", description: "药力偏烈，危急时可迅速稳住伤势。" },
+  "筑基丹": { kind: "破境丹药", rarity: "上品", effect: "人道筑基所需的关键材料。", description: "凝聚炼气根基，能显著降低筑基时的失控风险。" },
+  "灵药": { kind: "材料", rarity: "凡品", effect: "用于炼丹、洞府种植和部分任务。", description: "蕴含温和灵气的通用药材。" },
+  "青锋剑": { kind: "法器", rarity: "黄阶", effect: "装备后提高普通攻击伤害，五行为金。", description: "青云一带常见的入门飞剑，锋锐而易于驾驭。" },
+  "五行灵珠": { kind: "天材地宝", rarity: "极品", effect: "天道突破与高阶炼制的重要材料。", description: "五行灵机在珠中循环不息，极为罕见。" },
+  "道韵": { kind: "悟道材料", rarity: "珍稀", effect: "用于天道突破及高阶悟道。", description: "天地规则留下的一缕痕迹，无法以凡俗价值衡量。" },
+};
+
+function helpFor(label) {
+  const text = String(label || "");
+  return termHelp.find(([term]) => text.includes(term))?.[1] || "";
+}
+
+function addTooltip(node, help) {
+  if (!help) return node;
+  node.classList.add("has-tooltip");
+  if (!node.hasAttribute("tabindex")) node.tabIndex = 0;
+  node.dataset.tooltip = help;
+  node.title = help;
+  return node;
+}
 
 function svgIcon(name) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -71,6 +113,90 @@ function element(tag, className, text) {
   return node;
 }
 
+function openDetail({ kind = "条目详情", title = "未知道途", subtitle = "", seal = "览", body = "暂无更多说明。", stats = [] }) {
+  $("detailKind").textContent = kind;
+  $("detailTitle").textContent = title;
+  $("detailSubtitle").textContent = subtitle;
+  $("detailSeal").textContent = seal;
+  $("detailBody").textContent = body;
+  $("detailStats").replaceChildren(...stats.filter((entry) => entry?.value !== undefined && entry?.value !== "").map((entry) => {
+    const stat = element("span", "detail-stat");
+    stat.append(element("small", "", entry.label), element("strong", "", String(entry.value)));
+    if (entry.help || helpFor(entry.label)) addTooltip(stat, entry.help || helpFor(entry.label));
+    return stat;
+  }));
+  const dialog = $("detailDialog");
+  if (!dialog.open) dialog.showModal();
+}
+
+function itemDetail(name, count) {
+  const guide = itemGuide[name] || { kind: "修仙资源", rarity: "未鉴定", effect: "可在对应事件、炼制或交易中使用。", description: "此物的具体用途会随道途进展逐步显现。" };
+  openDetail({
+    kind: "乾坤袋 · 物品详情",
+    title: name,
+    subtitle: guide.description,
+    seal: String(name || "物").slice(0, 1),
+    body: guide.effect,
+    stats: [{ label: "持有", value: `${count} 件` }, { label: "类别", value: guide.kind }, { label: "品阶", value: guide.rarity }],
+  });
+}
+
+function personDetail(person) {
+  const profile = latestSnapshot?.npc_profiles?.[person.name] || {};
+  const affinity = person.affinity ?? profile.affinity ?? "0";
+  openDetail({
+    kind: "人物牵绊 · 完整档案",
+    title: person.name || "未知道友",
+    subtitle: person.descriptor || person.identity || profile.identity || "身份未明",
+    seal: String(person.name || "人").slice(0, 1),
+    body: person.greeting || profile.greeting || "你们尚未留下足够深刻的交谈。",
+    stats: [
+      { label: "性别", value: person.gender || profile.gender || "未知" },
+      { label: "年龄", value: person.age || (profile.age ? `${profile.age}岁` : "未知") },
+      { label: "境界", value: person.realm || profile.realm || "未知" },
+      { label: "关系", value: person.relation || profile.relation || "缘分未定" },
+      { label: "好感", value: affinity },
+      { label: "所在地", value: person.location || profile.location || "行踪不明" },
+      { label: "偏爱", value: (person.likes || profile.likes || []).join("、") || "尚待了解" },
+      { label: "避讳", value: (person.dislikes || profile.dislikes || []).join("、") || "尚待了解" },
+    ],
+  });
+}
+
+function makeDetailEntry(node, details) {
+  node.classList.add("interactive-entry");
+  node.tabIndex = 0;
+  node.setAttribute("role", "button");
+  node.dataset.showcaseReadonly = "true";
+  const open = () => details.onOpen ? details.onOpen() : openDetail(details);
+  node.addEventListener("click", open);
+  node.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    open();
+  });
+  return node;
+}
+
+function showToast(message, tone = "success") {
+  const toast = element("div", "game-toast", message);
+  toast.dataset.tone = tone;
+  $("toastRegion").append(toast);
+  window.setTimeout(() => toast.classList.add("is-leaving"), 2800);
+  window.setTimeout(() => toast.remove(), 3250);
+}
+
+function announceResult(payload) {
+  const presentation = payload?.presentation || {};
+  const changes = presentation.changes || [];
+  const resourceChange = changes.find((change) => /灵石|灵药|丹|剑|材料|收获/.test(`${change.label || ""}${change.value || ""}`));
+  const relationChange = changes.find((change) => /好感|关系|道侣/.test(`${change.label || ""}${change.value || ""}`));
+  if (presentation.tone === "danger") showToast(`危机已结算 · ${presentation.title || "请查看当前状态"}`, "danger");
+  else if (resourceChange) showToast(`获得与消耗已更新 · ${resourceChange.label} ${resourceChange.value}`, "treasure");
+  else if (relationChange) showToast(`人物牵绊有新进展 · ${relationChange.label} ${relationChange.value}`, "relation");
+  else showToast(`推演完成 · ${presentation.title || "道途已更新"}`, "success");
+}
+
 function semanticHead(title, meta = "", mark = "") {
   const head = element("header", "semantic-head");
   const identity = element("div", "semantic-identity");
@@ -83,7 +209,13 @@ function semanticHead(title, meta = "", mark = "") {
 
 function factItem(item) {
   const node = element("div", "fact-item");
-  node.append(element("small", "", item.label || "信息"), element("strong", "", item.value || "—"));
+  const labelText = item.label || "信息";
+  const label = element("small", "fact-label");
+  const iconName = labelText.includes("五行") ? "element" : (labelText.includes("威胁") ? "threat" : (labelText.includes("弱点") ? "weakness" : (labelText.includes("成功率") ? "chance" : "")));
+  if (iconName) label.append(svgIcon(iconName));
+  label.append(document.createTextNode(labelText));
+  addTooltip(label, item.help || helpFor(labelText));
+  node.append(label, element("strong", "", item.value || "—"));
   return node;
 }
 
@@ -113,10 +245,18 @@ function personItem(person) {
     const fill = element("i", "");
     fill.style.width = `${Math.max(0, value)}%`;
     track.append(fill);
-    affinity.append(element("small", "", "好感"), track, element("strong", "", String(value)));
+    affinity.append(addTooltip(element("small", "", "好感"), helpFor("好感")), track, element("strong", "", String(value)));
     row.append(affinity);
   }
-  return row;
+  return makeDetailEntry(row, {
+    kind: "人物牵绊 · 完整档案",
+    title: person.name || "未知道友",
+    subtitle: "点击查看完整档案",
+    seal: String(person.name || "人").slice(0, 1),
+    body: "正在打开人物档案。",
+    stats: [],
+    onOpen: () => personDetail(person),
+  });
 }
 
 function locationItem(location) {
@@ -164,32 +304,49 @@ function renderSemanticBlock(block, index) {
   const card = element("section", `semantic-block ${type}-block`);
   card.style.setProperty("--block-order", index);
   const items = block.items || [];
+  const noticeKey = `${block.title || ""}:${items.map((item) => item.text || item.name || item.value || "").join("|")}`;
+  if (/宗门.*任务|任务|委托/.test(block.title || "") && !seenContentKeys.has(noticeKey)) {
+    card.classList.add("has-new-content");
+    card.addEventListener("click", () => {
+      seenContentKeys.add(noticeKey);
+      card.classList.remove("has-new-content");
+    }, { once: true });
+  }
 
   if (type === "facts") {
     card.append(semanticHead(block.title, `${items.length} 项`, block.mark || "判"));
+    const body = element("div", "semantic-data-region");
+    if (items.length > 8) body.dataset.overflow = "true";
     const grid = element("div", "fact-grid");
     grid.append(...items.slice(0, 6).map(factItem));
-    card.append(grid);
-    if (items.length > 6) card.append(overflowDetails(`查看其余 ${items.length - 6} 项`, items.slice(6).map(factItem)));
+    body.append(grid);
+    if (items.length > 6) body.append(overflowDetails(`查看其余 ${items.length - 6} 项`, items.slice(6).map(factItem)));
+    card.append(body);
     return card;
   }
 
   if (type === "people") {
     const preview = Math.max(1, block.preview || 2);
     card.append(semanticHead(block.title, `${items.length} 人`, block.mark || "人"));
+    const body = element("div", "semantic-data-region");
+    if (items.length > 4) body.dataset.overflow = "true";
     const list = element("div", "person-summaries");
     list.append(...items.slice(0, preview).map(personItem));
-    card.append(list);
-    if (items.length > preview) card.append(overflowDetails(`查看其余 ${items.length - preview} 位人物`, items.slice(preview).map(personItem)));
+    body.append(list);
+    if (items.length > preview) body.append(overflowDetails(`查看其余 ${items.length - preview} 位人物`, items.slice(preview).map(personItem)));
+    card.append(body);
     return card;
   }
 
   if (type === "locations") {
     card.append(semanticHead(block.title, `${items.length} 处`, block.mark || "图"));
+    const body = element("div", "semantic-data-region");
+    if (items.length > 4) body.dataset.overflow = "true";
     const grid = element("div", "location-grid");
     grid.append(...items.map(locationItem));
-    card.append(grid);
-    if (block.legend) card.append(element("p", "location-legend", block.legend));
+    body.append(grid);
+    if (block.legend) body.append(element("p", "location-legend", block.legend));
+    card.append(body);
     return card;
   }
 
@@ -214,13 +371,39 @@ function renderSemanticBlock(block, index) {
   card.append(semanticHead(block.title, `${items.length} 条`, block.mark || (block.title || "录").slice(0, 1)));
   if (preview) {
     const list = element("ul", "semantic-list");
-    list.append(...items.slice(0, preview).map((item) => element("li", "", item.text || "")));
+    list.append(...items.slice(0, preview).map((item) => {
+      const line = element("li", "", item.text || "");
+      if (/坊市|货架|商铺|宗门|任务|委托|收获/.test(block.title || "")) {
+        makeDetailEntry(line, {
+          kind: `${block.title || "道途"} · 条目详情`,
+          title: (item.text || "相关条目").split(/[｜·：:]/)[0],
+          subtitle: block.title || "相关信息",
+          seal: (block.mark || block.title || "览").slice(0, 1),
+          body: item.text || "暂无更多说明。",
+          stats: [],
+        });
+      }
+      return line;
+    }));
     card.append(list);
   }
   if (items.length > preview) {
     card.append(overflowDetails(
       preview ? `查看其余 ${items.length - preview} 条` : `展开查看 ${items.length} 条`,
-      items.slice(preview).map((item) => element("p", "semantic-detail-line", item.text || "")),
+      items.slice(preview).map((item) => {
+        const line = element("p", "semantic-detail-line", item.text || "");
+        if (/坊市|货架|商铺|宗门|任务|委托|收获/.test(block.title || "")) {
+          makeDetailEntry(line, {
+            kind: `${block.title || "道途"} · 条目详情`,
+            title: (item.text || "相关条目").split(/[｜·：:]/)[0],
+            subtitle: block.title || "相关信息",
+            seal: (block.mark || block.title || "览").slice(0, 1),
+            body: item.text || "暂无更多说明。",
+            stats: [],
+          });
+        }
+        return line;
+      }),
     ));
   }
   return card;
@@ -314,15 +497,28 @@ function renderDecision(decision) {
     const button = element("button", "decision-choice");
     button.type = "button";
     button.dataset.tone = choice.tone || "primary";
-    button.setAttribute("aria-label", `选择：${choice.label}`);
+    button.disabled = choice.disabled === true;
+    button.setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-label", button.disabled ? `${choice.label}，不可用：${choice.disabled_reason || "条件不足"}` : `选择：${choice.label}`);
+    addTooltip(button, choice.tooltip || choice.disabled_reason || choice.description || "");
     const seal = element("span", "decision-choice-seal", (choice.label || "选").slice(0, 1));
     const copy = element("span", "decision-choice-copy");
     copy.append(
       element("strong", "", choice.label),
-      element("small", "", choice.description || "点击选择此项。"),
+      element("small", "", choice.summary || choice.description || "点击选择此项。"),
     );
-    button.append(seal, copy, element("span", "decision-choice-action", "选择此项"));
-    button.addEventListener("click", () => sendAction(choice.action));
+    const action = element("span", "decision-choice-action", button.disabled ? "条件不足" : "选择此项");
+    button.append(seal, copy, action);
+    button.addEventListener("click", () => {
+      document.querySelectorAll("#decisionChoices .decision-choice").forEach((entry) => {
+        entry.classList.remove("is-selected");
+        entry.setAttribute("aria-pressed", "false");
+      });
+      button.classList.add("is-selected");
+      button.setAttribute("aria-pressed", "true");
+      action.textContent = "推演中";
+      sendAction(choice.action);
+    });
     return button;
   }));
 }
@@ -398,9 +594,11 @@ function compactRelationItem(name, relation) {
   const fill = element("i", "");
   fill.style.width = `${Math.max(0, Math.min(100, affinityValue))}%`;
   track.append(fill);
-  meter.append(element("small", "", "好感"), track, element("strong", "", String(affinityValue)));
+  meter.append(addTooltip(element("small", "", "好感"), helpFor("好感")), track, element("strong", "", String(affinityValue)));
   item.append(head, meter);
-  return item;
+  return makeDetailEntry(item, {
+    onOpen: () => personDetail({ name, relation: relation.path || "缘分未定", affinity: affinityValue }),
+  });
 }
 
 function historyItem(entry) {
@@ -448,7 +646,8 @@ function actionGroup(label, actions) {
   return group;
 }
 
-function render(snapshot) {
+function render(snapshot, options = {}) {
+  previousSnapshot = latestSnapshot;
   latestSnapshot = snapshot;
   const state = snapshot.state;
   const p = state.player;
@@ -468,7 +667,12 @@ function render(snapshot) {
   const resources = Object.entries(p.resources || {}).filter(([, count]) => count > 0);
   $("inventoryList").replaceChildren(...(resources.length
     ? resources.slice(0, 18).map(([name, count]) => {
-        const tag = document.createElement("span"); tag.textContent = `${name} × ${count}`; return tag;
+        const tag = element("button", "inventory-item", `${name} × ${count}`);
+        tag.type = "button";
+        tag.dataset.showcaseReadonly = "true";
+        tag.setAttribute("aria-label", `查看 ${name} 详情，当前 ${count} 件`);
+        tag.addEventListener("click", () => itemDetail(name, count));
+        return tag;
       })
     : [inventoryEmptyState()]));
 
@@ -489,6 +693,8 @@ function render(snapshot) {
   $("unknownRelations").open = false;
   $("unknownRelationCount").textContent = `${unknownRelations.length} 位`;
   $("unknownRelationList").replaceChildren(...unknownRelations.map(([name]) => element("span", "", name)));
+  const previousRelations = Object.entries(previousSnapshot?.state?.npc_relations || {}).filter(isKnownRelation);
+  $("relationNotice").hidden = options.suppressNotices || !previousSnapshot || knownRelations.length <= previousRelations.length;
 
   const history = (state.history || []).slice(-12).reverse();
   $("historyList").replaceChildren(...(history.length
@@ -499,7 +705,10 @@ function render(snapshot) {
   $("historyMore").open = false;
   $("historyMoreLabel").textContent = `查看更早 ${olderHistory.length} 条经历`;
   $("historyMoreList").replaceChildren(...olderHistory.map(historyItem));
-  $("worldEvent").textContent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
+  const worldEvent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
+  $("worldEvent").textContent = worldEvent;
+  const previousWorldEvent = previousSnapshot?.state?.last_world_event || "灵气潮汐尚在暗中酝酿。";
+  $("worldNotice").hidden = options.suppressNotices || !previousSnapshot || worldEvent === previousWorldEvent;
   renderPresentation(snapshot.presentation);
   renderDecision(snapshot.decision);
   renderSaveLibrary(snapshot);
@@ -553,10 +762,12 @@ async function sendAction(action) {
     });
     $("actionInput").value = "";
     render(payload);
+    announceResult(payload);
     return payload;
   } catch (error) {
     renderError(error.message);
     renderDecision(latestSnapshot?.decision);
+    showToast(`推演受阻 · ${error.message}`, "danger");
     return null;
   } finally {
     document.body.classList.remove("is-resolving");
@@ -623,6 +834,14 @@ $("finishGuide").addEventListener("click", () => closeGuide(true));
 $("guideDialog").addEventListener("click", (event) => {
   if (event.target === $("guideDialog")) closeGuide(false);
 });
+$("closeDetail").addEventListener("click", () => $("detailDialog").close());
+$("detailDialog").addEventListener("click", (event) => {
+  if (event.target === $("detailDialog")) $("detailDialog").close();
+});
+$("relationNotice").closest("details").addEventListener("toggle", (event) => {
+  if (event.currentTarget.open) $("relationNotice").hidden = true;
+});
+$("worldNotice").closest("section").addEventListener("click", () => { $("worldNotice").hidden = true; });
 
 applyReadingPreferences();
 if (readPreference("xiuxian-guide-seen", "false") !== "true") window.setTimeout(openGuide, 180);
@@ -631,6 +850,7 @@ window.xiuxianUi = {
   renderSnapshot: render,
   getLatestSnapshot: () => latestSnapshot,
   openGuide,
+  notify: showToast,
 };
 
 requestJson("/api/state")

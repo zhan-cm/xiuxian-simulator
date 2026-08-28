@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from .choices import DecisionCatalog
 from .engine import GameEngine
 from .presentation import present_action, welcome_presentation
+from .relationships import NPCS
 
 
 CONTENT_TYPES = {
@@ -30,6 +31,22 @@ class WebApplication:
         self._presentation = welcome_presentation()
 
     def snapshot(self) -> dict[str, Any]:
+        npc_profiles = {
+            name: {
+                "name": npc.name,
+                "gender": npc.gender,
+                "identity": npc.identity,
+                "age": npc.age,
+                "realm": npc.realm,
+                "location": npc.location,
+                "likes": list(npc.likes),
+                "dislikes": list(npc.dislikes),
+                "greeting": npc.greeting,
+                "affinity": int(self.engine.state.npc_relations.get(name, {}).get("affinity", 0)),
+                "relation": str(self.engine.state.npc_relations.get(name, {}).get("path", "缘分未定")),
+            }
+            for name, npc in NPCS.items()
+        }
         return {
             "state": self.engine.state.to_dict(),
             "narrator": self.engine.narrator.name,
@@ -37,6 +54,7 @@ class WebApplication:
             "save_summaries": self.engine.saves.list_summaries(),
             "presentation": self._presentation,
             "decision": self.decisions.for_state(self.engine.state),
+            "npc_profiles": npc_profiles,
         }
 
     @staticmethod
@@ -82,7 +100,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.29"
+        server_version = "XiuxianSimulator/0.30"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

@@ -25,6 +25,10 @@
     <symbol id="icon-world" viewBox="0 0 24 24"><path d="M4 8h10c3 0 3-4 0-4-1.4 0-2.3.7-2.8 1.7M4 12h15c3 0 3 4 0 4-1.2 0-2-.5-2.5-1.4M4 16h7"/></symbol>
     <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 3v6M16 3v6M4 10h16M8 14h2M14 14h2M8 17h2"/></symbol>
     <symbol id="icon-showcase" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4v3H7zM14 9h3M14 12h3M7 15h10"/></symbol>
+    <symbol id="icon-element" viewBox="0 0 24 24"><path d="M12 3c3 3.2 5 5.8 5 9a5 5 0 0 1-10 0c0-3.2 2-5.8 5-9Z"/><path d="M9.5 15.5c1.1.8 3.4.8 4.8-.4"/></symbol>
+    <symbol id="icon-threat" viewBox="0 0 24 24"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></symbol>
+    <symbol id="icon-weakness" viewBox="0 0 24 24"><path d="m14 3-8 10h6l-2 8 8-11h-6l2-7Z"/></symbol>
+    <symbol id="icon-chance" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12 17 8M12 7v5h5"/></symbol>
   </svg>
   <div class="mist mist-one"></div>
   <div class="mist mist-two"></div>
@@ -127,7 +131,7 @@
 
     <aside class="side-column right-column">
       <details class="card collapsible-card" open>
-        <summary class="panel-summary"><h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-people"></use></svg>人物牵绊</h3><span class="panel-toggle"><i>已结识优先</i><strong></strong><b aria-hidden="true"></b></span></summary>
+        <summary class="panel-summary"><h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-people"></use></svg>人物牵绊<span id="relationNotice" class="content-indicator" hidden aria-label="有新人物"></span></h3><span class="panel-toggle"><i>已结识优先</i><strong></strong><b aria-hidden="true"></b></span></summary>
         <div id="tensionMeter" class="tension-meter" hidden>
           <div><span>尘缘波澜</span><strong id="tensionValue">0</strong></div>
           <div class="tension-track"><i id="tensionBar"></i></div>
@@ -148,7 +152,7 @@
         </details>
       </details>
       <section class="card world-card">
-        <h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-world"></use></svg>九州风声</h3>
+        <h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-world"></use></svg>九州风声<span id="worldNotice" class="content-indicator" hidden aria-label="有新风声"></span></h3>
         <p id="worldEvent">灵气潮汐尚在暗中酝酿。</p>
       </section>
     </aside>
@@ -218,6 +222,19 @@
       <button id="finishGuide" class="guide-start" type="button">我已明白，踏入仙途</button>
     </div>
   </dialog>
+
+  <dialog id="detailDialog" class="detail-dialog" aria-labelledby="detailTitle">
+    <div class="detail-shell">
+      <header class="detail-head">
+        <div class="detail-identity"><span id="detailSeal">物</span><div><p id="detailKind" class="card-kicker">条目详情</p><h2 id="detailTitle">尚未选择</h2><p id="detailSubtitle"></p></div></div>
+        <button id="closeDetail" class="dialog-close" type="button" aria-label="关闭详情">关闭</button>
+      </header>
+      <div id="detailStats" class="detail-stats"></div>
+      <p id="detailBody" class="detail-body"></p>
+    </div>
+  </dialog>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
   <footer>本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算</footer>
   <script src="/app.js" defer></script>

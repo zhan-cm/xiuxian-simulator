@@ -36,12 +36,23 @@ class DecisionCatalog:
         for route, tone in (("人道", "safe"), ("地道", "primary"), ("天道", "danger")):
             requirements = ProgressionEngine.major_requirements(state.player, route)
             needs = "、".join(f"{name}×{count}" for name, count in requirements.items())
+            missing = [f"{name}×{count}" for name, count in requirements.items() if state.player.resources.get(name, 0) < count]
+            heart_chance, thunder_chance = ProgressionEngine.major_chances(state.player, route)
+            route_meaning = {
+                "人道": "风险最低，成功后气血与灵力小幅增长。",
+                "地道": "风险与潜力均衡，成功后六维与根基同步成长。",
+                "天道": "风险最高，成功后获得最强六维与根基成长。",
+            }[route]
             choices.append(
                 {
                     "label": f"{route}筑基",
                     "action": f"突破 {route}",
-                    "description": f"需要 {needs}；路线越高，风险与道基潜力越大。",
+                    "summary": f"材料 {needs} · 心魔 {heart_chance}% / 雷劫 {thunder_chance}%",
+                    "description": f"需要 {needs}；心魔判定 {heart_chance}%，雷劫判定 {thunder_chance}%。{route_meaning}",
+                    "tooltip": f"{route_meaning} 两次判定都通过才算突破成功；所需材料：{needs}。",
                     "tone": tone,
+                    "disabled": bool(missing),
+                    "disabled_reason": "缺少 " + "、".join(missing) if missing else "",
                 }
             )
         choices.append(

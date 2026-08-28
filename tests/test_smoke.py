@@ -1339,6 +1339,8 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(payload["presentation"]["title"], "灵气潮汐将至")
             self.assertTrue(payload["decision"]["exclusive"])
             self.assertEqual(payload["decision"]["choices"][0]["action"], "开始游戏")
+            self.assertIn("顾清玄", payload["npc_profiles"])
+            self.assertIn("清茶", payload["npc_profiles"]["顾清玄"]["likes"])
             status, content_type, body = app.dispatch("GET", "/showcase.js")
             self.assertEqual(status, 200)
             self.assertIn("javascript", content_type)
@@ -1511,6 +1513,22 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual([choice["label"] for choice in decision["choices"]], state.pending_choices)
         self.assertEqual([choice["action"] for choice in decision["choices"]], ["选择 1", "选择 2", "选择 3"])
 
+    def test_major_breakthrough_choices_explain_chances_and_lock_missing_materials(self) -> None:
+        state = GameState(phase="major_breakthrough_choice")
+        state.player.stage_index = 3
+        state.player.cultivation = state.player.cultivation_required
+        state.player.resources["筑基丹"] = 1
+        catalog = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json")
+        choices = catalog.for_state(state)["choices"]
+        human, earth, heaven, cancel = choices
+        self.assertFalse(human["disabled"])
+        self.assertIn("心魔", human["summary"])
+        self.assertIn("雷劫", human["description"])
+        self.assertTrue(earth["disabled"])
+        self.assertIn("天材地宝", earth["disabled_reason"])
+        self.assertTrue(heaven["disabled"])
+        self.assertNotIn("disabled", cancel)
+
     def test_v13_save_payload_remains_compatible_with_web_version(self) -> None:
         payload = {
             "version": "0.13.0",
@@ -1631,7 +1649,7 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn('label: "01 · 初始入世"', showcase)
         self.assertIn('label: "14 · 游玩指引"', showcase)
         self.assertIn("不修改存档", page)
-        self.assertIn("ui.renderSnapshot(liveSnapshot)", showcase)
+        self.assertIn("ui.renderSnapshot(liveSnapshot, { suppressNotices: true })", showcase)
         self.assertNotIn('/api/action', showcase)
         self.assertIn(".showcase-panel", styles)
         self.assertIn("容量不限 · 格位按物品自动扩展", script)
@@ -1640,6 +1658,13 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertNotIn("decision-badge", page)
         self.assertIn('classList.toggle("is-empty"', script)
         self.assertIn('.bar.is-empty[data-kind="cultivation"]', styles)
+        self.assertIn('id="detailDialog"', page)
+        self.assertIn('id="toastRegion"', page)
+        self.assertIn("function announceResult", script)
+        self.assertIn("function personDetail", script)
+        self.assertIn('.decision-choice.is-selected', styles)
+        self.assertIn('.semantic-data-region[data-overflow="true"]', styles)
+        self.assertIn('.content-indicator', styles)
 
     def test_windows_launchers_use_cmd_compatible_line_endings(self) -> None:
         for name in ("启动网页版.bat", "检查环境.bat"):
