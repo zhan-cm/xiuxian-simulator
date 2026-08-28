@@ -72,7 +72,6 @@
         <section id="decisionPanel" class="decision-panel" aria-labelledby="decisionTitle" hidden>
           <header class="decision-head">
             <div><p id="decisionEyebrow" class="card-kicker">当前抉择</p><h3 id="decisionTitle">请选择下一步</h3></div>
-            <span class="decision-badge">点击即选择</span>
           </header>
           <div id="decisionChoices" class="decision-choices"></div>
           <p id="decisionHint" class="decision-hint"></p>
@@ -88,7 +87,7 @@
         <div class="action-toolbar">
           <div><p class="card-kicker">常用行动</p><div id="quickActions" class="quick-actions primary-actions" aria-label="常用行动"></div></div>
           <details id="moreActionPanel" class="more-actions" hidden>
-            <summary>更多行动</summary>
+            <summary><span>更多功能</span><strong id="moreActionCount">0 项</strong></summary>
             <div id="quickMore" class="quick-actions secondary-actions" aria-label="更多行动"></div>
           </details>
         </div>
@@ -100,7 +99,7 @@
             <button type="button" data-suggestion="我闭关三个月，专心吐纳修炼">闭关修炼</button>
           </div>
           <div class="input-row">
-            <textarea id="actionInput" maxlength="2000" rows="2" placeholder="描述你想做的事，也可以先点上方示例"></textarea>
+            <textarea id="actionInput" maxlength="2000" rows="2" placeholder="描述你想做的事，也可以点击上方快捷行动"></textarea>
             <button id="submitAction" type="submit">推演此行</button>
           </div>
           <p class="form-tip">可以输入任何合理行动；重要决定仍由你亲自确认。</p>

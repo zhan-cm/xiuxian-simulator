@@ -1589,11 +1589,17 @@ class SimulatorSmokeTests(unittest.TestCase):
         launcher = (ROOT / "启动网页版.bat").read_text(encoding="utf-8")
         page = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "web" / "app.css").read_text(encoding="utf-8")
         self.assertIn("--check", launcher)
         self.assertTrue((ROOT / "检查环境.bat").is_file())
         self.assertTrue((ROOT / "首次游玩指南.md").is_file())
         self.assertIn('id="guideDialog"', page)
         self.assertIn("xiuxian-guide-seen", script)
+        self.assertIn('id="moreActionCount"', page)
+        self.assertIn("点击上方快捷行动", page)
+        self.assertNotIn("decision-badge", page)
+        self.assertIn('classList.toggle("is-empty"', script)
+        self.assertIn('.bar.is-empty[data-kind="cultivation"]', styles)
 
     def test_windows_launchers_use_cmd_compatible_line_endings(self) -> None:
         for name in ("启动网页版.bat", "检查环境.bat"):

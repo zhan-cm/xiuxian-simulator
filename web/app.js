@@ -24,7 +24,12 @@ function percent(value, max) {
 
 function setBar(prefix, value, max) {
   $(`${prefix}Text`).textContent = `${value} / ${max}`;
-  $(`${prefix}Bar`).style.width = `${percent(value, max)}%`;
+  const fill = $(`${prefix}Bar`);
+  const track = fill.parentElement;
+  fill.style.width = `${percent(value, max)}%`;
+  track.dataset.kind = prefix;
+  track.classList.toggle("is-empty", Number(value) <= 0 && Number(max) > 0);
+  track.setAttribute("aria-label", `${prefix === "health" ? "气血" : (prefix === "spirit" ? "灵力" : "修为")} ${value} / ${max}`);
 }
 
 function calendarLabel(state) {
@@ -200,6 +205,7 @@ function renderPresentation(presentation) {
   $("eventSeal").textContent = view.seal || "道";
   $("eventEyebrow").textContent = view.eyebrow || "天道推演";
   $("eventTitle").textContent = view.title || "天道推演";
+  $("eventHero").classList.toggle("is-duplicate-title", (view.title || "").trim() === $("sceneTitle").textContent.trim());
   $("storyOutput").replaceChildren(...(view.paragraphs || []).map((text) => element("p", "", text)));
 
   $("changeRibbon").replaceChildren(...(view.changes || []).map((change) => {
@@ -446,6 +452,7 @@ function render(snapshot) {
   $("quickMore").replaceChildren(...secondaryActions.map((action) => actionButton(action)));
   $("moreActionPanel").hidden = secondaryActions.length === 0;
   $("moreActionPanel").open = false;
+  $("moreActionCount").textContent = `${secondaryActions.length} 项`;
 }
 
 async function requestJson(url, options) {
