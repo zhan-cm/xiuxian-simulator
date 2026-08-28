@@ -17,6 +17,33 @@ const phaseActions = {
   ended: ["开始游戏"],
 };
 
+const actionMeta = {
+  "修炼": { label: "吐纳修炼", icon: "cultivate" },
+  "闭关3月": { label: "闭关三月", icon: "retreat" },
+  "地图": { label: "查看地图", icon: "map" },
+  "坊市": { label: "前往坊市", icon: "market" },
+  "存档": { label: "保存进度", icon: "save" },
+  "面板": { label: "角色面板", icon: "foundation" },
+  "秘境": { label: "秘境", icon: "explore" },
+  "宗门": { label: "宗门", icon: "world" },
+  "情缘": { label: "人物情缘", icon: "people" },
+  "世情": { label: "人物动态", icon: "history" },
+  "天下": { label: "天下局势", icon: "world" },
+  "干预天下": { label: "干预天下", icon: "world" },
+  "情劫": { label: "面对情劫", icon: "people" },
+  "护宗战": { label: "护宗战", icon: "foundation" },
+};
+
+function svgIcon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  svg.classList.add("ui-icon");
+  svg.setAttribute("aria-hidden", "true");
+  use.setAttribute("href", `#icon-${name || "explore"}`);
+  svg.append(use);
+  return svg;
+}
+
 function percent(value, max) {
   if (!max) return 0;
   return Math.max(0, Math.min(100, Math.round(value * 100 / max)));
@@ -342,7 +369,11 @@ function inventoryEmptyState() {
   const state = element("div", "inventory-empty");
   const slots = element("div", "inventory-slots");
   for (let index = 0; index < 4; index += 1) slots.append(element("i", ""));
-  state.append(slots, element("p", "", "获得丹药、法器或材料后，将自动收纳在这里。"));
+  state.append(
+    slots,
+    element("strong", "inventory-capacity", "容量不限 · 格位按物品自动扩展"),
+    element("p", "", "获得丹药、法器或材料后，将自动收纳在这里。"),
+  );
   return state;
 }
 
@@ -376,10 +407,22 @@ function historyItem(entry) {
 }
 
 function actionButton(action, className = "") {
-  const button = element("button", className, action);
+  const meta = actionMeta[action] || { label: action, icon: "explore" };
+  const button = element("button", className);
   button.type = "button";
+  button.title = `${meta.label}：点击后立即执行`;
+  button.append(svgIcon(meta.icon), element("span", "", meta.label));
   button.addEventListener("click", () => sendAction(action));
   return button;
+}
+
+function actionGroup(label, actions) {
+  const group = element("div", "action-group");
+  group.append(element("small", "", label));
+  const buttons = element("div", "action-group-buttons");
+  buttons.append(...actions.map((action) => actionButton(action)));
+  group.append(buttons);
+  return group;
 }
 
 function render(snapshot) {
@@ -387,10 +430,9 @@ function render(snapshot) {
   const state = snapshot.state;
   const p = state.player;
   $("timeLabel").textContent = calendarLabel(state);
-  $("narratorLabel").textContent = snapshot.narrator || "本地叙事器";
   $("playerName").textContent = state.phase === "new" ? "尚未入世" : `${p.dao_name} · ${p.name}`;
   $("daoSeal").textContent = (p.dao_name || p.name || "道").slice(0, 1);
-  $("playerMeta").textContent = `${p.gender} · ${p.age}/${p.lifespan}岁 · ${p.location}`;
+  $("playerMeta").textContent = `${p.gender} · ${p.age}岁（寿元 ${p.lifespan}） · ${p.location}`;
   $("realmValue").textContent = p.realm;
   $("sectValue").textContent = p.sect === "散修" ? "散修" : `${p.sect}·${p.sect_rank}`;
   $("stonesValue").textContent = p.spirit_stones;
@@ -445,14 +487,22 @@ function render(snapshot) {
   if (state.phase === "playing" && [war.attacker, war.defender].includes(p.sect) && !war.player_acted && !actions.includes("护宗战")) {
     actions.splice(8, 0, "护宗战");
   }
-  const primaryNames = state.phase === "playing" ? new Set(["修炼", "闭关3月", "地图", "存档"]) : new Set(actions);
+  const primaryNames = state.phase === "playing" ? new Set(["修炼", "闭关3月", "地图", "坊市", "存档"]) : new Set(actions);
   const primaryActions = actions.filter((action) => primaryNames.has(action));
   const secondaryActions = actions.filter((action) => !primaryNames.has(action));
-  $("quickActions").replaceChildren(...primaryActions.map((action) => actionButton(action, action === "存档" ? "save-action" : "")));
+  if (state.phase === "playing") {
+    const groups = [
+      actionGroup("修行", primaryActions.filter((action) => ["修炼", "闭关3月"].includes(action))),
+      actionGroup("出行", primaryActions.filter((action) => ["地图", "坊市"].includes(action))),
+      actionGroup("记录", primaryActions.filter((action) => action === "存档")),
+    ].filter((group) => group.querySelector("button"));
+    $("quickActions").replaceChildren(...groups);
+  } else {
+    $("quickActions").replaceChildren(...primaryActions.map((action) => actionButton(action)));
+  }
   $("quickMore").replaceChildren(...secondaryActions.map((action) => actionButton(action)));
   $("moreActionPanel").hidden = secondaryActions.length === 0;
   $("moreActionPanel").open = false;
-  $("moreActionCount").textContent = `${secondaryActions.length} 项`;
 }
 
 async function requestJson(url, options) {
@@ -492,6 +542,7 @@ $("actionForm").addEventListener("submit", (event) => {
   sendAction($("actionInput").value);
 });
 document.querySelectorAll("[data-suggestion]").forEach((button) => {
+  button.prepend(svgIcon(button.dataset.icon));
   button.addEventListener("click", () => {
     $("actionInput").value = button.dataset.suggestion || "";
     $("actionInput").focus();

@@ -8,6 +8,22 @@
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-cultivate" viewBox="0 0 24 24"><path d="M12 3c2.8 2.4 4.2 4.6 4.2 6.7A4.2 4.2 0 0 1 12 14a4.2 4.2 0 0 1-4.2-4.3C7.8 7.6 9.2 5.4 12 3Z"/><path d="M8 20c.9-2.5 2.2-3.8 4-3.8s3.1 1.3 4 3.8M5 20h14"/></symbol>
+    <symbol id="icon-retreat" viewBox="0 0 24 24"><path d="m3 19 6.5-9 3.2 4 2.6-3.4L21 19H3Z"/><path d="M17.5 4.2A4 4 0 1 0 20 10a4.7 4.7 0 0 1-2.5-5.8Z"/></symbol>
+    <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3 6 5-2 8 2 5-2v14l-5 2-8-2-5 2V6Z"/><path d="M8 4v14M16 6v14"/></symbol>
+    <symbol id="icon-market" viewBox="0 0 24 24"><path d="M5 9h14l-1-4H6L5 9Z"/><path d="M6 9v10h12V9M9 19v-5h6v5"/><path d="M4 9c0 1.2 1 2 2 2s2-.8 2-2c0 1.2 1 2 2 2s2-.8 2-2c0 1.2 1 2 2 2s2-.8 2-2c0 1.2 1 2 2 2s2-.8 2-2"/></symbol>
+    <symbol id="icon-save" viewBox="0 0 24 24"><path d="M6 4h11l2 2v14H6a3 3 0 0 1 0-6h13"/><path d="M8 8h7M8 11h6"/></symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="icon-draft" viewBox="0 0 24 24"><path d="M18.5 3.5c2 2 1.2 5.3-1.7 8.2L9 19.5 4 20l.5-5 7.8-7.8c2.9-2.9 4.2-4.7 6.2-3.7Z"/><path d="m8 16 3 3M5 15h4"/></symbol>
+    <symbol id="icon-explore" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z"/></symbol>
+    <symbol id="icon-talk" viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4V5Z"/><path d="M8 9h8M8 12h5"/></symbol>
+    <symbol id="icon-bag" viewBox="0 0 24 24"><path d="M8 7c0-2 1.5-3 4-3s4 1 4 3l3 4c2 3.5-.2 9-4.5 9h-5C5.2 20 3 14.5 5 11l3-4Z"/><path d="M8 8h8M10 12c1.2 1 2.8 1 4 0"/></symbol>
+    <symbol id="icon-foundation" viewBox="0 0 24 24"><path d="M12 4c1.7 2.3 2.6 4.2 2.6 5.8A2.6 2.6 0 0 1 12 12.5a2.6 2.6 0 0 1-2.6-2.7C9.4 8.2 10.3 6.3 12 4Z"/><path d="M4 18c2-2 4.7-3 8-3s6 1 8 3M6 21h12"/></symbol>
+    <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6"/><path d="M4 8c1-2 2.2-3.2 4-4M20 8c-1-2-2.2-3.2-4-4"/></symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24"><path d="M6 4h12v16H6a3 3 0 0 1 0-6h12"/><path d="M9 8h6M9 11h5"/></symbol>
+    <symbol id="icon-world" viewBox="0 0 24 24"><path d="M4 8h10c3 0 3-4 0-4-1.4 0-2.3.7-2.8 1.7M4 12h15c3 0 3 4 0 4-1.2 0-2-.5-2.5-1.4M4 16h7"/></symbol>
+  </svg>
   <div class="mist mist-one"></div>
   <div class="mist mist-two"></div>
   <header class="topbar">
@@ -17,9 +33,8 @@
     </div>
     <div class="top-status">
       <span id="timeLabel" hidden>天玄历 387 年</span>
-      <span id="narratorLabel">本地叙事器</span>
-      <button id="openGuide" class="guide-button" type="button"><span aria-hidden="true">引</span> 游玩指引</button>
-      <button id="openArchive" class="archive-button" type="button"><span aria-hidden="true">卷</span> 洞天卷宗</button>
+      <button id="openGuide" class="guide-button" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-explore"></use></svg> 游玩指引</button>
+      <button id="openArchive" class="archive-button" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-save"></use></svg> 洞天卷宗</button>
     </div>
   </header>
 
@@ -36,14 +51,14 @@
       </section>
 
       <section class="card bars-card">
-        <h3>道途根基</h3>
+        <h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-foundation"></use></svg>道途根基</h3>
         <div class="bar-row" title="气血归零可能陨落；休养或丹药可以恢复"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
         <div class="bar-row" title="施展道法会消耗灵力，休息后逐步恢复"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
         <div class="bar-row" title="修为达到上限后可以尝试突破当前小境界"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
       </section>
 
       <details class="card compact-card collapsible-card" open>
-        <summary class="panel-summary"><h3>乾坤袋</h3><span>物品与材料</span></summary>
+        <summary class="panel-summary"><h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-bag"></use></svg>乾坤袋</h3><span class="panel-toggle"><i>物品与材料</i><strong></strong><b aria-hidden="true"></b></span></summary>
         <div id="inventoryList" class="tag-list"><span class="empty">空空如也</span></div>
       </details>
     </aside>
@@ -85,22 +100,22 @@
 
       <section class="action-card">
         <div class="action-toolbar">
-          <div><p class="card-kicker">常用行动</p><div id="quickActions" class="quick-actions primary-actions" aria-label="常用行动"></div></div>
+          <div class="instant-actions"><div class="action-mode-head"><div><p class="card-kicker">一键行动</p><strong>点击后立即执行</strong></div></div><div id="quickActions" class="quick-actions primary-actions" aria-label="一键执行的行动"></div></div>
           <details id="moreActionPanel" class="more-actions" hidden>
-            <summary><span>更多功能</span><strong id="moreActionCount">0 项</strong></summary>
+            <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-more"></use></svg><span>更多功能</span><i aria-hidden="true"></i></summary>
             <div id="quickMore" class="quick-actions secondary-actions" aria-label="更多行动"></div>
           </details>
         </div>
         <form id="actionForm" class="action-form">
-          <label for="actionInput">自由行动</label>
-          <div class="action-suggestions" aria-label="自由行动示例">
-            <button type="button" data-suggestion="我前往坊市打听最近的秘境传闻">去坊市</button>
-            <button type="button" data-suggestion="我离开洞府，前往青岳山麓谨慎探索">外出探索</button>
-            <button type="button" data-suggestion="我闭关三个月，专心吐纳修炼">闭关修炼</button>
+          <div class="draft-head"><label for="actionInput"><svg class="ui-icon" aria-hidden="true"><use href="#icon-draft"></use></svg>行动草稿</label><small>点击填入，可修改后再推演</small></div>
+          <div class="action-suggestions" aria-label="可编辑行动草稿">
+            <button type="button" data-icon="market" data-suggestion="我前往坊市打听最近的秘境传闻">打听秘境传闻</button>
+            <button type="button" data-icon="explore" data-suggestion="我离开洞府，前往青岳山麓谨慎探索">谨慎探索青岳</button>
+            <button type="button" data-icon="talk" data-suggestion="我想拜访一位相识的修士，与其交谈近况">拜访相识修士</button>
           </div>
           <div class="input-row">
             <textarea id="actionInput" maxlength="2000" rows="2" placeholder="描述你想做的事，也可以点击上方快捷行动"></textarea>
-            <button id="submitAction" type="submit">推演此行</button>
+            <button id="submitAction" type="submit"><svg class="ui-icon" aria-hidden="true"><use href="#icon-explore"></use></svg>推演此行</button>
           </div>
           <p class="form-tip">可以输入任何合理行动；重要决定仍由你亲自确认。</p>
         </form>
@@ -109,7 +124,7 @@
 
     <aside class="side-column right-column">
       <details class="card collapsible-card" open>
-        <summary class="panel-summary"><h3>人物牵绊</h3><span>已结识优先</span></summary>
+        <summary class="panel-summary"><h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-people"></use></svg>人物牵绊</h3><span class="panel-toggle"><i>已结识优先</i><strong></strong><b aria-hidden="true"></b></span></summary>
         <div id="tensionMeter" class="tension-meter" hidden>
           <div><span>尘缘波澜</span><strong id="tensionValue">0</strong></div>
           <div class="tension-track"><i id="tensionBar"></i></div>
@@ -122,7 +137,7 @@
         </details>
       </details>
       <details class="card collapsible-card" open>
-        <summary class="panel-summary"><h3>最近经历</h3><span>最近 4 条</span></summary>
+        <summary class="panel-summary"><h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-history"></use></svg>最近经历</h3><span class="panel-toggle"><i>最近 4 条</i><strong></strong><b aria-hidden="true"></b></span></summary>
         <ol id="historyList" class="history-list"><li class="empty">等待第一段经历</li></ol>
         <details id="historyMore" class="history-more" hidden>
           <summary id="historyMoreLabel">查看更早经历</summary>
@@ -130,7 +145,7 @@
         </details>
       </details>
       <section class="card world-card">
-        <h3>九州风声</h3>
+        <h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-world"></use></svg>九州风声</h3>
         <p id="worldEvent">灵气潮汐尚在暗中酝酿。</p>
       </section>
     </aside>
