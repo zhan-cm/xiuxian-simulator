@@ -23,6 +23,7 @@
     <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6"/><path d="M4 8c1-2 2.2-3.2 4-4M20 8c-1-2-2.2-3.2-4-4"/></symbol>
     <symbol id="icon-history" viewBox="0 0 24 24"><path d="M6 4h12v16H6a3 3 0 0 1 0-6h12"/><path d="M9 8h6M9 11h5"/></symbol>
     <symbol id="icon-world" viewBox="0 0 24 24"><path d="M4 8h10c3 0 3-4 0-4-1.4 0-2.3.7-2.8 1.7M4 12h15c3 0 3 4 0 4-1.2 0-2-.5-2.5-1.4M4 16h7"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 3v6M16 3v6M4 10h16M8 14h2M14 14h2M8 17h2"/></symbol>
   </svg>
   <div class="mist mist-one"></div>
   <div class="mist mist-two"></div>
@@ -44,17 +45,17 @@
         <p class="card-kicker">修士名帖</p>
         <div class="seal" id="daoSeal">清</div>
         <h2 id="playerName">尚未入世</h2>
-        <p id="playerMeta" class="muted">请先开始游戏</p>
-        <div class="stat-line" title="境界决定可进入区域、可学习功法与突破目标"><span>境界</span><strong id="realmValue">凡人</strong></div>
+        <p id="playerMeta" class="muted has-tooltip" tabindex="0" data-tooltip="年龄达到寿元上限时会坐化；突破境界可增长寿元。">请先开始游戏</p>
+        <div class="stat-line has-tooltip" tabindex="0" data-tooltip="境界决定可进入区域、可学习功法与下一次突破目标。"><span>境界</span><strong id="realmValue">凡人</strong></div>
         <div class="stat-line"><span>宗门</span><strong id="sectValue">散修</strong></div>
-        <div class="stat-line" title="灵石是修仙界通用货币，可在坊市购买丹药、法器和材料"><span>灵石</span><strong id="stonesValue">0</strong></div>
+        <div class="stat-line has-tooltip" tabindex="0" data-tooltip="灵石是修仙界通用货币，可在坊市购买丹药、法器与材料。"><span>灵石</span><strong id="stonesValue">0</strong></div>
       </section>
 
       <section class="card bars-card">
         <h3 class="icon-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-foundation"></use></svg>道途根基</h3>
-        <div class="bar-row" title="气血归零可能陨落；休养或丹药可以恢复"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
-        <div class="bar-row" title="施展道法会消耗灵力，休息后逐步恢复"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
-        <div class="bar-row" title="修为达到上限后可以尝试突破当前小境界"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
+        <div class="bar-row has-tooltip" tabindex="0" data-tooltip="气血归零可能陨落；休养或服用丹药可以恢复。"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
+        <div class="bar-row has-tooltip" tabindex="0" data-tooltip="施展道法会消耗灵力，休息后会逐步恢复。"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
+        <div class="bar-row has-tooltip" tabindex="0" data-tooltip="修为达到上限后，需要突破才能继续增长。"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
       </section>
 
       <details class="card compact-card collapsible-card" open>
@@ -67,7 +68,7 @@
       <section class="story-card event-canvas">
         <div class="story-heading">
           <div><p class="card-kicker">当前道途</p><h2 id="sceneTitle">此世尚未开启</h2></div>
-          <span id="turnBadge" class="turn-badge">第 0 回合｜天玄历 387 年</span>
+          <span id="turnBadge" class="turn-badge"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg><span id="turnBadgeText">第 0 回合｜天玄历 387 年</span></span>
         </div>
         <article id="eventHero" class="event-hero" data-tone="story" aria-live="polite">
           <div class="event-seal-wrap" aria-hidden="true"><span id="eventSeal">道</span></div>
@@ -107,7 +108,7 @@
           </details>
         </div>
         <form id="actionForm" class="action-form">
-          <div class="draft-head"><label for="actionInput"><svg class="ui-icon" aria-hidden="true"><use href="#icon-draft"></use></svg>行动草稿</label><small>点击填入，可修改后再推演</small></div>
+          <div class="draft-head"><label for="actionInput"><svg class="ui-icon" aria-hidden="true"><use href="#icon-draft"></use></svg>行动草稿</label><small>仅填入输入框 · 点“推演此行”后生效</small></div>
           <div class="action-suggestions" aria-label="可编辑行动草稿">
             <button type="button" data-icon="market" data-suggestion="我前往坊市打听最近的秘境传闻">打听秘境传闻</button>
             <button type="button" data-icon="explore" data-suggestion="我离开洞府，前往青岳山麓谨慎探索">谨慎探索青岳</button>

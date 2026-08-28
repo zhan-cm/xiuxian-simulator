@@ -406,11 +406,23 @@ function historyItem(entry) {
   return item;
 }
 
+function actionAvailability(action) {
+  const player = latestSnapshot?.state?.player;
+  if (["修炼", "闭关3月"].includes(action) && player && Number(player.cultivation) >= Number(player.cultivation_required)) {
+    return { enabled: false, reason: "修为已圆满，请先尝试突破" };
+  }
+  return { enabled: true, reason: "" };
+}
+
 function actionButton(action, className = "") {
   const meta = actionMeta[action] || { label: action, icon: "explore" };
+  const availability = actionAvailability(action);
   const button = element("button", className);
   button.type = "button";
-  button.title = `${meta.label}：点击后立即执行`;
+  button.dataset.action = action;
+  button.disabled = !availability.enabled;
+  button.title = availability.enabled ? `${meta.label}：点击后立即执行` : availability.reason;
+  button.setAttribute("aria-label", availability.enabled ? `${meta.label}，点击后立即执行` : `${meta.label}，不可用：${availability.reason}`);
   button.append(svgIcon(meta.icon), element("span", "", meta.label));
   button.addEventListener("click", () => sendAction(action));
   return button;
@@ -436,7 +448,7 @@ function render(snapshot) {
   $("realmValue").textContent = p.realm;
   $("sectValue").textContent = p.sect === "散修" ? "散修" : `${p.sect}·${p.sect_rank}`;
   $("stonesValue").textContent = p.spirit_stones;
-  $("turnBadge").textContent = `第 ${state.turn} 回合｜${calendarLabel(state)}`;
+  $("turnBadgeText").textContent = `第 ${state.turn} 回合｜${calendarLabel(state)}`;
   $("sceneTitle").textContent = state.phase === "ended" ? "此世已终" : (state.main_quest || "长生问道");
   setBar("health", p.health, p.health_max);
   setBar("spirit", p.spirit, p.spirit_max);
@@ -515,7 +527,11 @@ async function requestJson(url, options) {
 async function sendAction(action) {
   const trimmed = action.trim();
   if (!trimmed) return;
-  $("submitAction").disabled = true;
+  document.body.classList.add("is-resolving");
+  document.querySelectorAll("#quickActions button, #quickMore button, .action-suggestions button, #submitAction").forEach((button) => {
+    button.disabled = true;
+    if (button.closest("#quickActions, #quickMore")) button.classList.add("is-pending");
+  });
   document.querySelectorAll("#decisionChoices button").forEach((button) => { button.disabled = true; });
   renderLoading();
   try {
@@ -532,7 +548,14 @@ async function sendAction(action) {
     renderDecision(latestSnapshot?.decision);
     return null;
   } finally {
+    document.body.classList.remove("is-resolving");
     $("submitAction").disabled = false;
+    document.querySelectorAll("#quickActions button, #quickMore button").forEach((button) => {
+      const availability = actionAvailability(button.dataset.action || "");
+      button.disabled = !availability.enabled;
+      button.classList.remove("is-pending");
+    });
+    document.querySelectorAll(".action-suggestions button").forEach((button) => { button.disabled = false; });
     $("actionInput").focus();
   }
 }
