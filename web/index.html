@@ -16,10 +16,9 @@
       <h1>问道长生</h1>
     </div>
     <div class="top-status">
-      <span id="timeLabel">天玄历 387 年</span>
-      <span class="dot"></span>
+      <span id="timeLabel" hidden>天玄历 387 年</span>
       <span id="narratorLabel">本地叙事器</span>
-      <button id="openGuide" class="guide-button" type="button">游玩指引</button>
+      <button id="openGuide" class="guide-button" type="button"><span aria-hidden="true">引</span> 游玩指引</button>
       <button id="openArchive" class="archive-button" type="button"><span aria-hidden="true">卷</span> 洞天卷宗</button>
     </div>
   </header>
@@ -31,29 +30,29 @@
         <div class="seal" id="daoSeal">清</div>
         <h2 id="playerName">尚未入世</h2>
         <p id="playerMeta" class="muted">请先开始游戏</p>
-        <div class="stat-line"><span>境界</span><strong id="realmValue">凡人</strong></div>
+        <div class="stat-line" title="境界决定可进入区域、可学习功法与突破目标"><span>境界</span><strong id="realmValue">凡人</strong></div>
         <div class="stat-line"><span>宗门</span><strong id="sectValue">散修</strong></div>
-        <div class="stat-line"><span>灵石</span><strong id="stonesValue">0</strong></div>
+        <div class="stat-line" title="灵石是修仙界通用货币，可在坊市购买丹药、法器和材料"><span>灵石</span><strong id="stonesValue">0</strong></div>
       </section>
 
       <section class="card bars-card">
         <h3>道途根基</h3>
-        <div class="bar-row"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
-        <div class="bar-row"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
-        <div class="bar-row"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
+        <div class="bar-row" title="气血归零可能陨落；休养或丹药可以恢复"><div><span>气血</span><span id="healthText">0 / 0</span></div><div class="bar"><i id="healthBar" class="health"></i></div></div>
+        <div class="bar-row" title="施展道法会消耗灵力，休息后逐步恢复"><div><span>灵力</span><span id="spiritText">0 / 0</span></div><div class="bar"><i id="spiritBar" class="spirit"></i></div></div>
+        <div class="bar-row" title="修为达到上限后可以尝试突破当前小境界"><div><span>修为</span><span id="cultivationText">0 / 0</span></div><div class="bar"><i id="cultivationBar" class="cultivation"></i></div></div>
       </section>
 
-      <section class="card compact-card">
-        <h3>乾坤袋</h3>
+      <details class="card compact-card collapsible-card" open>
+        <summary class="panel-summary"><h3>乾坤袋</h3><span>物品与材料</span></summary>
         <div id="inventoryList" class="tag-list"><span class="empty">空空如也</span></div>
-      </section>
+      </details>
     </aside>
 
     <section class="story-column">
       <section class="story-card event-canvas">
         <div class="story-heading">
           <div><p class="card-kicker">当前道途</p><h2 id="sceneTitle">此世尚未开启</h2></div>
-          <span id="turnBadge" class="turn-badge">第 0 回合</span>
+          <span id="turnBadge" class="turn-badge">第 0 回合｜天玄历 387 年</span>
         </div>
         <article id="eventHero" class="event-hero" data-tone="story" aria-live="polite">
           <div class="event-seal-wrap" aria-hidden="true"><span id="eventSeal">道</span></div>
@@ -80,17 +79,28 @@
         </section>
 
         <details id="eventDetails" class="event-details" hidden>
-          <summary><span>查看完整推演记录</span><i aria-hidden="true"></i></summary>
+          <summary><span><strong>完整推演记录</strong><small>查看判定与原始结算</small></span><i aria-hidden="true"></i></summary>
           <pre id="eventDetailsText"></pre>
         </details>
       </section>
 
       <section class="action-card">
-        <div id="quickActions" class="quick-actions" aria-label="快捷行动"></div>
+        <div class="action-toolbar">
+          <div><p class="card-kicker">常用行动</p><div id="quickActions" class="quick-actions primary-actions" aria-label="常用行动"></div></div>
+          <details id="moreActionPanel" class="more-actions" hidden>
+            <summary>更多行动</summary>
+            <div id="quickMore" class="quick-actions secondary-actions" aria-label="更多行动"></div>
+          </details>
+        </div>
         <form id="actionForm" class="action-form">
           <label for="actionInput">自由行动</label>
+          <div class="action-suggestions" aria-label="自由行动示例">
+            <button type="button" data-suggestion="我前往坊市打听最近的秘境传闻">去坊市</button>
+            <button type="button" data-suggestion="我离开洞府，前往青岳山麓谨慎探索">外出探索</button>
+            <button type="button" data-suggestion="我闭关三个月，专心吐纳修炼">闭关修炼</button>
+          </div>
           <div class="input-row">
-            <textarea id="actionInput" maxlength="2000" rows="2" placeholder="例如：我想去坊市打听最近的秘境传闻"></textarea>
+            <textarea id="actionInput" maxlength="2000" rows="2" placeholder="描述你想做的事，也可以先点上方示例"></textarea>
             <button id="submitAction" type="submit">推演此行</button>
           </div>
           <p class="form-tip">可以输入任何合理行动；重要决定仍由你亲自确认。</p>
@@ -99,19 +109,27 @@
     </section>
 
     <aside class="side-column right-column">
-      <section class="card">
-        <h3>人物牵绊</h3>
+      <details class="card collapsible-card" open>
+        <summary class="panel-summary"><h3>人物牵绊</h3><span>已结识优先</span></summary>
         <div id="tensionMeter" class="tension-meter" hidden>
           <div><span>尘缘波澜</span><strong id="tensionValue">0</strong></div>
           <div class="tension-track"><i id="tensionBar"></i></div>
           <small id="tensionHint">情丝尚静</small>
         </div>
         <div id="relationList" class="relation-list"><p class="empty">尚未结识修士</p></div>
-      </section>
-      <section class="card">
-        <h3>最近经历</h3>
+        <details id="unknownRelations" class="unknown-relations" hidden>
+          <summary><span>可结识人物</span><strong id="unknownRelationCount">0 位</strong></summary>
+          <div id="unknownRelationList" class="unknown-relation-list"></div>
+        </details>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary class="panel-summary"><h3>最近经历</h3><span>最近 4 条</span></summary>
         <ol id="historyList" class="history-list"><li class="empty">等待第一段经历</li></ol>
-      </section>
+        <details id="historyMore" class="history-more" hidden>
+          <summary id="historyMoreLabel">查看更早经历</summary>
+          <ol id="historyMoreList" class="history-list history-list-more"></ol>
+        </details>
+      </details>
       <section class="card world-card">
         <h3>九州风声</h3>
         <p id="worldEvent">灵气潮汐尚在暗中酝酿。</p>

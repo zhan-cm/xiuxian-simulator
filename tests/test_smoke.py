@@ -1434,6 +1434,23 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(view["blocks"][0]["type"], "facts")
         self.assertTrue(view["blocks"][1]["collapsed"])
 
+    def test_exploration_map_becomes_actionable_danger_cards(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = (
+            "【东洲探索地图】\n"
+            "青岳山麓｜炼气可入｜危险度 12\n"
+            "百草谷｜炼气可入｜危险度 18\n"
+            "迷雾山谷｜至少第 2 大境界｜危险度 28\n"
+            "古战场外围｜至少第 3 大境界｜危险度 38\n"
+            "输入：探索 青岳山麓"
+        )
+        view = present_action("地图", output, state, state)
+        self.assertEqual([block["type"] for block in view["blocks"]], ["locations"])
+        items = view["blocks"][0]["items"]
+        self.assertEqual([item["danger_label"] for item in items], ["低危", "寻常", "高危", "绝境"])
+        self.assertEqual(items[-1]["tone"], "danger")
+        self.assertIn("致命", items[-1]["help"])
+
     def test_button_backed_choice_copy_is_not_repeated_as_a_block(self) -> None:
         state = GameState(phase="heart_trial_choice").to_dict()
         output = (

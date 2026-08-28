@@ -27,6 +27,11 @@ function setBar(prefix, value, max) {
   $(`${prefix}Bar`).style.width = `${percent(value, max)}%`;
 }
 
+function calendarLabel(state) {
+  const seasons = ["", "春一月", "春二月", "春三月", "夏四月", "夏五月", "夏六月", "秋七月", "秋八月", "秋九月", "冬十月", "冬十一月", "冬十二月"];
+  return `天玄历 ${state.calendar_year} 年 · ${seasons[state.month] || `${state.month} 月`}`;
+}
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -82,6 +87,26 @@ function personItem(person) {
   return row;
 }
 
+function locationItem(location) {
+  const card = element("article", "location-item");
+  card.dataset.tone = location.tone || "normal";
+  const head = element("header", "location-head");
+  const name = element("strong", "", location.name || "未知之地");
+  const danger = element("span", "danger-badge", `${location.danger_label || "未知"} · ${location.danger ?? "—"}`);
+  danger.title = location.help || "危险度越高，探索时遭遇伤势和强敌的概率越高。";
+  danger.setAttribute("aria-label", `危险度 ${location.danger ?? "未知"}，${location.danger_label || "等级未知"}`);
+  head.append(name, danger);
+  const meta = element("div", "location-meta");
+  meta.append(element("span", "", location.requirement || "准入境界未知"));
+  const help = element("p", "location-help", location.help || "请量力而行。 ");
+  const action = element("button", "location-action", "前往探索");
+  action.type = "button";
+  action.setAttribute("aria-label", `探索 ${location.name}`);
+  action.addEventListener("click", () => sendAction(`探索 ${location.name}`));
+  card.append(head, meta, help, action);
+  return card;
+}
+
 function overflowDetails(label, nodes) {
   const details = element("details", "semantic-more");
   details.append(element("summary", "", label));
@@ -113,6 +138,15 @@ function renderSemanticBlock(block, index) {
     list.append(...items.slice(0, preview).map(personItem));
     card.append(list);
     if (items.length > preview) card.append(overflowDetails(`查看其余 ${items.length - preview} 位人物`, items.slice(preview).map(personItem)));
+    return card;
+  }
+
+  if (type === "locations") {
+    card.append(semanticHead(block.title, `${items.length} 处`, block.mark || "图"));
+    const grid = element("div", "location-grid");
+    grid.append(...items.map(locationItem));
+    card.append(grid);
+    if (block.legend) card.append(element("p", "location-legend", block.legend));
     return card;
   }
 
@@ -298,11 +332,55 @@ function applyReadingPreferences() {
   $("motionToggle").checked = reduceMotion;
 }
 
+function inventoryEmptyState() {
+  const state = element("div", "inventory-empty");
+  const slots = element("div", "inventory-slots");
+  for (let index = 0; index < 4; index += 1) slots.append(element("i", ""));
+  state.append(slots, element("p", "", "获得丹药、法器或材料后，将自动收纳在这里。"));
+  return state;
+}
+
+function compactRelationItem(name, relation) {
+  const affinityValue = Number(relation.affinity) || 0;
+  const item = element("article", "relation-item");
+  const head = element("div", "relation-head");
+  head.append(element("strong", "", name), element("span", "relation-path", relation.path || "缘分未定"));
+  const meter = element("div", "relation-affinity");
+  const track = element("span", "relation-affinity-track");
+  const fill = element("i", "");
+  fill.style.width = `${Math.max(0, Math.min(100, affinityValue))}%`;
+  track.append(fill);
+  meter.append(element("small", "", "好感"), track, element("strong", "", String(affinityValue)));
+  item.append(head, meter);
+  return item;
+}
+
+function historyItem(entry) {
+  const parts = String(entry).split("｜").map((part) => part.trim()).filter(Boolean);
+  const item = element("li", "history-item");
+  const turn = element("span", "history-turn", parts[0] || "往事");
+  const copy = element("span", "history-copy");
+  copy.append(
+    element("strong", "", parts.slice(2).join("｜") || parts[1] || String(entry)),
+    element("small", "", parts.length > 2 ? parts[1] : "道途留痕"),
+  );
+  item.append(turn, copy);
+  item.title = String(entry);
+  return item;
+}
+
+function actionButton(action, className = "") {
+  const button = element("button", className, action);
+  button.type = "button";
+  button.addEventListener("click", () => sendAction(action));
+  return button;
+}
+
 function render(snapshot) {
   latestSnapshot = snapshot;
   const state = snapshot.state;
   const p = state.player;
-  $("timeLabel").textContent = `天玄历 ${state.calendar_year} 年 · ${state.month} 月`;
+  $("timeLabel").textContent = calendarLabel(state);
   $("narratorLabel").textContent = snapshot.narrator || "本地叙事器";
   $("playerName").textContent = state.phase === "new" ? "尚未入世" : `${p.dao_name} · ${p.name}`;
   $("daoSeal").textContent = (p.dao_name || p.name || "道").slice(0, 1);
@@ -310,7 +388,7 @@ function render(snapshot) {
   $("realmValue").textContent = p.realm;
   $("sectValue").textContent = p.sect === "散修" ? "散修" : `${p.sect}·${p.sect_rank}`;
   $("stonesValue").textContent = p.spirit_stones;
-  $("turnBadge").textContent = `第 ${state.turn} 回合`;
+  $("turnBadge").textContent = `第 ${state.turn} 回合｜${calendarLabel(state)}`;
   $("sceneTitle").textContent = state.phase === "ended" ? "此世已终" : (state.main_quest || "长生问道");
   setBar("health", p.health, p.health_max);
   setBar("spirit", p.spirit, p.spirit_max);
@@ -321,30 +399,35 @@ function render(snapshot) {
     ? resources.slice(0, 18).map(([name, count]) => {
         const tag = document.createElement("span"); tag.textContent = `${name} × ${count}`; return tag;
       })
-    : [Object.assign(document.createElement("span"), { className: "empty", textContent: "空空如也" })]));
+    : [inventoryEmptyState()]));
 
   const relations = Object.entries(state.npc_relations || {});
+  const isKnownRelation = ([, relation]) => (Number(relation.affinity) || 0) !== 0 || !["", "缘分未定", "陌生"].includes(relation.path || "");
+  const knownRelations = relations.filter(isKnownRelation).sort((left, right) => (Number(right[1].affinity) || 0) - (Number(left[1].affinity) || 0));
+  const unknownRelations = relations.filter((entry) => !isKnownRelation(entry));
   const tension = Math.max(0, Math.min(100, state.relationship_tension || 0));
   $("tensionMeter").hidden = tension <= 0;
   $("tensionValue").textContent = `${tension}/100`;
   $("tensionBar").style.width = `${tension}%`;
   $("tensionHint").textContent = tension >= 60 ? "情劫将至" : (tension >= 30 ? "数段心意正在交汇" : "风波初起");
-  $("relationList").replaceChildren(...(relations.length
-    ? relations.slice(0, 8).map(([name, relation]) => {
-        const item = document.createElement("div"); item.className = "relation-item";
-        const line = document.createElement("div");
-        const who = document.createElement("strong"); who.textContent = name;
-        const affinity = document.createElement("span"); affinity.textContent = `好感 ${relation.affinity || 0}`;
-        line.append(who, affinity);
-        const path = document.createElement("small"); path.textContent = relation.path || "缘分未定";
-        item.append(line, path); return item;
-      })
-    : [Object.assign(document.createElement("p"), { className: "empty", textContent: "尚未结识修士" })]));
+  $("relationList").replaceChildren(...(knownRelations.length
+    ? knownRelations.slice(0, 8).map(([name, relation]) => compactRelationItem(name, relation))
+    : [element("p", "empty relation-empty", unknownRelations.length ? "尚未结下牵绊，可从下方人物开始结识。" : "尚未遇见可结识的修士。")]
+  ));
+  $("unknownRelations").hidden = unknownRelations.length === 0;
+  $("unknownRelations").open = false;
+  $("unknownRelationCount").textContent = `${unknownRelations.length} 位`;
+  $("unknownRelationList").replaceChildren(...unknownRelations.map(([name]) => element("span", "", name)));
 
-  const history = (state.history || []).slice(-7).reverse();
+  const history = (state.history || []).slice(-12).reverse();
   $("historyList").replaceChildren(...(history.length
-    ? history.map((entry) => { const li = document.createElement("li"); li.textContent = entry; return li; })
-    : [Object.assign(document.createElement("li"), { className: "empty", textContent: "等待第一段经历" })]));
+    ? history.slice(0, 4).map(historyItem)
+    : [element("li", "empty", "等待第一段经历")]));
+  const olderHistory = history.slice(4);
+  $("historyMore").hidden = olderHistory.length === 0;
+  $("historyMore").open = false;
+  $("historyMoreLabel").textContent = `查看更早 ${olderHistory.length} 条经历`;
+  $("historyMoreList").replaceChildren(...olderHistory.map(historyItem));
   $("worldEvent").textContent = state.last_world_event || "灵气潮汐尚在暗中酝酿。";
   renderPresentation(snapshot.presentation);
   renderDecision(snapshot.decision);
@@ -356,11 +439,13 @@ function render(snapshot) {
   if (state.phase === "playing" && [war.attacker, war.defender].includes(p.sect) && !war.player_acted && !actions.includes("护宗战")) {
     actions.splice(8, 0, "护宗战");
   }
-  $("quickActions").replaceChildren(...actions.map((action) => {
-    const button = document.createElement("button");
-    button.type = "button"; button.textContent = action; button.addEventListener("click", () => sendAction(action));
-    return button;
-  }));
+  const primaryNames = state.phase === "playing" ? new Set(["修炼", "闭关3月", "地图", "存档"]) : new Set(actions);
+  const primaryActions = actions.filter((action) => primaryNames.has(action));
+  const secondaryActions = actions.filter((action) => !primaryNames.has(action));
+  $("quickActions").replaceChildren(...primaryActions.map((action) => actionButton(action, action === "存档" ? "save-action" : "")));
+  $("quickMore").replaceChildren(...secondaryActions.map((action) => actionButton(action)));
+  $("moreActionPanel").hidden = secondaryActions.length === 0;
+  $("moreActionPanel").open = false;
 }
 
 async function requestJson(url, options) {
@@ -398,6 +483,12 @@ async function sendAction(action) {
 $("actionForm").addEventListener("submit", (event) => {
   event.preventDefault();
   sendAction($("actionInput").value);
+});
+document.querySelectorAll("[data-suggestion]").forEach((button) => {
+  button.addEventListener("click", () => {
+    $("actionInput").value = button.dataset.suggestion || "";
+    $("actionInput").focus();
+  });
 });
 
 $("openArchive").addEventListener("click", () => {

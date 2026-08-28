@@ -113,7 +113,6 @@ BUTTON_BACKED_SECTION_TITLES = ("情劫抉择", "大境界突破路线", "逆天
 COLLECTION_SECTION_TITLES = (
     "东洲宗门",
     "九州秘境",
-    "东洲探索地图",
     "可交手目标",
     "道法构筑",
     "修仙百艺",
@@ -124,6 +123,7 @@ COLLECTION_SECTION_TITLES = (
     "指令大全",
 )
 TECHNICAL_PREFIXES = ("判定", "结算", "成功率", "尘缘波澜", "当前好感", "贡献：", "权限：")
+MAP_SECTION_TITLES = ("东洲探索地图",)
 
 
 def _section_lines(section: dict[str, str]) -> list[str]:
@@ -136,6 +136,10 @@ def _is_people_section(title: str) -> bool:
 
 def _is_collection_section(title: str) -> bool:
     return any(title.startswith(word) for word in COLLECTION_SECTION_TITLES)
+
+
+def _is_map_section(title: str) -> bool:
+    return any(title.startswith(word) for word in MAP_SECTION_TITLES)
 
 
 def _is_technical_line(line: str) -> bool:
@@ -199,6 +203,41 @@ def _person_items(lines: list[str], priority_names: set[str]) -> list[dict[str, 
     return sorted(people, key=lambda person: (person["name"] not in priority_names, -int(person["affinity"] or 0)))
 
 
+def _danger_profile(value: int) -> tuple[str, str, str]:
+    if value <= 15:
+        return "低危", "safe", "适合炼气修士初次探索，仍可能遭遇意外。"
+    if value <= 25:
+        return "寻常", "normal", "存在明确风险，建议气血与灵力充足后前往。"
+    if value <= 35:
+        return "高危", "warning", "容易受伤或遭遇强敌，不宜在境界不足时冒险。"
+    return "绝境", "danger", "可能致命，仅建议准备充分的高境界修士进入。"
+
+
+def _location_items(lines: list[str]) -> list[dict[str, Any]]:
+    locations: list[dict[str, Any]] = []
+    for line in lines:
+        if line.startswith(("输入：", "指令：")):
+            continue
+        parts = [part.strip() for part in line.split("｜") if part.strip()]
+        danger_part = next((part for part in parts if part.startswith("危险度 ")), "")
+        danger_match = re.search(r"危险度\s*(\d+)", danger_part)
+        if len(parts) < 2 or not danger_match:
+            continue
+        danger = int(danger_match.group(1))
+        label, tone, help_text = _danger_profile(danger)
+        locations.append(
+            {
+                "name": parts[0],
+                "requirement": parts[1],
+                "danger": danger,
+                "danger_label": label,
+                "tone": tone,
+                "help": help_text,
+            }
+        )
+    return locations
+
+
 def _meter_block(title: str, line: str) -> dict[str, Any] | None:
     match = re.search(r"(-?\d+)\s*/\s*(\d+)", line)
     if not match:
@@ -249,7 +288,7 @@ def _semantic_blocks(
         first = sections[0]
         first_title = first["title"]
         first_lines = _section_lines(first)
-        if not _is_people_section(first_title) and not _is_collection_section(first_title):
+        if not _is_people_section(first_title) and not _is_collection_section(first_title) and not _is_map_section(first_title):
             narrative = [line for line in first_lines if not _is_technical_line(line)]
             if not paragraphs and narrative:
                 paragraphs = narrative[:2]
@@ -278,6 +317,19 @@ def _semantic_blocks(
             meter = _meter_block(title, lines[0])
             if meter:
                 blocks.append(meter)
+            continue
+        if _is_map_section(title):
+            items = _location_items(lines)
+            if items:
+                blocks.append(
+                    {
+                        "type": "locations",
+                        "mark": "图",
+                        "title": title,
+                        "items": items,
+                        "legend": "危险度越高，受伤、强敌与致命事件的概率越高。",
+                    }
+                )
             continue
         if _is_people_section(title):
             named_in_action = {line.split("｜", 1)[0].strip() for line in lines if line.split("｜", 1)[0].strip() in action}
