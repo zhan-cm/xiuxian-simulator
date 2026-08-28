@@ -1448,8 +1448,20 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual([block["type"] for block in view["blocks"]], ["locations"])
         items = view["blocks"][0]["items"]
         self.assertEqual([item["danger_label"] for item in items], ["低危", "寻常", "高危", "绝境"])
+        self.assertEqual([item["accessible"] for item in items], [True, True, False, False])
+        self.assertEqual(items[2]["requirement_label"], "筑基境")
+        self.assertEqual(items[3]["requirement_label"], "结晶境")
+        self.assertIn("筑基境", items[2]["locked_reason"])
+        self.assertIn("不是奖励点数", view["blocks"][0]["legend"])
         self.assertEqual(items[-1]["tone"], "danger")
         self.assertIn("致命", items[-1]["help"])
+
+    def test_exploration_map_keeps_more_than_four_locations(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        lines = [f"试炼地{index}｜炼气可入｜危险度 {10 + index}" for index in range(1, 7)]
+        view = present_action("地图", "【东洲探索地图】\n" + "\n".join(lines), state, state)
+        self.assertEqual(len(view["blocks"][0]["items"]), 6)
+        self.assertTrue(all(item["accessible"] for item in view["blocks"][0]["items"]))
 
     def test_button_backed_choice_copy_is_not_repeated_as_a_block(self) -> None:
         state = GameState(phase="heart_trial_choice").to_dict()
@@ -1604,6 +1616,10 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn("修为已圆满，请先尝试突破", script)
         self.assertIn(".has-tooltip::after", styles)
         self.assertIn(".quick-actions button:disabled", styles)
+        self.assertIn("repeat(auto-fit, minmax(min(230px, 100%), 1fr))", styles)
+        self.assertIn('.location-action:disabled', styles)
+        self.assertIn('location.accessible === false', script)
+        self.assertIn('location.danger_help', script)
         self.assertIn("容量不限 · 格位按物品自动扩展", script)
         self.assertNotIn('id="narratorLabel"', page)
         self.assertNotIn('id="moreActionCount"', page)

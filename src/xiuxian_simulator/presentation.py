@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .progression import REALMS
+
 
 HEADER_PATTERN = re.compile(r"【([^】]+)】")
 TIME_PATTERN = re.compile(r"^天玄历\s+\d+\s+年\s*·\s*[^\n]+$")
@@ -213,8 +215,19 @@ def _danger_profile(value: int) -> tuple[str, str, str]:
     return "绝境", "danger", "可能致命，仅建议准备充分的高境界修士进入。"
 
 
-def _location_items(lines: list[str]) -> list[dict[str, Any]]:
+def _minimum_realm(requirement: str) -> int:
+    if "炼气" in requirement:
+        return 0
+    match = re.search(r"(?:至少)?第?\s*(\d+)\s*(?:阶|大境界)", requirement)
+    return max(0, int(match.group(1)) - 1) if match else 0
+
+
+def _location_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
     locations: list[dict[str, Any]] = []
+    player = state.get("player", {}) or {}
+    player_realm = int(player.get("realm_index", 0) or 0)
+    current_location = str(player.get("location", ""))
+    history = [str(entry) for entry in (state.get("history", []) or [])]
     for line in lines:
         if line.startswith(("输入：", "指令：")):
             continue
@@ -225,14 +238,23 @@ def _location_items(lines: list[str]) -> list[dict[str, Any]]:
             continue
         danger = int(danger_match.group(1))
         label, tone, help_text = _danger_profile(danger)
+        minimum_realm = _minimum_realm(parts[1])
+        realm_name = REALMS[min(minimum_realm, len(REALMS) - 1)]
+        accessible = player_realm >= minimum_realm
         locations.append(
             {
                 "name": parts[0],
                 "requirement": parts[1],
+                "requirement_label": f"{realm_name}境",
+                "minimum_realm": minimum_realm,
+                "accessible": accessible,
+                "locked_reason": "" if accessible else f"需要达到{realm_name}境才可进入",
+                "visited": parts[0] in current_location or any(f"探索{parts[0]}" in entry for entry in history),
                 "danger": danger,
                 "danger_label": label,
                 "tone": tone,
                 "help": help_text,
+                "danger_help": f"危险度 {danger}：数值越高，越容易遭遇强敌与不利事件；提升境界可以降低部分风险。",
             }
         )
     return locations
@@ -275,6 +297,7 @@ def _semantic_blocks(
     paragraphs: list[str],
     sections: list[dict[str, str]],
     changes: list[dict[str, str]],
+    state: dict[str, Any],
 ) -> tuple[list[str], list[dict[str, Any]]]:
     blocks: list[dict[str, Any]] = []
     priority_names = {
@@ -319,7 +342,7 @@ def _semantic_blocks(
                 blocks.append(meter)
             continue
         if _is_map_section(title):
-            items = _location_items(lines)
+            items = _location_items(lines, state)
             if items:
                 blocks.append(
                     {
@@ -327,7 +350,7 @@ def _semantic_blocks(
                         "mark": "图",
                         "title": title,
                         "items": items,
-                        "legend": "危险度越高，受伤、强敌与致命事件的概率越高。",
+                        "legend": "危险度表示遭遇强敌与不利事件的风险，不是奖励点数；境界不足的地点会自动锁定。",
                     }
                 )
             continue
@@ -402,7 +425,7 @@ def present_action(
     seal, tone, default_title = _classify(action, output)
     paragraphs, sections, hidden_details = _split_output(output)
     changes = _state_changes(before, after)
-    paragraphs, blocks = _semantic_blocks(action, tone, paragraphs, sections, changes)
+    paragraphs, blocks = _semantic_blocks(action, tone, paragraphs, sections, changes, after)
     title = sections[0]["title"] if sections and len(sections[0]["title"]) <= 18 else default_title
     details = hidden_details or output.strip()
     return {

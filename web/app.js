@@ -122,20 +122,31 @@ function personItem(person) {
 function locationItem(location) {
   const card = element("article", "location-item");
   card.dataset.tone = location.tone || "normal";
+  card.dataset.access = location.accessible === false ? "locked" : "open";
   const head = element("header", "location-head");
-  const name = element("strong", "", location.name || "未知之地");
-  const danger = element("span", "danger-badge", `${location.danger_label || "未知"} · ${location.danger ?? "—"}`);
-  danger.title = location.help || "危险度越高，探索时遭遇伤势和强敌的概率越高。";
+  const name = element("div", "location-name");
+  name.append(element("strong", "", location.name || "未知之地"));
+  if (location.visited) name.append(element("small", "location-visited", "已探访"));
+  const danger = element("span", "danger-badge has-tooltip", `${location.danger_label || "未知"} · ${location.danger ?? "—"}`);
+  danger.tabIndex = 0;
+  danger.dataset.tooltip = location.danger_help || "危险度越高，越容易遭遇强敌与不利事件。";
+  danger.title = danger.dataset.tooltip;
   danger.setAttribute("aria-label", `危险度 ${location.danger ?? "未知"}，${location.danger_label || "等级未知"}`);
   head.append(name, danger);
   const meta = element("div", "location-meta");
-  meta.append(element("span", "", location.requirement || "准入境界未知"));
+  meta.append(element("span", "", "准入"), element("strong", "", location.requirement_label || location.requirement || "境界未知"));
   const help = element("p", "location-help", location.help || "请量力而行。 ");
-  const action = element("button", "location-action", "前往探索");
+  const footer = element("footer", "location-footer");
+  const action = element("button", "location-action has-tooltip");
   action.type = "button";
-  action.setAttribute("aria-label", `探索 ${location.name}`);
+  action.disabled = location.accessible === false;
+  action.dataset.tooltip = action.disabled ? (location.locked_reason || "当前境界不足，无法进入") : "点击后立即前往，并执行一次探索推演";
+  action.title = action.dataset.tooltip;
+  action.setAttribute("aria-label", action.disabled ? `无法探索 ${location.name}：${action.dataset.tooltip}` : `探索 ${location.name}，点击后立即执行`);
+  action.append(svgIcon("explore"), element("span", "", action.disabled ? "境界不足" : "前往探索"));
   action.addEventListener("click", () => sendAction(`探索 ${location.name}`));
-  card.append(head, meta, help, action);
+  footer.append(action);
+  card.append(head, meta, help, footer);
   return card;
 }
 
