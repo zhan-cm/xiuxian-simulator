@@ -609,7 +609,10 @@ $("motionToggle").addEventListener("change", (event) => {
   applyReadingPreferences();
 });
 
-function openGuide() { $("guideDialog").showModal(); }
+function openGuide() {
+  if (document.body.classList.contains("showcase-mode")) return;
+  $("guideDialog").showModal();
+}
 function closeGuide(markSeen = false) {
   if (markSeen) writePreference("xiuxian-guide-seen", "true");
   $("guideDialog").close();
@@ -623,6 +626,12 @@ $("guideDialog").addEventListener("click", (event) => {
 
 applyReadingPreferences();
 if (readPreference("xiuxian-guide-seen", "false") !== "true") window.setTimeout(openGuide, 180);
+
+window.xiuxianUi = {
+  renderSnapshot: render,
+  getLatestSnapshot: () => latestSnapshot,
+  openGuide,
+};
 
 requestJson("/api/state")
   .then((snapshot) => render(snapshot))

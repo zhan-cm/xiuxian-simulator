@@ -24,6 +24,7 @@
     <symbol id="icon-history" viewBox="0 0 24 24"><path d="M6 4h12v16H6a3 3 0 0 1 0-6h12"/><path d="M9 8h6M9 11h5"/></symbol>
     <symbol id="icon-world" viewBox="0 0 24 24"><path d="M4 8h10c3 0 3-4 0-4-1.4 0-2.3.7-2.8 1.7M4 12h15c3 0 3 4 0 4-1.2 0-2-.5-2.5-1.4M4 16h7"/></symbol>
     <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 3v6M16 3v6M4 10h16M8 14h2M14 14h2M8 17h2"/></symbol>
+    <symbol id="icon-showcase" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4v3H7zM14 9h3M14 12h3M7 15h10"/></symbol>
   </svg>
   <div class="mist mist-one"></div>
   <div class="mist mist-two"></div>
@@ -34,6 +35,7 @@
     </div>
     <div class="top-status">
       <span id="timeLabel" hidden>天玄历 387 年</span>
+      <button id="openShowcase" class="showcase-button" type="button" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-showcase"></use></svg> 成果巡览</button>
       <button id="openGuide" class="guide-button" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-explore"></use></svg> 游玩指引</button>
       <button id="openArchive" class="archive-button" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-save"></use></svg> 洞天卷宗</button>
     </div>
@@ -152,6 +154,19 @@
     </aside>
   </main>
 
+  <aside id="showcasePanel" class="showcase-panel" aria-labelledby="showcaseTitle" hidden>
+    <header>
+      <div><p>不修改存档</p><h2 id="showcaseTitle">成果巡览</h2></div>
+      <button id="exitShowcase" type="button" aria-label="退出成果巡览">退出</button>
+    </header>
+    <div class="showcase-progress"><span id="showcaseIndex">01 / 14</span><i><b id="showcaseProgressBar"></b></i></div>
+    <label for="showcaseSelect">当前展示页面</label>
+    <select id="showcaseSelect" aria-label="选择要展示的游戏页面"></select>
+    <div class="showcase-copy"><strong id="showcasePageTitle">初始入世</strong><p id="showcaseDescription"></p></div>
+    <section class="showcase-checks"><h3>本页检查重点</h3><ul id="showcaseChecklist"></ul></section>
+    <footer><button id="showcasePrevious" type="button">上一页</button><button id="showcaseNext" type="button">下一页</button></footer>
+  </aside>
+
   <dialog id="archiveDialog" class="archive-dialog" aria-labelledby="archiveTitle">
     <div class="archive-shell">
       <header class="archive-head">
@@ -206,5 +221,6 @@
 
   <footer>本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算</footer>
   <script src="/app.js" defer></script>
+  <script src="/showcase.js" defer></script>
 </body>
 </html>

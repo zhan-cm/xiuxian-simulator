@@ -33,7 +33,7 @@ def run_diagnostics(root: Path) -> list[DiagnosticItem]:
         content_detail = str(exc)
     items.append(DiagnosticItem("结构化内容", content_ok, content_detail))
 
-    web_assets = [root / "web" / name for name in ("index.html", "app.css", "app.js")]
+    web_assets = [root / "web" / name for name in ("index.html", "app.css", "app.js", "showcase.js")]
     items.append(DiagnosticItem("网页资源", all(path.is_file() for path in web_assets), "HTML / CSS / JavaScript"))
 
     save_dir = root / "data" / "saves"

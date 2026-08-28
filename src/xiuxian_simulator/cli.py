@@ -69,7 +69,7 @@ def main() -> None:
         )
         return
 
-    print("问道长生 V0.28 地图准入与探索反馈版")
+    print("问道长生 V0.29 成果巡览与全页验收版")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

@@ -71,7 +71,7 @@ class WebApplication:
             return self._json({"error": "不支持此请求。"}, HTTPStatus.METHOD_NOT_ALLOWED)
 
         asset = "index.html" if path == "/" else path.removeprefix("/")
-        if asset not in {"index.html", "app.css", "app.js"}:
+        if asset not in {"index.html", "app.css", "app.js", "showcase.js"}:
             return self._json({"error": "页面不存在。"}, HTTPStatus.NOT_FOUND)
         destination = (self.web_root / asset).resolve()
         if destination.parent != self.web_root or not destination.is_file():
@@ -82,7 +82,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.28"
+        server_version = "XiuxianSimulator/0.29"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")
