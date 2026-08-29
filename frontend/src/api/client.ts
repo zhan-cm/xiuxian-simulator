@@ -1,4 +1,4 @@
-import type { Snapshot } from './types'
+import type { ShowcaseResponse, Snapshot } from './types'
 
 async function decode<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -18,4 +18,8 @@ export function performAction(action: string): Promise<Snapshot> {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ action }),
   }).then(decode<Snapshot>)
+}
+
+export function fetchShowcase(): Promise<ShowcaseResponse> {
+  return fetch('/api/v1/showcase', { headers: { Accept: 'application/json' } }).then(decode<ShowcaseResponse>)
 }

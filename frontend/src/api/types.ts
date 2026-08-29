@@ -103,3 +103,15 @@ export interface Snapshot {
   npc_profiles: Record<string, NpcProfile>
   output?: string
 }
+
+export interface ShowcasePage {
+  id: string
+  title: string
+  description: string
+  checklist: string[]
+  snapshot: Snapshot
+}
+
+export interface ShowcaseResponse {
+  pages: ShowcasePage[]
+}

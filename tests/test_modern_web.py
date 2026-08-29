@@ -55,6 +55,23 @@ class ModernWebTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn("问道长生", response.text)
 
+    def test_showcase_uses_isolated_real_engine_snapshots(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            original_state = engine.state.to_dict()
+            client = TestClient(create_modern_app(engine, ROOT))
+            response = client.get("/api/v1/showcase")
+            self.assertEqual(response.status_code, 200)
+            pages = response.json()["pages"]
+            self.assertGreaterEqual(len(pages), 12)
+            self.assertEqual(engine.state.to_dict(), original_state)
+            self.assertFalse(list(Path(temp_dir).glob("*.json")))
+            by_id = {page["id"]: page for page in pages}
+            self.assertEqual(by_id["market"]["snapshot"]["presentation"]["blocks"][0]["type"], "market")
+            self.assertEqual(by_id["battle"]["snapshot"]["state"]["phase"], "combat_ready")
+            self.assertEqual(by_id["breakthrough"]["snapshot"]["state"]["phase"], "major_breakthrough_choice")
+
 
 if __name__ == "__main__":
     unittest.main()

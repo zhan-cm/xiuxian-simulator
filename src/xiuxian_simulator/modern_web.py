@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 import uvicorn
 
 from .engine import GameEngine
+from .showcase import build_showcase
 from .webapp import WebApplication
 
 
@@ -40,7 +41,7 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
     game = WebApplication(engine, root / "web")
     app = FastAPI(
         title="问道长生本地接口",
-        version="0.31.0",
+        version="0.32.0",
         docs_url="/api/docs",
         redoc_url=None,
         openapi_url="/api/openapi.json",
@@ -60,7 +61,7 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:
-        return HealthResponse(status="ok", version="0.31.0", interface="react")
+        return HealthResponse(status="ok", version="0.32.0", interface="react")
 
     @app.get("/api/v1/state")
     def state() -> dict[str, Any]:
@@ -72,6 +73,10 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
             return game.perform_action(request.action)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/v1/showcase")
+    def showcase() -> dict[str, Any]:
+        return {"pages": build_showcase(engine, root)}
 
     assets = dist_root / "assets"
     if assets.is_dir():
@@ -95,7 +100,7 @@ def run_modern_server(
 ) -> None:
     app = create_modern_app(engine, root)
     url = f"http://{host}:{port}/"
-    print(f"问道长生 V0.31 新版界面已启动：{url}")
+    print(f"问道长生 V0.32 新版界面已启动：{url}")
     print("关闭此窗口即可停止游戏服务。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

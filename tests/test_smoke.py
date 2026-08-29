@@ -1481,6 +1481,54 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(len(view["blocks"][0]["items"]), 6)
         self.assertTrue(all(item["accessible"] for item in view["blocks"][0]["items"]))
 
+    def test_market_output_becomes_filterable_trade_items(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = "【青岳坊市】\n聚气丹：买 20／卖 12 灵石\n筑基丹：买 500／卖 300 灵石\n灵药：买 12／卖 7 灵石"
+        view = present_action("坊市", output, state, state)
+        block = view["blocks"][0]
+        self.assertEqual(block["type"], "market")
+        self.assertEqual([item["category"] for item in block["items"]], ["丹药", "丹药", "材料"])
+        self.assertTrue(block["items"][0]["affordable"])
+        self.assertFalse(block["items"][1]["affordable"])
+        self.assertEqual(block["items"][0]["buy_action"], "买 聚气丹")
+
+    def test_secret_realms_reuse_accessible_location_cards(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = (
+            "【九州秘境】\n"
+            "通灵秘境｜炼气可入｜危险度 20｜林海灵雾终年不散。\n"
+            "上古洞府｜至少2阶大境界｜危险度 35｜残阵仍在运转。"
+        )
+        view = present_action("秘境", output, state, state)
+        block = view["blocks"][0]
+        self.assertEqual(block["type"], "locations")
+        self.assertEqual(block["items"][0]["action"], "进入秘境 通灵秘境")
+        self.assertFalse(block["items"][1]["accessible"])
+        self.assertEqual(block["items"][0]["description"], "林海灵雾终年不散。")
+
+    def test_cave_output_exposes_upgrade_cost_and_lock_reason(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        state["player"]["spirit_stones"] = 1000
+        state["player"]["resources"] = {"灵铁": 10, "灵药": 3, "五行灵珠": 1}
+        output = "【洞府】灵气：普通\n静室：0 级\n丹房：0 级\n器坊：0 级\n灵田：0 级\n聚灵阵：0 级\n禁制：0 级\n灵田：无作物"
+        view = present_action("洞府", output, state, state)
+        block = view["blocks"][0]
+        self.assertEqual(block["type"], "facilities")
+        self.assertEqual(block["items"][0]["cost_stones"], 200)
+        self.assertTrue(block["items"][0]["affordable"])
+        self.assertEqual(block["items"][0]["action"], "升级洞府 静室")
+
+    def test_recipes_and_sects_become_actionable_components(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        state["player"]["resources"] = {"灵药": 2}
+        recipes = present_action("技艺", "【已知配方】\n炼丹 聚气丹｜灵药×2 → 聚气丹×2\n炼丹 疗伤丹｜灵药×3 → 疗伤丹×1", state, state)
+        self.assertEqual(recipes["blocks"][0]["type"], "recipes")
+        self.assertTrue(recipes["blocks"][0]["items"][0]["available"])
+        self.assertFalse(recipes["blocks"][0]["items"][1]["available"])
+        sects = present_action("宗门", "【东洲宗门】\n青云宗｜入门试炼\n丹霞谷｜入门试炼", state, state)
+        self.assertEqual(sects["blocks"][0]["type"], "sects")
+        self.assertEqual(sects["blocks"][0]["items"][0]["action"], "拜入 青云宗")
+
     def test_button_backed_choice_copy_is_not_repeated_as_a_block(self) -> None:
         state = GameState(phase="heart_trial_choice").to_dict()
         output = (

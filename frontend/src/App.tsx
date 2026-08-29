@@ -1,16 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { Backpack, CalendarDays, CircleAlert, CloudSun, Gem, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound } from 'lucide-react'
-import { useState } from 'react'
-import { fetchSnapshot, performAction } from './api/client'
+import { Backpack, CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, Gem, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
 import { ActionDock } from './components/ActionDock'
+import { ArchiveDialog } from './components/ArchiveDialog'
 import { CharacterSheet } from './components/CharacterSheet'
 import { DecisionPanel } from './components/DecisionPanel'
 import { EventPanel } from './components/EventPanel'
 import { GameTooltip, TooltipProvider } from './components/GameTooltip'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
+import { ShowcaseNavigator } from './components/ShowcaseNavigator'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -61,20 +63,27 @@ interface GameProps {
   activeAction: string
   error: string
   onAction: (action: string) => void
+  showcase: boolean
+  showcaseLoading: boolean
+  onShowcase: () => void
+  onExitShowcase: () => void
+  notice: string
 }
 
-function Game({ snapshot, busy, activeAction, error, onAction }: GameProps) {
+function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, notice }: GameProps) {
   const { state, presentation, decision } = snapshot
   const { player } = state
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = ['playing', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)
   return (
     <TooltipProvider>
-      <div className="game-shell">
+      <div className="game-shell" data-showcase={showcase || undefined}>
         <header className="topbar">
           <div className="brand"><span>高自由修仙文字模拟</span><h1>问道长生</h1><p>凡尘一念，万法由心</p></div>
           <div className="topbar-actions">
             <div className="time-badge"><CalendarDays size={16} /><span>第 {state.turn} 回合</span><b /><strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong></div>
+            <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>{showcase ? <X size={16} /> : <Eye size={16} />}{showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}</button>
+            {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} />}
             <CharacterSheet player={player} />
           </div>
         </header>
@@ -117,7 +126,8 @@ function Game({ snapshot, busy, activeAction, error, onAction }: GameProps) {
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.31 React 技术预览</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.32 React 新版界面</footer>
+        <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
   )
@@ -127,16 +137,47 @@ export default function App() {
   const queryClient = useQueryClient()
   const [activeAction, setActiveAction] = useState('')
   const [actionError, setActionError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [showcaseIndex, setShowcaseIndex] = useState<number | null>(null)
   const snapshot = useQuery({ queryKey: ['snapshot'], queryFn: fetchSnapshot, staleTime: 15_000, retry: 1 })
+  const showcase = useQuery({ queryKey: ['showcase'], queryFn: fetchShowcase, enabled: false, staleTime: Infinity })
   const action = useMutation({
     mutationFn: performAction,
-    onMutate: (value) => { setActiveAction(value); setActionError('') },
-    onSuccess: (data) => { queryClient.setQueryData(['snapshot'], data) },
+    onMutate: (value) => { setActiveAction(value); setActionError(''); setNotice('') },
+    onSuccess: (data, value) => { queryClient.setQueryData(['snapshot'], data); setNotice(data.presentation?.title || `已完成：${value}`) },
     onError: (reason: Error) => setActionError(reason.message),
     onSettled: () => setActiveAction(''),
   })
+  useEffect(() => {
+    if (!notice) return
+    const timer = window.setTimeout(() => setNotice(''), 3200)
+    return () => window.clearTimeout(timer)
+  }, [notice])
 
   if (snapshot.isPending) return <LoadingScreen />
   if (snapshot.isError) return <ErrorScreen message={snapshot.error.message} />
-  return <Game snapshot={snapshot.data} busy={action.isPending} activeAction={activeAction} error={actionError} onAction={(value) => action.mutate(value)} />
+  const pages = showcase.data?.pages || []
+  const inShowcase = showcaseIndex !== null && Boolean(pages[showcaseIndex])
+  const displayed = inShowcase ? pages[showcaseIndex].snapshot : snapshot.data
+  const openShowcase = async () => {
+    const result = await showcase.refetch()
+    if (result.data?.pages.length) setShowcaseIndex(0)
+  }
+  return (
+    <>
+      <Game
+        snapshot={displayed}
+        busy={inShowcase ? false : action.isPending}
+        activeAction={inShowcase ? '' : activeAction}
+        error={inShowcase ? '' : actionError}
+        onAction={inShowcase ? () => undefined : (value) => action.mutate(value)}
+        showcase={inShowcase}
+        showcaseLoading={showcase.isFetching}
+        onShowcase={openShowcase}
+        onExitShowcase={() => setShowcaseIndex(null)}
+        notice={inShowcase ? '' : notice}
+      />
+      {inShowcase && <ShowcaseNavigator pages={pages} index={showcaseIndex} onIndex={setShowcaseIndex} onExit={() => setShowcaseIndex(null)} />}
+    </>
+  )
 }

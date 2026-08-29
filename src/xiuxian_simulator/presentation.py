@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .crafting import FACILITY_COSTS, RECIPES
 from .progression import REALMS
 
 
@@ -126,6 +127,9 @@ COLLECTION_SECTION_TITLES = (
 )
 TECHNICAL_PREFIXES = ("判定", "结算", "成功率", "尘缘波澜", "当前好感", "贡献：", "权限：")
 MAP_SECTION_TITLES = ("东洲探索地图",)
+SECRET_REALM_SECTION_TITLES = ("九州秘境",)
+MARKET_SECTION_TITLES = ("青岳坊市",)
+CAVE_SECTION_TITLES = ("洞府",)
 
 
 def _section_lines(section: dict[str, str]) -> list[str]:
@@ -142,6 +146,18 @@ def _is_collection_section(title: str) -> bool:
 
 def _is_map_section(title: str) -> bool:
     return any(title.startswith(word) for word in MAP_SECTION_TITLES)
+
+
+def _is_secret_realm_section(title: str) -> bool:
+    return any(title.startswith(word) for word in SECRET_REALM_SECTION_TITLES)
+
+
+def _is_market_section(title: str) -> bool:
+    return any(title.startswith(word) for word in MARKET_SECTION_TITLES)
+
+
+def _is_cave_section(title: str) -> bool:
+    return any(title.startswith(word) for word in CAVE_SECTION_TITLES)
 
 
 def _is_technical_line(line: str) -> bool:
@@ -222,7 +238,7 @@ def _minimum_realm(requirement: str) -> int:
     return max(0, int(match.group(1)) - 1) if match else 0
 
 
-def _location_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
+def _location_items(lines: list[str], state: dict[str, Any], action_prefix: str = "探索") -> list[dict[str, Any]]:
     locations: list[dict[str, Any]] = []
     player = state.get("player", {}) or {}
     player_realm = int(player.get("realm_index", 0) or 0)
@@ -250,6 +266,8 @@ def _location_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, A
                 "accessible": accessible,
                 "locked_reason": "" if accessible else f"需要达到{realm_name}境才可进入",
                 "visited": parts[0] in current_location or any(f"探索{parts[0]}" in entry for entry in history),
+                "description": parts[3] if len(parts) > 3 else help_text,
+                "action": f"{action_prefix} {parts[0]}",
                 "danger": danger,
                 "danger_label": label,
                 "tone": tone,
@@ -258,6 +276,124 @@ def _location_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, A
             }
         )
     return locations
+
+
+def _market_category(name: str) -> str:
+    if name.endswith("丹"):
+        return "丹药"
+    if "残卷" in name:
+        return "功法残卷"
+    if any(word in name for word in ("剑", "刃", "衣", "甲", "法袍")):
+        return "法器"
+    if any(word in name for word in ("符", "符纸")):
+        return "符箓"
+    if any(word in name for word in ("茶", "酒", "画卷", "剑穗", "灵果", "烤肉", "甜糕", "玉简", "灵石匣")):
+        return "礼物"
+    return "材料"
+
+
+def _market_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
+    player = state.get("player", {}) or {}
+    stones = int(player.get("spirit_stones", 0) or 0)
+    resources = player.get("resources", {}) or {}
+    inventory = [str(item) for item in (player.get("inventory", []) or [])]
+    items: list[dict[str, Any]] = []
+    for line in lines:
+        match = re.match(r"^(.+?)：买\s*(\d+)／卖\s*(\d+)\s*灵石$", line)
+        if not match:
+            continue
+        name, buy, sell = match.group(1), int(match.group(2)), int(match.group(3))
+        owned = int(resources.get(name, 0) or 0) + inventory.count(name)
+        items.append(
+            {
+                "name": name,
+                "category": _market_category(name),
+                "buy": buy,
+                "sell": sell,
+                "owned": owned,
+                "affordable": stones >= buy,
+                "buy_action": f"买 {name}",
+                "sell_action": f"卖 {name}",
+            }
+        )
+    return items
+
+
+def _facility_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
+    player = state.get("player", {}) or {}
+    stones = int(player.get("spirit_stones", 0) or 0)
+    resources = player.get("resources", {}) or {}
+    items: list[dict[str, Any]] = []
+    for line in lines:
+        match = re.match(r"^([^：]+)：(\d+)\s*级$", line)
+        if not match or match.group(1) not in FACILITY_COSTS:
+            continue
+        name, level = match.group(1), int(match.group(2))
+        multiplier = level + 1
+        base_stones, base_materials = FACILITY_COSTS[name]
+        cost_stones = base_stones * multiplier
+        materials = {material: count * multiplier for material, count in base_materials.items()}
+        missing = [f"{material}×{count}" for material, count in materials.items() if int(resources.get(material, 0) or 0) < count]
+        maxed = level >= 3
+        affordable = not maxed and stones >= cost_stones and not missing
+        items.append(
+            {
+                "name": name,
+                "level": level,
+                "max_level": 3,
+                "cost_stones": cost_stones,
+                "materials": materials,
+                "affordable": affordable,
+                "disabled_reason": "已达当前最高等级" if maxed else ("缺少 " + "、".join(missing) if missing else (f"需要灵石 {cost_stones}" if stones < cost_stones else "")),
+                "action": f"升级洞府 {name}",
+            }
+        )
+    return items
+
+
+def _recipe_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
+    resources = (state.get("player", {}) or {}).get("resources", {}) or {}
+    items: list[dict[str, Any]] = []
+    for line in lines:
+        command, _, result = line.partition("｜")
+        parts = command.split(maxsplit=1)
+        if len(parts) != 2 or parts[1] not in RECIPES:
+            continue
+        craft, name = parts
+        recipe = RECIPES[name]
+        missing = [f"{material}×{count}" for material, count in recipe.ingredients.items() if int(resources.get(material, 0) or 0) < count]
+        action_craft = "制符" if craft == "符箓" else craft
+        items.append(
+            {
+                "name": name,
+                "craft": craft,
+                "ingredients": recipe.ingredients,
+                "result": result.strip(),
+                "chance": recipe.base_chance,
+                "available": not missing,
+                "disabled_reason": "缺少 " + "、".join(missing) if missing else "",
+                "action": f"{action_craft} {name}",
+            }
+        )
+    return items
+
+
+def _sect_items(lines: list[str]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for line in lines:
+        if line.startswith(("输入：", "指令：")):
+            continue
+        name, _, description = line.partition("｜")
+        if not name:
+            continue
+        items.append(
+            {
+                "name": name.strip(),
+                "description": description.strip() or "宗门山门常年招收有缘弟子。",
+                "action": f"拜入 {name.strip()}",
+            }
+        )
+    return items
 
 
 def _meter_block(title: str, line: str) -> dict[str, Any] | None:
@@ -311,7 +447,14 @@ def _semantic_blocks(
         first = sections[0]
         first_title = first["title"]
         first_lines = _section_lines(first)
-        if not _is_people_section(first_title) and not _is_collection_section(first_title) and not _is_map_section(first_title):
+        if (
+            not _is_people_section(first_title)
+            and not _is_collection_section(first_title)
+            and not _is_map_section(first_title)
+            and not _is_secret_realm_section(first_title)
+            and not _is_market_section(first_title)
+            and not _is_cave_section(first_title)
+        ):
             narrative = [line for line in first_lines if not _is_technical_line(line)]
             if not paragraphs and narrative:
                 paragraphs = narrative[:2]
@@ -341,6 +484,34 @@ def _semantic_blocks(
             if meter:
                 blocks.append(meter)
             continue
+        if _is_market_section(title):
+            items = _market_items(lines, state)
+            if items:
+                blocks.append(
+                    {
+                        "type": "market",
+                        "mark": "市",
+                        "title": title,
+                        "items": items,
+                        "currency": int((state.get("player", {}) or {}).get("spirit_stones", 0) or 0),
+                    }
+                )
+            continue
+        if _is_cave_section(title):
+            items = _facility_items(lines, state)
+            crop_line = next((line.removeprefix("灵田：") for line in lines if line.startswith("灵田：") and not re.match(r"^灵田：\d+\s*级$", line)), "无作物")
+            if items:
+                blocks.append(
+                    {
+                        "type": "facilities",
+                        "mark": "府",
+                        "title": title,
+                        "items": items,
+                        "aura": str(state.get("aura_level", "普通")),
+                        "crops": crop_line,
+                    }
+                )
+            continue
         if _is_map_section(title):
             items = _location_items(lines, state)
             if items:
@@ -353,6 +524,29 @@ def _semantic_blocks(
                         "legend": "危险度表示遭遇强敌与不利事件的风险，不是奖励点数；境界不足的地点会自动锁定。",
                     }
                 )
+            continue
+        if _is_secret_realm_section(title):
+            items = _location_items(lines, state, action_prefix="进入秘境")
+            if items:
+                blocks.append(
+                    {
+                        "type": "locations",
+                        "mark": "境",
+                        "title": title,
+                        "items": items,
+                        "legend": "秘境危险度越高，失败时损失越重；进入前仍会要求你亲自确认。",
+                    }
+                )
+            continue
+        if title.startswith("已知配方"):
+            items = _recipe_items(lines, state)
+            if items:
+                blocks.append({"type": "recipes", "mark": "艺", "title": title, "items": items})
+            continue
+        if title.startswith("东洲宗门"):
+            items = _sect_items(lines)
+            if items:
+                blocks.append({"type": "sects", "mark": "宗", "title": title, "items": items})
             continue
         if _is_people_section(title):
             named_in_action = {line.split("｜", 1)[0].strip() for line in lines if line.split("｜", 1)[0].strip() in action}
