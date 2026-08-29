@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from .progression import ProgressionEngine
 from .state import GameState
+from .auctions import AuctionEngine
 
 
 SECT_RANKS = ("外门弟子", "内门弟子", "真传弟子", "长老", "掌门")
@@ -399,7 +400,8 @@ class WorldTimelineEngine:
                 events.append("千年灵气潮汐正式降临，沉睡灵脉与域外裂隙同时苏醒。")
                 state.aura_level = "福地"
                 state.world_tension += 20
-        if cls._auction_roll(state) <= 3:
+        if cls._auction_roll(state) <= 8 and not state.auction.get("active"):
+            AuctionEngine.open(state)
             events.append("天机坊市临时宣布一场拍卖会，珍稀功法与来路不明的宝物即将现世。")
         state.world_event_keys.append(key)
         for event in events:

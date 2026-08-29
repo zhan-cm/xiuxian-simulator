@@ -14,6 +14,7 @@ from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
 from .items import InventoryEngine
+from .auctions import AuctionEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
@@ -79,6 +80,8 @@ class GameEngine:
             return self._world_intervention_choice(action)
         if self.state.phase == "main_story_choice":
             return self._story_choice(action)
+        if self.state.phase == "auction_choice":
+            return self._auction_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -130,6 +133,10 @@ class GameEngine:
             return self._trade(*trade)
         if action == "坊市":
             return self._market()
+        if action in {"拍卖会", "天机拍卖", "拍卖"}:
+            return AuctionEngine.panel_text(self.state)
+        if action.startswith("竞拍"):
+            return self._begin_auction_bid(action)
         if action == "宗门":
             return self._sect()
         if action == "申请晋升":
@@ -574,6 +581,40 @@ class GameEngine:
             f"灵石 {stone_change:+d}｜{item} {direction}{item_change}\n"
             f"当前灵石：{self.state.player.spirit_stones}"
         )
+
+    def _begin_auction_bid(self, action: str) -> str:
+        lot_id = action.removeprefix("竞拍").strip()
+        if not lot_id:
+            return "请选择要参与竞拍的拍品。"
+        try:
+            lot = AuctionEngine.begin(self.state, lot_id)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"为《{lot['name']}》举起竞价玉牌")
+        self._autosave()
+        return (
+            f"【天机竞价 · {lot['name']}】\n"
+            f"底价 {lot['reserve']} 灵石｜每次加价 {lot['increment']} 灵石\n"
+            f"主要对手：{self.state.auction['competitor']}｜{self.state.auction['competitor_style']}\n"
+            "请选择稳健举牌、强势压场或退出竞价。"
+        )
+
+    def _auction_choice(self, action: str) -> str:
+        strategy = action.removeprefix("拍卖选择").strip() if action.startswith("拍卖选择") else ""
+        try:
+            lot, won, offer, roll, chance = AuctionEngine.resolve(self.state, strategy)
+        except ValueError as exc:
+            return str(exc)
+        if strategy == "withdraw":
+            result = f"你放下竞价玉牌；{lot['winner']}以 {lot['price']} 灵石拍得《{lot['name']}》。"
+        elif won:
+            reward = "、".join(f"{name}×{count}" for name, count in lot["rewards"].items())
+            result = f"落槌成交。你以 {offer} 灵石拍得《{lot['name']}》，所得 {reward} 已收入乾坤袋。\n判定：1d100={roll}，成交机会 {chance}%"
+        else:
+            result = f"竞价失利。{lot['winner']}以 {lot['price']} 灵石拍得《{lot['name']}》，你没有损失灵石。\n判定：1d100={roll}，成交机会 {chance}%"
+        self.state.remember(result.splitlines()[0])
+        self._autosave()
+        return f"【天机拍卖 · 落槌】\n{result}\n\n{AuctionEngine.panel_text(self.state)}"
 
     def _sect(self) -> str:
         player = self.state.player
@@ -1413,6 +1454,7 @@ class GameEngine:
             NpcEcologyEngine.tick(self.state)
             WorldTimelineEngine.tick(self.state)
             CommissionEngine.expire_overdue(self.state)
+            AuctionEngine.expire(self.state)
         return died_of_age
 
     @staticmethod
@@ -1426,6 +1468,7 @@ class GameEngine:
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
+            "拍卖会｜竞拍 [拍品编号]；竞价时可稳健举牌、强势压场或退出\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
             "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"

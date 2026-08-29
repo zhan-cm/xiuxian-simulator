@@ -41,7 +41,7 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
     game = WebApplication(engine, root / "web")
     app = FastAPI(
         title="问道长生本地接口",
-        version="0.36.0",
+        version="0.37.0",
         docs_url="/api/docs",
         redoc_url=None,
         openapi_url="/api/openapi.json",
@@ -61,7 +61,7 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:
-        return HealthResponse(status="ok", version="0.36.0", interface="react")
+        return HealthResponse(status="ok", version="0.37.0", interface="react")
 
     @app.get("/api/v1/state")
     def state() -> dict[str, Any]:
@@ -100,7 +100,7 @@ def run_modern_server(
 ) -> None:
     app = create_modern_app(engine, root)
     url = f"http://{host}:{port}/"
-    print(f"问道长生 V0.36 新版界面已启动：{url}")
+    print(f"问道长生 V0.37 新版界面已启动：{url}")
     print("关闭此窗口即可停止游戏服务。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

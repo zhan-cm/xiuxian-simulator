@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.36.0"
+    version: str = "0.37.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -127,6 +127,8 @@ class GameState:
     story_choices: dict[str, str] = field(default_factory=dict)
     story_history: list[str] = field(default_factory=list)
     pending_story_node: str = ""
+    auction: dict[str, Any] = field(default_factory=dict)
+    auction_history: list[str] = field(default_factory=list)
 
     @property
     def time_label(self) -> str:

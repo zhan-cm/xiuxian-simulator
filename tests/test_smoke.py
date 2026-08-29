@@ -37,6 +37,7 @@ from xiuxian_simulator.journey import JourneyEngine
 from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.items import InventoryEngine
+from xiuxian_simulator.auctions import AuctionEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -115,6 +116,88 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(snapshot["equipped"]["weapon"], "青锋剑")
         self.assertEqual(InventoryEngine.unequip(state, "青锋剑"), "武器")
         self.assertEqual(state.player.equipped_weapon, "")
+
+    def test_auction_win_deducts_exact_price_and_grants_lot(self) -> None:
+        state = GameState(phase="playing")
+        state.player.spirit_stones = 10_000
+        AuctionEngine.open(state)
+        lot = next(lot for lot in state.auction["lots"] if int(lot["minimum_realm"]) == 0)
+        before = state.player.spirit_stones
+        AuctionEngine.begin(state, str(lot["id"]))
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+            resolved, won, offer, roll, chance = AuctionEngine.resolve(state, "steady")
+        self.assertTrue(won)
+        self.assertEqual(roll, 1)
+        self.assertGreater(chance, 0)
+        self.assertEqual(state.player.spirit_stones, before - offer)
+        for name, count in resolved["rewards"].items():
+            self.assertEqual(state.player.resources[name], count)
+        self.assertEqual(state.phase, "playing")
+        self.assertEqual(resolved["status"], "won")
+
+    def test_auction_loss_and_withdrawal_never_deduct_stones(self) -> None:
+        state = GameState(phase="playing")
+        state.player.spirit_stones = 10_000
+        AuctionEngine.open(state)
+        first, second = [lot for lot in state.auction["lots"] if int(lot["minimum_realm"]) == 0][:2]
+        before = state.player.spirit_stones
+        AuctionEngine.begin(state, str(first["id"]))
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=100):
+            _, won, _, _, _ = AuctionEngine.resolve(state, "steady")
+        self.assertFalse(won)
+        self.assertEqual(state.player.spirit_stones, before)
+        AuctionEngine.begin(state, str(second["id"]))
+        AuctionEngine.resolve(state, "withdraw")
+        self.assertEqual(state.player.spirit_stones, before)
+
+    def test_auction_expiry_and_old_save_defaults_are_safe(self) -> None:
+        state = GameState.from_dict({"phase": "playing", "player": {}})
+        self.assertEqual(state.auction, {})
+        self.assertEqual(state.auction_history, [])
+        AuctionEngine.open(state, duration=1)
+        state.turn += 1
+        expired = AuctionEngine.expire(state)
+        self.assertEqual(len(expired), 4)
+        self.assertFalse(state.auction["active"])
+        self.assertTrue(all(lot["status"] == "expired" for lot in state.auction["lots"]))
+
+    def test_world_timeline_opens_playable_auction(self) -> None:
+        state = GameState(phase="playing")
+        with mock.patch.object(WorldTimelineEngine, "_auction_roll", return_value=1):
+            events = WorldTimelineEngine.tick(state)
+        self.assertTrue(any("拍卖会" in event for event in events))
+        self.assertTrue(AuctionEngine.snapshot(state)["active"])
+        self.assertEqual(len(state.auction["lots"]), 4)
+
+    def test_auction_decision_disables_unaffordable_bids(self) -> None:
+        state = GameState(phase="playing")
+        state.player.spirit_stones = 0
+        AuctionEngine.open(state)
+        lot = next(lot for lot in state.auction["lots"] if int(lot["minimum_realm"]) == 0)
+        AuctionEngine.begin(state, str(lot["id"]))
+        choices = AuctionEngine.decision(state)["choices"]
+        self.assertTrue(choices[0]["disabled"])
+        self.assertTrue(choices[1]["disabled"])
+        self.assertFalse(choices[2].get("disabled", False))
+
+    def test_engine_auction_choice_roundtrip_autosaves(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.spirit_stones = 10_000
+            AuctionEngine.open(engine.state)
+            lot = next(lot for lot in engine.state.auction["lots"] if int(lot["minimum_realm"]) == 0)
+            self.assertIn("天机竞价", engine.process(f"竞拍 {lot['id']}"))
+            self.assertEqual(engine.state.phase, "auction_choice")
+            self.assertEqual(DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(engine.state)["choices"][0]["action"], "拍卖选择 steady")
+            with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+                result = engine.process("拍卖选择 steady")
+            self.assertIn("落槌成交", result)
+            self.assertEqual(engine.state.phase, "playing")
+            saved = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            saved_lot = next(item for item in saved["auction"]["lots"] if item["id"] == lot["id"])
+            self.assertEqual(saved_lot["status"], "won")
 
     def test_journey_chapters_track_progress_and_grant_rewards_once(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

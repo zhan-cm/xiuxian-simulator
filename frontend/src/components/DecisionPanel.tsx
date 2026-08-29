@@ -7,10 +7,11 @@ interface DecisionPanelProps {
   decision: Decision
   activeAction: string
   busy: boolean
+  readOnly?: boolean
   onChoose: (action: string) => void
 }
 
-export function DecisionPanel({ decision, activeAction, busy, onChoose }: DecisionPanelProps) {
+export function DecisionPanel({ decision, activeAction, busy, readOnly = false, onChoose }: DecisionPanelProps) {
   if (!decision?.choices?.length) return null
   return (
     <section className="decision-panel" aria-labelledby="decision-title">
@@ -21,7 +22,7 @@ export function DecisionPanel({ decision, activeAction, busy, onChoose }: Decisi
       </div>
       <div className="decision-grid">
         {decision.choices.map((choice) => {
-          const disabled = busy || Boolean(choice.disabled)
+          const disabled = busy || readOnly || Boolean(choice.disabled)
           const selected = busy && activeAction === choice.action
           const button = (
             <motion.button
@@ -35,17 +36,18 @@ export function DecisionPanel({ decision, activeAction, busy, onChoose }: Decisi
               whileTap={disabled ? undefined : { y: 1, scale: 0.99 }}
               onClick={() => onChoose(choice.action)}
             >
-              <span className="choice-seal">{choice.disabled ? <LockKeyhole size={17} /> : <Check size={17} />}</span>
+              <span className="choice-seal">{disabled ? <LockKeyhole size={17} /> : <Check size={17} />}</span>
               <span className="choice-copy">
                 <strong>{choice.label}</strong>
                 {choice.summary && <small>{choice.summary}</small>}
-                <p>{choice.disabled ? choice.disabled_reason : choice.description}</p>
+                <p>{readOnly ? '成果巡览仅供检验，不会修改当前存档' : choice.disabled ? choice.disabled_reason : choice.description}</p>
               </span>
               <i>{selected ? '推演中' : '选择'}</i>
             </motion.button>
           )
-          return choice.disabled && choice.disabled_reason
-            ? <GameTooltip key={choice.action} label={choice.disabled_reason}>{button}</GameTooltip>
+          const disabledReason = readOnly ? '成果巡览模式仅供检验界面' : choice.disabled_reason
+          return disabled && disabledReason
+            ? <GameTooltip key={choice.action} label={disabledReason}>{button}</GameTooltip>
             : button
         })}
       </div>

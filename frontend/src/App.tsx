@@ -6,6 +6,7 @@ import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
 import { ActionDock } from './components/ActionDock'
 import { ArchiveDialog } from './components/ArchiveDialog'
+import { AuctionHouse } from './components/AuctionHouse'
 import { CharacterSheet } from './components/CharacterSheet'
 import { CommissionBoard } from './components/CommissionBoard'
 import { DecisionPanel } from './components/DecisionPanel'
@@ -101,6 +102,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
 
           <section className="main-stage">
             <div className="stage-heading"><div><span>当前所在</span><h2>{player.location}</h2></div><span className="era-badge"><CloudSun size={15} />{state.world_era}</span></div>
+            <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
@@ -109,7 +111,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 <EventPanel presentation={presentation} onAction={onAction} />
               </motion.div>
             </AnimatePresence>
-            <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} onChoose={onAction} />
+            <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
             <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />
           </section>
@@ -122,7 +124,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.36 乾坤万象版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.37 天机竞价版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

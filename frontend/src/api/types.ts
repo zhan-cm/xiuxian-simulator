@@ -192,6 +192,18 @@ export interface InventorySnapshot {
   equipped: { weapon: string; armor: string }
 }
 
+export interface AuctionLot {
+  id: string; name: string; summary: string; reserve: number; increment: number
+  rewards: Record<string, number>; minimum_realm: number; minimum_realm_label: string
+  status: 'available' | 'won' | 'lost' | 'expired'; price: number; winner: string
+  eligible: boolean; affordable: boolean; begin_action: string
+}
+
+export interface AuctionSnapshot {
+  active: boolean; title: string; closes_in: number; competitor: string; competitor_style: string
+  pending: string; lots: AuctionLot[]; history: string[]
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -204,6 +216,7 @@ export interface Snapshot {
   commissions: CommissionSnapshot
   story: StorySnapshot
   inventory: InventorySnapshot
+  auction: AuctionSnapshot
   output?: string
 }
 
