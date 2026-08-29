@@ -127,6 +127,49 @@ export interface JourneySnapshot {
   chapters: JourneyChapter[]
 }
 
+export interface CommissionOffer {
+  id: string
+  template_id: string
+  title: string
+  issuer: string
+  kind: string
+  kind_label: string
+  summary: string
+  requirement: string
+  duration: number
+  reward: string
+  accepted: boolean
+  completed: boolean
+  eligible: boolean
+  disabled_reason: string
+  accept_action: string
+}
+
+export interface ActiveCommission extends CommissionOffer {
+  current: number
+  required: number
+  progress: number
+  ready: boolean
+  expired: boolean
+  turns_left: number
+  deadline_turn: number
+  deliver_action: string
+  abandon_action: string
+}
+
+export interface CommissionSnapshot {
+  title: string
+  cycle: number
+  rotation_label: string
+  active_limit: number
+  active_count: number
+  renown: number
+  completed_count: number
+  offers: CommissionOffer[]
+  active: ActiveCommission[]
+  history: string[]
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -136,6 +179,7 @@ export interface Snapshot {
   decision: Decision
   npc_profiles: Record<string, NpcProfile>
   journey: JourneySnapshot
+  commissions: CommissionSnapshot
   output?: string
 }
 

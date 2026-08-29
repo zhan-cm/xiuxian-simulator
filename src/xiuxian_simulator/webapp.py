@@ -14,6 +14,7 @@ from .engine import GameEngine
 from .presentation import present_action, welcome_presentation
 from .relationships import NPCS
 from .journey import JourneyEngine
+from .commissions import CommissionEngine
 
 
 CONTENT_TYPES = {
@@ -57,6 +58,7 @@ class WebApplication:
             "decision": self.decisions.for_state(self.engine.state),
             "npc_profiles": npc_profiles,
             "journey": JourneyEngine.snapshot(self.engine.state),
+            "commissions": CommissionEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:
@@ -111,7 +113,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.33"
+        server_version = "XiuxianSimulator/0.34"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

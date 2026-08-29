@@ -11,13 +11,14 @@ from .ecology import NpcEcologyEngine
 from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .journey import JourneyEngine
+from .commissions import CommissionEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 道途 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 道途 委托 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -87,6 +88,14 @@ class GameEngine:
             return JourneyEngine.panel_text(self.state)
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
+        if action in {"委托", "悬赏", "悬榜"}:
+            return CommissionEngine.panel_text(self.state)
+        if action.startswith("接取委托"):
+            return self._accept_commission(action)
+        if action.startswith("交付委托"):
+            return self._deliver_commission(action)
+        if action.startswith("放弃委托"):
+            return self._abandon_commission(action)
         if action == "修炼":
             return self._cultivate(retreat=False)
         if action == "闭关":
@@ -249,6 +258,7 @@ class GameEngine:
         gain, breakdown, months_used = ProgressionEngine.cultivate(self.state, months=months, retreat=retreat)
         if months_used == 0:
             return f"修为已圆满：{player.cultivation}/{player.cultivation_required}。请先尝试突破。"
+        CommissionEngine.mark(self.state, "cultivation_month", months_used)
         died_of_age = self._advance_time(months_used)
         mode = "闭关" if retreat else "吐纳"
         self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}")
@@ -401,6 +411,7 @@ class GameEngine:
             result = EconomyEngine.explore(self.state, area)
         except ValueError as exc:
             return str(exc)
+        CommissionEngine.mark(self.state, "exploration")
         died_of_age = self._advance_time()
         rewards = [f"灵石 +{result.spirit_stones}"] if result.spirit_stones else []
         rewards.extend(f"{name} +{count}" for name, count in result.rewards.items())
@@ -526,6 +537,7 @@ class GameEngine:
             stone_change, item_change = EconomyEngine.trade(self.state, operation, item, count)
         except ValueError as exc:
             return str(exc)
+        CommissionEngine.mark(self.state, "market_trade")
         self.state.remember(f"坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}")
         self._autosave()
         direction = "+" if item_change > 0 else ""
@@ -738,6 +750,8 @@ class GameEngine:
             result = EconomyEngine.sect_task(self.state, task)
         except ValueError as exc:
             return str(exc)
+        if result.success:
+            CommissionEngine.mark(self.state, "sect_task_success")
         died_of_age = self._advance_time()
         rewards = []
         if result.spirit_stones:
@@ -980,6 +994,8 @@ class GameEngine:
             result = CraftingEngine.craft(self.state, craft, name)
         except ValueError as exc:
             return str(exc)
+        if result.success:
+            CommissionEngine.mark(self.state, "craft_success")
         died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
@@ -1262,6 +1278,43 @@ class GameEngine:
         self._autosave()
         return f"【道途奖励】{reward}\n\n" + JourneyEngine.panel_text(self.state)
 
+    def _accept_commission(self, action: str) -> str:
+        instance_id = action.removeprefix("接取委托").strip()
+        if not instance_id:
+            return CommissionEngine.panel_text(self.state)
+        try:
+            result = CommissionEngine.accept(self.state, instance_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + CommissionEngine.panel_text(self.state)
+        self.state.remember(result)
+        self._autosave()
+        return f"【接取委托】{result}\n\n" + CommissionEngine.panel_text(self.state)
+
+    def _deliver_commission(self, action: str) -> str:
+        instance_id = action.removeprefix("交付委托").strip()
+        if not instance_id:
+            return CommissionEngine.panel_text(self.state)
+        try:
+            result = CommissionEngine.deliver(self.state, instance_id)
+        except ValueError as exc:
+            self._autosave()
+            return str(exc) + "\n\n" + CommissionEngine.panel_text(self.state)
+        self.state.remember(result)
+        self._autosave()
+        return f"【委托交付】{result}\n\n" + CommissionEngine.panel_text(self.state)
+
+    def _abandon_commission(self, action: str) -> str:
+        instance_id = action.removeprefix("放弃委托").strip()
+        if not instance_id:
+            return CommissionEngine.panel_text(self.state)
+        try:
+            result = CommissionEngine.abandon(self.state, instance_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + CommissionEngine.panel_text(self.state)
+        self.state.remember(result)
+        self._autosave()
+        return f"【委托撤下】{result}\n\n" + CommissionEngine.panel_text(self.state)
+
     def _save(self, action: str) -> str:
         parts = action.split(maxsplit=1)
         name = parts[1] if len(parts) == 2 else self.autosave_name
@@ -1291,6 +1344,7 @@ class GameEngine:
             died_of_age = self.state.advance_month() or died_of_age
             NpcEcologyEngine.tick(self.state)
             WorldTimelineEngine.tick(self.state)
+            CommissionEngine.expire_overdue(self.state)
         return died_of_age
 
     @staticmethod
@@ -1299,6 +1353,7 @@ class GameEngine:
             "【指令大全 · 问道长生】\n"
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
             "道途｜查看四章成长目标；领取道途奖励 [编号]\n"
+            "委托｜查看东洲悬榜；接取/交付/放弃委托 [编号]；悬榜每三个月轮换\n"
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"

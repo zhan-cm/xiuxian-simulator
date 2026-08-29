@@ -31,6 +31,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["state"]["phase"], "new")
             self.assertIn("presentation", snapshot.json())
             self.assertEqual(snapshot.json()["journey"]["active_chapter_id"], "chapter-1")
+            self.assertEqual(snapshot.json()["commissions"]["active_limit"], 2)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -65,7 +66,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 13)
+            self.assertGreaterEqual(len(pages), 14)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -75,6 +76,9 @@ class ModernWebTests(unittest.TestCase):
             journey = by_id["journey"]["snapshot"]["journey"]
             self.assertEqual(journey["active"]["completed_tasks"], 2)
             self.assertEqual(journey["points"], 0)
+            commissions = by_id["commissions"]["snapshot"]["commissions"]
+            self.assertEqual(commissions["active_count"], 1)
+            self.assertTrue(commissions["active"][0]["ready"])
 
 
 if __name__ == "__main__":

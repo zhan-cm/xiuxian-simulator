@@ -34,6 +34,7 @@ from xiuxian_simulator.rules import RuleBook
 from xiuxian_simulator.save_manager import SaveManager
 from xiuxian_simulator.state import GameState
 from xiuxian_simulator.journey import JourneyEngine
+from xiuxian_simulator.commissions import CommissionEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -111,6 +112,65 @@ class SimulatorSmokeTests(unittest.TestCase):
         chapter = JourneyEngine.snapshot(state)["chapters"][2]
         victory = next(task for task in chapter["tasks"] if task["id"] == "c3-victory")
         self.assertTrue(victory["complete"])
+
+    def test_commission_resource_delivery_is_persistent_and_idempotent(self) -> None:
+        state = GameState(phase="playing", turn=1)
+        board = CommissionEngine.snapshot(state)
+        herb = next(item for item in board["offers"] if item["template_id"] == "herb-delivery")
+        message = CommissionEngine.accept(state, herb["id"])
+        self.assertIn("已接取", message)
+        self.assertEqual(len(state.active_commissions), 1)
+        state.player.resources["灵药"] = 3
+        active = CommissionEngine.snapshot(state)["active"][0]
+        self.assertTrue(active["ready"])
+        stones_before = state.player.spirit_stones
+        reward = CommissionEngine.deliver(state, herb["id"])
+        self.assertIn("交付完成", reward)
+        self.assertEqual(state.player.resources.get("灵药", 0), 0)
+        self.assertGreater(state.player.spirit_stones, stones_before)
+        self.assertEqual(state.commission_renown, 1)
+        with self.assertRaisesRegex(ValueError, "没有追踪"):
+            CommissionEngine.deliver(state, herb["id"])
+
+    def test_commission_commands_share_engine_autosave_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            board = CommissionEngine.snapshot(engine.state)
+            herb = next(item for item in board["offers"] if item["template_id"] == "herb-delivery")
+            self.assertIn("接取委托", engine.process(str(herb["accept_action"])))
+            engine.state.player.resources["灵药"] = 3
+            self.assertIn("委托交付", engine.process(f"交付委托 {herb['id']}"))
+            persisted = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertIn(herb["id"], persisted.completed_commissions)
+            self.assertEqual(persisted.commission_renown, 1)
+
+    def test_commission_counter_progress_limits_and_expiry(self) -> None:
+        state = GameState(phase="playing", turn=1)
+        board = CommissionEngine.snapshot(state)
+        scout = next(item for item in board["offers"] if item["template_id"] == "mountain-survey")
+        hunt = next(item for item in board["offers"] if item["template_id"] == "monster-hunt")
+        CommissionEngine.accept(state, scout["id"])
+        CommissionEngine.accept(state, hunt["id"])
+        with self.assertRaisesRegex(ValueError, "最多追踪"):
+            extra = next(item for item in board["offers"] if item["template_id"] == "artisan-order")
+            CommissionEngine.accept(state, extra["id"])
+        CommissionEngine.mark(state, "exploration", 2)
+        ready = next(item for item in CommissionEngine.snapshot(state)["active"] if item["template_id"] == "mountain-survey")
+        self.assertTrue(ready["ready"])
+        CommissionEngine.deliver(state, scout["id"])
+        deadline = int(state.active_commissions[hunt["id"]]["deadline_turn"])
+        while state.turn <= deadline:
+            state.advance_month()
+        self.assertEqual(CommissionEngine.expire_overdue(state), ["除祟悬榜"])
+        self.assertNotIn(hunt["id"], state.active_commissions)
+
+    def test_old_save_defaults_include_commission_ledger(self) -> None:
+        state = GameState.from_dict({"phase": "playing", "player": {}})
+        self.assertEqual(state.active_commissions, {})
+        self.assertEqual(state.completed_commissions, [])
+        self.assertEqual(state.commission_renown, 0)
 
     def test_save_summaries_are_safe_and_newest_first(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
