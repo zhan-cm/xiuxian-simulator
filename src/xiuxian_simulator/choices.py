@@ -7,6 +7,7 @@ from typing import Any
 
 from .progression import ProgressionEngine
 from .state import GameState
+from .story import StoryEngine
 
 
 class DecisionCatalog:
@@ -120,6 +121,8 @@ class DecisionCatalog:
         }
 
     def for_state(self, state: GameState) -> dict[str, Any]:
+        if state.phase == "main_story_choice":
+            return StoryEngine.decision(state)
         if state.phase == "major_breakthrough_choice":
             return self._major_breakthrough(state)
         if state.phase == "breakthrough_talent_choice":

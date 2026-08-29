@@ -170,6 +170,17 @@ export interface CommissionSnapshot {
   history: string[]
 }
 
+export interface StoryChapter {
+  id: string; chapter: number; title: string; summary: string; location: string
+  completed: boolean; choice: string; unlocked: boolean; locked_hint: string
+}
+
+export interface StorySnapshot {
+  title: string; completed: number; total: number; available: boolean
+  begin_action: string; next_hint: string; pending: string
+  chapters: StoryChapter[]; history: string[]
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -180,6 +191,7 @@ export interface Snapshot {
   npc_profiles: Record<string, NpcProfile>
   journey: JourneySnapshot
   commissions: CommissionSnapshot
+  story: StorySnapshot
   output?: string
 }
 

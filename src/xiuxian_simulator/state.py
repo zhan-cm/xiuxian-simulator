@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.34.0"
+    version: str = "0.35.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -123,6 +123,10 @@ class GameState:
     completed_commissions: list[str] = field(default_factory=list)
     commission_history: list[str] = field(default_factory=list)
     commission_renown: int = 0
+    story_completed: list[str] = field(default_factory=list)
+    story_choices: dict[str, str] = field(default_factory=dict)
+    story_history: list[str] = field(default_factory=list)
+    pending_story_node: str = ""
 
     @property
     def time_label(self) -> str:

@@ -15,6 +15,7 @@ import { JourneyTracker } from './components/JourneyTracker'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
 import { ShowcaseNavigator } from './components/ShowcaseNavigator'
+import { StoryChronicle } from './components/StoryChronicle'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -110,6 +111,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
 
           <section className="main-stage">
             <div className="stage-heading"><div><span>当前所在</span><h2>{player.location}</h2></div><span className="era-badge"><CloudSun size={15} />{state.world_era}</span></div>
+            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
             <AnimatePresence mode="wait">
@@ -130,7 +132,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.34 东洲悬榜版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.35 灵潮因果版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

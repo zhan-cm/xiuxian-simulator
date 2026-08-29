@@ -12,13 +12,14 @@ from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, W
 from .narrator import Narrator
 from .journey import JourneyEngine
 from .commissions import CommissionEngine
+from .story import StoryEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 道途 委托 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -75,6 +76,8 @@ class GameEngine:
             return self._sect_war_choice(action)
         if self.state.phase == "world_intervention_choice":
             return self._world_intervention_choice(action)
+        if self.state.phase == "main_story_choice":
+            return self._story_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -86,6 +89,10 @@ class GameEngine:
             return "此世已终。输入“开始游戏”可创建新的轮回。"
         if action in {"道途", "章程", "历练"}:
             return JourneyEngine.panel_text(self.state)
+        if action in {"主线", "因果", "主线卷宗"}:
+            return StoryEngine.panel_text(self.state)
+        if action == "推进主线":
+            return self._begin_story()
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
         if action in {"委托", "悬赏", "悬榜"}:
@@ -1278,6 +1285,34 @@ class GameEngine:
         self._autosave()
         return f"【道途奖励】{reward}\n\n" + JourneyEngine.panel_text(self.state)
 
+    def _begin_story(self) -> str:
+        try:
+            node = StoryEngine.begin(self.state)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + StoryEngine.panel_text(self.state)
+        self.state.remember(f"主线第{node.chapter}章《{node.title}》浮现")
+        self._autosave()
+        choices = "\n".join(f"{choice.label}｜{choice.description}" for choice in node.choices)
+        return f"【主线第 {node.chapter} 章 · {node.title}】\n{node.summary}\n地点：{node.location}\n\n【因果抉择】\n{choices}"
+
+    def _story_choice(self, action: str) -> str:
+        if not action.startswith("主线选择"):
+            return "当前主线因果尚待决定，请从页面列出的三项抉择中选择。"
+        choice_id = action.removeprefix("主线选择").strip()
+        try:
+            node, choice, result = StoryEngine.resolve(self.state, choice_id)
+        except ValueError as exc:
+            return str(exc)
+        died = self._advance_time()
+        self.state.remember(f"主线《{node.title}》选择{choice.label}：{result}")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "主线因果落定后寿元耗尽"
+        self._autosave()
+        if died:
+            return f"{result}\n【坐化结局】你在因果落定后走完此生。"
+        return f"{self.state.time_label}\n【{node.title} · {choice.label}】\n{choice.description}\n结算：{result}\n\n{StoryEngine.panel_text(self.state)}"
+
     def _accept_commission(self, action: str) -> str:
         instance_id = action.removeprefix("接取委托").strip()
         if not instance_id:
@@ -1352,6 +1387,7 @@ class GameEngine:
         return (
             "【指令大全 · 问道长生】\n"
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
+            "主线｜查看灵潮因果；推进主线后从三项行动中亲自选择\n"
             "道途｜查看四章成长目标；领取道途奖励 [编号]\n"
             "委托｜查看东洲悬榜；接取/交付/放弃委托 [编号]；悬榜每三个月轮换\n"
             "退出：退出／quit／Ctrl+C\n"

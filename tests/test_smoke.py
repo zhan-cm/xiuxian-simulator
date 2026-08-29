@@ -35,6 +35,7 @@ from xiuxian_simulator.save_manager import SaveManager
 from xiuxian_simulator.state import GameState
 from xiuxian_simulator.journey import JourneyEngine
 from xiuxian_simulator.commissions import CommissionEngine
+from xiuxian_simulator.story import StoryEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -171,6 +172,42 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.active_commissions, {})
         self.assertEqual(state.completed_commissions, [])
         self.assertEqual(state.commission_renown, 0)
+
+    def test_story_branch_changes_world_and_persists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            self.assertIn("潮声初闻", engine.process("推进主线"))
+            self.assertEqual(engine.state.phase, "main_story_choice")
+            before = engine.state.faction_strengths["青云宗"]
+            result = engine.process("主线选择 seek-counsel")
+            self.assertIn("声望 +3", result)
+            self.assertEqual(engine.state.phase, "playing")
+            self.assertIn("tide-whisper", engine.state.story_completed)
+            self.assertGreater(engine.state.faction_strengths["青云宗"], before)
+            loaded = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertEqual(loaded.story_choices["tide-whisper"], "seek-counsel")
+
+    def test_story_unlocks_from_real_exploration_and_rejects_unpayable_choice(self) -> None:
+        state = GameState(phase="playing")
+        StoryEngine.begin(state)
+        StoryEngine.resolve(state, "observe")
+        self.assertFalse(StoryEngine.snapshot(state)["available"])
+        state.journey_counters["exploration"] = 2
+        node = StoryEngine.begin(state)
+        self.assertEqual(node.id, "vein-rift")
+        state.player.spirit_stones = 0
+        with self.assertRaisesRegex(ValueError, "120 灵石"):
+            StoryEngine.resolve(state, "seal")
+        self.assertEqual(state.phase, "main_story_choice")
+        self.assertNotIn("vein-rift", state.story_completed)
+
+    def test_old_save_defaults_include_story_ledger(self) -> None:
+        state = GameState.from_dict({"phase": "playing", "player": {}})
+        self.assertEqual(state.story_completed, [])
+        self.assertEqual(state.story_choices, {})
+        self.assertEqual(state.pending_story_node, "")
 
     def test_save_summaries_are_safe_and_newest_first(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
