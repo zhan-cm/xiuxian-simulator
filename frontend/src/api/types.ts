@@ -93,6 +93,40 @@ export interface NpcProfile {
   relation: string
 }
 
+export interface JourneyTask {
+  id: string
+  title: string
+  description: string
+  hint: string
+  complete: boolean
+  claimed: boolean
+  reward: string
+  claim_action: string
+}
+
+export interface JourneyChapter {
+  id: string
+  number: number
+  title: string
+  summary: string
+  unlocked: boolean
+  claimed: boolean
+  complete: boolean
+  completed_tasks: number
+  total_tasks: number
+  reward_ready: boolean
+  reward: string
+  claim_action: string
+  tasks: JourneyTask[]
+}
+
+export interface JourneySnapshot {
+  points: number
+  active_chapter_id: string
+  active: JourneyChapter
+  chapters: JourneyChapter[]
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -101,6 +135,7 @@ export interface Snapshot {
   presentation: Presentation
   decision: Decision
   npc_profiles: Record<string, NpcProfile>
+  journey: JourneySnapshot
   output?: string
 }
 

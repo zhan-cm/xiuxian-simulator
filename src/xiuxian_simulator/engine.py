@@ -10,13 +10,14 @@ from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
 from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
+from .journey import JourneyEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 道途 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -82,6 +83,10 @@ class GameEngine:
             return self._handle_trait_creation(action)
         if self.state.phase == "ended":
             return "此世已终。输入“开始游戏”可创建新的轮回。"
+        if action in {"道途", "章程", "历练"}:
+            return JourneyEngine.panel_text(self.state)
+        if action.startswith("领取道途奖励"):
+            return self._claim_journey(action)
         if action == "修炼":
             return self._cultivate(retreat=False)
         if action == "闭关":
@@ -827,6 +832,7 @@ class GameEngine:
             return f"{result.player_text}。\n{result.enemy_text}\n\n{self._status()}"
 
         if result.victory:
+            JourneyEngine.mark(self.state, "combat_victory")
             died_of_age = self._advance_combat_time()
             if died_of_age:
                 self.state.phase = "ended"
@@ -1244,6 +1250,18 @@ class GameEngine:
             f"主线：{self.state.main_quest}\n指令：{COMMANDS}"
         )
 
+    def _claim_journey(self, action: str) -> str:
+        claim_id = action.removeprefix("领取道途奖励").strip()
+        if not claim_id:
+            return JourneyEngine.panel_text(self.state)
+        try:
+            reward = JourneyEngine.claim(self.state, claim_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + JourneyEngine.panel_text(self.state)
+        self.state.remember(f"领取道途奖励：{reward}")
+        self._autosave()
+        return f"【道途奖励】{reward}\n\n" + JourneyEngine.panel_text(self.state)
+
     def _save(self, action: str) -> str:
         parts = action.split(maxsplit=1)
         name = parts[1] if len(parts) == 2 else self.autosave_name
@@ -1280,6 +1298,7 @@ class GameEngine:
         return (
             "【指令大全 · 问道长生】\n"
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
+            "道途｜查看四章成长目标；领取道途奖励 [编号]\n"
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"

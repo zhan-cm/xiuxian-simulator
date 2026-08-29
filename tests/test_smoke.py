@@ -33,6 +33,7 @@ from xiuxian_simulator.progression import ProgressionEngine
 from xiuxian_simulator.rules import RuleBook
 from xiuxian_simulator.save_manager import SaveManager
 from xiuxian_simulator.state import GameState
+from xiuxian_simulator.journey import JourneyEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -71,6 +72,45 @@ class SimulatorSmokeTests(unittest.TestCase):
             result = engine.process("读档 初入仙途")
             self.assertIn("读档完成", result)
             self.assertEqual(engine.state.player.cultivation, 0)
+
+    def test_journey_chapters_track_progress_and_grant_rewards_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            initial = JourneyEngine.snapshot(engine.state)
+            self.assertEqual(initial["active_chapter_id"], "chapter-1")
+            self.assertEqual(initial["active"]["completed_tasks"], 0)
+
+            engine.process("修炼")
+            engine.state.remember("探索青岳山麓：发现灵药")
+            engine.state.player.resources["灵药"] = 1
+            progressed = JourneyEngine.snapshot(engine.state)
+            self.assertEqual(progressed["active"]["completed_tasks"], 3)
+
+            stones_before = engine.state.player.spirit_stones
+            for claim_id in ("c1-cultivate", "c1-explore", "c1-resource"):
+                self.assertIn("道途奖励", engine.process(f"领取道途奖励 {claim_id}"))
+            self.assertTrue(JourneyEngine.snapshot(engine.state)["active"]["reward_ready"])
+            self.assertIn("初涉仙途章成", engine.process("领取道途奖励 chapter-1"))
+            self.assertGreater(engine.state.player.spirit_stones, stones_before)
+            self.assertEqual(engine.state.journey_points, 60)
+            self.assertEqual(JourneyEngine.snapshot(engine.state)["active_chapter_id"], "chapter-2")
+
+            points_before = engine.state.journey_points
+            repeated = engine.process("领取道途奖励 c1-cultivate")
+            self.assertIn("已经领取", repeated)
+            self.assertEqual(engine.state.journey_points, points_before)
+
+    def test_journey_combat_counter_and_old_save_defaults(self) -> None:
+        state = GameState.from_dict({"phase": "playing", "player": {}})
+        self.assertEqual(state.journey_points, 0)
+        self.assertEqual(state.journey_claims, [])
+        JourneyEngine.mark(state, "combat_victory")
+        self.assertEqual(state.journey_counters["combat_victory"], 1)
+        chapter = JourneyEngine.snapshot(state)["chapters"][2]
+        victory = next(task for task in chapter["tasks"] if task["id"] == "c3-victory")
+        self.assertTrue(victory["complete"])
 
     def test_save_summaries_are_safe_and_newest_first(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

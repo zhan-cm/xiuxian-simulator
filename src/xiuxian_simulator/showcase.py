@@ -66,8 +66,16 @@ def _cave(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("洞府")
 
 
+def _journey(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    app.perform_action("修炼")
+    engine.state.player.resources["灵药"] = 2
+    return app.perform_action("道途")
+
+
 SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("home", "洞府主界面", "查看新版三栏结构、根基状态和自由行动入口。", ["核心事件应最醒目", "属性数值应一眼可读", "未开放行动需要灰化"], _ready),
+    ("journey", "道途章程", "检查长期目标、完成状态和分章奖励。", ["主界面只显示紧凑进度", "展开后四章结构清楚", "巡览中的领取按钮必须禁用"], _journey),
     ("map", "东洲探索", "验证地点风险、境界准入和响应式地图卡。", ["危险度含义明确", "高境界地点自动锁定", "地点增加后自动换行"], _action("地图")),
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
