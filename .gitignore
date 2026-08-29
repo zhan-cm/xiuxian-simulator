@@ -1,7 +1,10 @@
 .venv/
+node_modules/
+.npm-cache/
 __pycache__/
 *.py[cod]
+*.egg-info/
 .env
 data/saves/*.json
+data/saves/*.bak
 !data/saves/.gitkeep
-

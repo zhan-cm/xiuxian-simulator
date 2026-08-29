@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -33,6 +34,8 @@ class SaveManager:
             with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as stream:
                 stream.write(payload)
                 stream.write("\n")
+            if destination.is_file():
+                shutil.copy2(destination, destination.with_suffix(".json.bak"))
             os.replace(temp_name, destination)
         except Exception:
             try:

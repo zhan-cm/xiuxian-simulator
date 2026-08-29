@@ -57,6 +57,21 @@ class WebApplication:
             "npc_profiles": npc_profiles,
         }
 
+    def perform_action(self, action: str) -> dict[str, Any]:
+        """Run one validated action and return the shared UI snapshot.
+
+        Both the stable HTML interface and the modern FastAPI interface use this
+        method so they cannot drift into separate rule or presentation paths.
+        """
+        normalized = action.strip()
+        with self._lock:
+            before = self.engine.state.to_dict()
+            output = self.engine.process(normalized)
+            after = self.engine.state.to_dict()
+            self._presentation = present_action(normalized, output, before, after)
+            snapshot = self.snapshot()
+        return {"output": output, **snapshot}
+
     @staticmethod
     def _json(payload: dict[str, Any], status: int = 200) -> tuple[int, str, bytes]:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -78,13 +93,7 @@ class WebApplication:
                 return self._json({"error": "请输入行动。"}, HTTPStatus.BAD_REQUEST)
             if len(action) > 2000:
                 return self._json({"error": "单次行动不能超过 2000 个字符。"}, HTTPStatus.BAD_REQUEST)
-            with self._lock:
-                before = self.engine.state.to_dict()
-                output = self.engine.process(action.strip())
-                after = self.engine.state.to_dict()
-                self._presentation = present_action(action.strip(), output, before, after)
-                snapshot = self.snapshot()
-            return self._json({"output": output, **snapshot})
+            return self._json(self.perform_action(action))
         if method != "GET":
             return self._json({"error": "不支持此请求。"}, HTTPStatus.METHOD_NOT_ALLOWED)
 
@@ -100,7 +109,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.30"
+        server_version = "XiuxianSimulator/0.31"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

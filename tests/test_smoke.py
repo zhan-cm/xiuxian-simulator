@@ -86,6 +86,18 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(summaries[0]["turn"], 12)
             self.assertNotIn("path", summaries[0])
 
+    def test_overwriting_save_keeps_previous_snapshot_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = SaveManager(Path(temp_dir))
+            previous = GameState(phase="playing", turn=20)
+            current = GameState(phase="playing", turn=21)
+            manager.save("autosave", previous)
+            manager.save("autosave", current)
+            backup = Path(temp_dir) / "autosave.json.bak"
+            self.assertTrue(backup.is_file())
+            self.assertEqual(json.loads(backup.read_text(encoding="utf-8"))["turn"], 20)
+            self.assertEqual(manager.load("autosave").turn, 21)
+
     def test_two_panel_custom_character_creation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))
@@ -1667,7 +1679,7 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn('.content-indicator', styles)
 
     def test_windows_launchers_use_cmd_compatible_line_endings(self) -> None:
-        for name in ("启动网页版.bat", "检查环境.bat"):
+        for name in ("启动网页版.bat", "启动新版界面.bat", "检查环境.bat"):
             payload = (ROOT / name).read_bytes()
             self.assertIn(b"\r\n", payload)
             self.assertNotIn(b"\n", payload.replace(b"\r\n", b""))

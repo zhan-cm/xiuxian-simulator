@@ -4,11 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xiuxian-simulator"
-version = "0.30.0"
-description = "《问道长生》规则驱动的本地修仙文字模拟器 V0.30 交互状态与信息提示打磨版"
+version = "0.31.0"
+description = "《问道长生》规则驱动的本地修仙文字模拟器 V0.31 现代界面技术底座版"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi>=0.116,<1",
+    "uvicorn>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = ["httpx2>=2.12,<3"]
 
 [project.scripts]
 xiuxian = "xiuxian_simulator.cli:main"
