@@ -181,6 +181,17 @@ export interface StorySnapshot {
   chapters: StoryChapter[]; history: string[]
 }
 
+export interface InventoryItem {
+  name: string; count: number; category: string; rarity: string
+  description: string; usage: string; equipped: boolean; slot: string
+  action: string; action_label: string; actionable: boolean; disabled_reason: string
+}
+
+export interface InventorySnapshot {
+  items: InventoryItem[]; categories: string[]; total_types: number; total_count: number
+  equipped: { weapon: string; armor: string }
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -192,6 +203,7 @@ export interface Snapshot {
   journey: JourneySnapshot
   commissions: CommissionSnapshot
   story: StorySnapshot
+  inventory: InventorySnapshot
   output?: string
 }
 

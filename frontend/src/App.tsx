@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { Backpack, CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, Gem, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -12,6 +12,7 @@ import { DecisionPanel } from './components/DecisionPanel'
 import { EventPanel } from './components/EventPanel'
 import { GameTooltip, TooltipProvider } from './components/GameTooltip'
 import { JourneyTracker } from './components/JourneyTracker'
+import { InventoryDialog } from './components/InventoryDialog'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
 import { ShowcaseNavigator } from './components/ShowcaseNavigator'
@@ -26,17 +27,6 @@ function LoadingScreen() {
 
 function ErrorScreen({ message }: { message: string }) {
   return <main className="loading-screen error"><CircleAlert /><h1>暂时未能连通本地世界</h1><p>{message}</p><button type="button" onClick={() => window.location.reload()}>重新尝试</button></main>
-}
-
-function Inventory({ snapshot }: { snapshot: Snapshot }) {
-  const resources = Object.entries(snapshot.state.player.resources || {})
-  const inventory = snapshot.state.player.inventory || []
-  const items: Array<[string, number]> = [...inventory.map((name) => [name, 1] as [string, number]), ...resources]
-  return (
-    <Panel title="乾坤袋" icon={<Backpack size={18} />} meta={items.length ? `${items.length} 类` : '空'}>
-      {items.length ? <div className="inventory-grid">{items.slice(0, 8).map(([name, count]) => <button type="button" key={name}><span>{name.slice(0, 1)}</span><strong>{name}</strong><small>×{count}</small></button>)}</div> : <div className="empty-inventory"><div><Gem size={20} /><span /><span /><span /></div><p>获取丹药、法器或材料后，将陈列于此。</p><small>当前容量 0 / 20</small></div>}
-    </Panel>
-  )
 }
 
 function Relations({ snapshot }: { snapshot: Snapshot }) {
@@ -106,7 +96,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
               </div>
               <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span></div>
             </Panel>
-            <Inventory snapshot={snapshot} />
+            <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
           </aside>
 
           <section className="main-stage">
@@ -132,7 +122,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.35 灵潮因果版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.36 乾坤万象版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

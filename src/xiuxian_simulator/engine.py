@@ -13,6 +13,7 @@ from .narrator import Narrator
 from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
+from .items import InventoryEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
@@ -114,6 +115,8 @@ class GameEngine:
             return self._breakthrough(action)
         if action in {"背包", "资源"}:
             return self._resources()
+        if action.startswith("使用"):
+            return self._use_item(action)
         if action == "地图":
             return self._map()
         if action.startswith("探索"):
@@ -157,6 +160,8 @@ class GameEngine:
             return self._equip_spell(action)
         if action.startswith("装备法宝"):
             return self._equip_artifact(action)
+        if action.startswith("卸下法宝"):
+            return self._unequip_artifact(action)
         if action == "技艺":
             return self._crafts()
         if action.startswith("炼丹"):
@@ -402,7 +407,23 @@ class GameEngine:
     def _resources(self) -> str:
         resources = self.state.player.resources
         lines = "\n".join(f"{name} × {count}" for name, count in sorted(resources.items())) or "暂无突破资源"
-        return f"【乾坤袋 · 突破资源】\n{lines}\n普通物品：{'、'.join(self.state.player.inventory) if self.state.player.inventory else '无'}"
+        return (
+            f"【乾坤袋 · 万象藏品】\n{lines}\n"
+            f"普通物品：{'、'.join(self.state.player.inventory) if self.state.player.inventory else '无'}\n"
+            "可在乾坤袋详情中查看用途并直接使用、装备或卸下。"
+        )
+
+    def _use_item(self, action: str) -> str:
+        name = action.removeprefix("使用").strip()
+        if not name:
+            return "请选择要使用的物品。"
+        try:
+            result = InventoryEngine.use(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"使用{name}：{result}")
+        self._autosave()
+        return f"【使用 · {name}】\n{result}\n\n{self._status()}"
 
     @staticmethod
     def _map() -> str:
@@ -982,6 +1003,18 @@ class GameEngine:
         self._autosave()
         return f"已装备{name}。\n\n{self._arts()}"
 
+    def _unequip_artifact(self, action: str) -> str:
+        name = action.removeprefix("卸下法宝").strip()
+        if not name:
+            return "请选择要卸下的法宝。"
+        try:
+            slot = InventoryEngine.unequip(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"卸下{slot}：{name}")
+        self._autosave()
+        return f"已卸下{name}，{slot}槽位现已空出。\n\n{self._arts()}"
+
     def _crafts(self) -> str:
         skill_lines = [
             f"{skill}：{CraftingEngine.skill_rank(self.state, skill)}（成功 {self.state.player.craft_successes.get(skill, 0)} 次）"
@@ -1397,6 +1430,7 @@ class GameEngine:
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
             "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
+            "背包｜使用 [丹药/灵食]｜装备法宝/卸下法宝 [名称]\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
             "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
             "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"

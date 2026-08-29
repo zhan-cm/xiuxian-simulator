@@ -33,6 +33,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["journey"]["active_chapter_id"], "chapter-1")
             self.assertEqual(snapshot.json()["commissions"]["active_limit"], 2)
             self.assertEqual(snapshot.json()["story"]["total"], 3)
+            self.assertEqual(snapshot.json()["inventory"]["total_types"], 0)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -67,7 +68,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 15)
+            self.assertGreaterEqual(len(pages), 16)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -81,6 +82,10 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(commissions["active_count"], 1)
             self.assertTrue(commissions["active"][0]["ready"])
             self.assertEqual(by_id["story"]["snapshot"]["state"]["phase"], "main_story_choice")
+            inventory = by_id["inventory"]["snapshot"]["inventory"]
+            self.assertGreaterEqual(inventory["total_types"], 7)
+            self.assertEqual(inventory["equipped"]["weapon"], "青锋剑")
+            self.assertTrue(next(item for item in inventory["items"] if item["name"] == "疗伤丹")["actionable"])
 
 
 if __name__ == "__main__":

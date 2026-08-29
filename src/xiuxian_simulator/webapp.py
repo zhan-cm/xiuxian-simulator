@@ -16,6 +16,7 @@ from .relationships import NPCS
 from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
+from .items import InventoryEngine
 
 
 CONTENT_TYPES = {
@@ -61,6 +62,7 @@ class WebApplication:
             "journey": JourneyEngine.snapshot(self.engine.state),
             "commissions": CommissionEngine.snapshot(self.engine.state),
             "story": StoryEngine.snapshot(self.engine.state),
+            "inventory": InventoryEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:
@@ -115,7 +117,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.35"
+        server_version = "XiuxianSimulator/0.36"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

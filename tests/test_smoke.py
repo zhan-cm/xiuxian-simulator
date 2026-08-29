@@ -36,6 +36,7 @@ from xiuxian_simulator.state import GameState
 from xiuxian_simulator.journey import JourneyEngine
 from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
+from xiuxian_simulator.items import InventoryEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -74,6 +75,46 @@ class SimulatorSmokeTests(unittest.TestCase):
             result = engine.process("读档 初入仙途")
             self.assertIn("读档完成", result)
             self.assertEqual(engine.state.player.cultivation, 0)
+
+    def test_inventory_consumables_apply_real_effects_and_autosave(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            player = engine.state.player
+            player.health = 40
+            player.resources.update({"疗伤丹": 1, "聚气丹": 1})
+
+            healed = engine.process("使用 疗伤丹")
+            self.assertIn("气血恢复 35 点", healed)
+            self.assertEqual(player.health, 75)
+            self.assertNotIn("疗伤丹", player.resources)
+
+            cultivated = engine.process("使用 聚气丹")
+            self.assertIn("修为增长 20 点", cultivated)
+            self.assertEqual(player.cultivation, 20)
+            saved = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["player"]["cultivation"], 20)
+
+    def test_inventory_rejects_wasted_consumable_without_consuming_it(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources["疗伤丹"] = 1
+        with self.assertRaisesRegex(ValueError, "气血充盈"):
+            InventoryEngine.use(state, "疗伤丹")
+        self.assertEqual(state.player.resources["疗伤丹"], 1)
+
+    def test_inventory_snapshot_tracks_equipment_and_unequip(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources.update({"青锋剑": 1, "灵药": 3, "五行灵珠": 1})
+        ArtsEngine.equip_artifact(state.player, "青锋剑")
+        snapshot = InventoryEngine.snapshot(state)
+        sword = next(item for item in snapshot["items"] if item["name"] == "青锋剑")
+        self.assertTrue(sword["equipped"])
+        self.assertEqual(sword["action"], "卸下法宝 青锋剑")
+        self.assertIn("法宝", snapshot["categories"])
+        self.assertEqual(snapshot["equipped"]["weapon"], "青锋剑")
+        self.assertEqual(InventoryEngine.unequip(state, "青锋剑"), "武器")
+        self.assertEqual(state.player.equipped_weapon, "")
 
     def test_journey_chapters_track_progress_and_grant_rewards_once(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
