@@ -33,7 +33,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertIn("presentation", snapshot.json())
             self.assertEqual(snapshot.json()["journey"]["active_chapter_id"], "chapter-1")
             self.assertEqual(snapshot.json()["commissions"]["active_limit"], 2)
-            self.assertEqual(snapshot.json()["story"]["total"], 3)
+            self.assertEqual(snapshot.json()["story"]["total"], 6)
+            self.assertEqual(len(snapshot.json()["story"]["alignments"]), 3)
             self.assertEqual(snapshot.json()["inventory"]["total_types"], 0)
             self.assertFalse(snapshot.json()["auction"]["active"])
             self.assertEqual(snapshot.json()["travel"]["current"], "东洲")
@@ -81,7 +82,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 19)
+            self.assertGreaterEqual(len(pages), 22)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -95,6 +96,14 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(commissions["active_count"], 1)
             self.assertTrue(commissions["active"][0]["ready"])
             self.assertEqual(by_id["story"]["snapshot"]["state"]["phase"], "main_story_choice")
+            finale = by_id["story-finale"]["snapshot"]
+            self.assertEqual(finale["state"]["phase"], "main_story_choice")
+            self.assertEqual(finale["story"]["total"], 6)
+            self.assertEqual(len(finale["decision"]["choices"]), 3)
+            self.assertIn("守世共鸣 5/5", finale["decision"]["choices"][0]["summary"])
+            ending = by_id["story-ending"]["snapshot"]
+            self.assertEqual(ending["story"]["ending"]["title"], "人间长明")
+            self.assertEqual(ending["state"]["world_era"], "灵潮新世")
             inventory = by_id["inventory"]["snapshot"]["inventory"]
             self.assertGreaterEqual(inventory["total_types"], 7)
             self.assertEqual(inventory["equipped"]["weapon"], "青锋剑")

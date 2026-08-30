@@ -13,6 +13,7 @@ from .auctions import AuctionEngine
 from .cave import CaveEngine
 from .npc_lifecycle import NpcLifecycleEngine
 from .npc_network import NpcNetworkEngine
+from .story import StoryEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -112,6 +113,38 @@ def _story(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("推进主线")
 
 
+def _prepare_story_finale(engine: GameEngine, app: WebApplication) -> None:
+    _ready(engine, app)
+    engine.state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide", "nine-realms-council"]
+    engine.state.story_choices = {
+        "tide-whisper": "observe",
+        "vein-rift": "seal",
+        "demon-seal": "guard",
+        "abyss-tide": "shelter",
+        "nine-realms-council": "great-ward",
+    }
+    engine.state.story_history = [
+        "第5章《九州会盟》｜共筑天幕｜灵石 -200，功德 +6，天下局势 -8",
+        "第4章《魔潮越界》｜守城安民｜气血 -10，功德 +4，南疆民生 +7",
+    ]
+    engine.state.player.realm_index = 2
+    engine.state.player.realm = "结晶·初期"
+    engine.state.player.location = "中州·登仙台"
+    engine.state.visited_regions = ["东洲", "南疆", "中州"]
+
+
+def _story_finale(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _prepare_story_finale(engine, app)
+    return app.perform_action("推进主线")
+
+
+def _story_ending(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _prepare_story_finale(engine, app)
+    StoryEngine.begin(engine.state)
+    StoryEngine.resolve(engine.state, "guard-world")
+    return app.perform_action("主线")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -164,6 +197,8 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("journey", "道途章程", "检查长期目标、完成状态和分章奖励。", ["主界面只显示紧凑进度", "展开后四章结构清楚", "巡览中的领取按钮必须禁用"], _journey),
     ("commissions", "东洲悬榜", "检查委托接取、真实进度、期限与交付报酬。", ["在途与可接委托清楚分层", "完成进度来自规则引擎", "巡览中所有操作必须禁用"], _commissions),
     ("story", "灵潮因果", "检查主线篇章、解锁条件与三项重大抉择。", ["篇章脉络应清楚", "抉择按钮接入真实状态机", "巡览中推进按钮必须禁用"], _story),
+    ("story-finale", "潮汐终局", "检查前五章因果倾向与终章三条结局路线。", ["守世、问天、同道共鸣可比较", "结局完成度由前置选择推导", "巡览中的终局按钮必须禁用"], _story_finale),
+    ("story-ending", "本世结局", "检查终章落定后的时代、命格与结局回顾。", ["结局卡突出但不遮挡六章卷宗", "时代与永久命格来自真实结算", "旧因果历史仍可回看"], _story_ending),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

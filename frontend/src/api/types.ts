@@ -174,14 +174,20 @@ export interface CommissionSnapshot {
 }
 
 export interface StoryChapter {
-  id: string; chapter: number; title: string; summary: string; location: string
+  id: string; chapter: number; act: number; title: string; summary: string; location: string
   completed: boolean; choice: string; unlocked: boolean; locked_hint: string
+}
+
+export interface StoryAlignment { id: string; label: string; value: number; dominant: boolean }
+export interface StoryEnding {
+  id?: string; title?: string; route?: string; route_label?: string; resonance?: number
+  quality?: string; perfected?: boolean; epilogue?: string; legacy?: string; year?: number; turn?: number
 }
 
 export interface StorySnapshot {
   title: string; completed: number; total: number; available: boolean
   begin_action: string; next_hint: string; pending: string
-  chapters: StoryChapter[]; history: string[]
+  chapters: StoryChapter[]; alignments: StoryAlignment[]; ending: StoryEnding; history: string[]
 }
 
 export interface InventoryItem {

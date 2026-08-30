@@ -129,7 +129,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.42 众生缘网版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.43 灵潮终章版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

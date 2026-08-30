@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.42.0"
+    version: str = "0.43.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -143,6 +143,7 @@ class GameState:
     story_choices: dict[str, str] = field(default_factory=dict)
     story_history: list[str] = field(default_factory=list)
     pending_story_node: str = ""
+    story_ending: dict[str, Any] = field(default_factory=dict)
     auction: dict[str, Any] = field(default_factory=dict)
     auction_history: list[str] = field(default_factory=list)
     pending_travel: dict[str, Any] = field(default_factory=dict)

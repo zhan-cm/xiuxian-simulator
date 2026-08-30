@@ -327,6 +327,10 @@ class SimulatorSmokeTests(unittest.TestCase):
         node = StoryEngine.begin(state)
         self.assertEqual(node.id, "vein-rift")
         state.player.spirit_stones = 0
+        decision = StoryEngine.decision(state)
+        seal = next(choice for choice in decision["choices"] if choice["action"] == "主线选择 seal")
+        self.assertTrue(seal["disabled"])
+        self.assertIn("120 灵石", seal["disabled_reason"])
         with self.assertRaisesRegex(ValueError, "120 灵石"):
             StoryEngine.resolve(state, "seal")
         self.assertEqual(state.phase, "main_story_choice")
@@ -337,6 +341,110 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.story_completed, [])
         self.assertEqual(state.story_choices, {})
         self.assertEqual(state.pending_story_node, "")
+        self.assertEqual(state.story_ending, {})
+
+    def test_story_second_act_unlocks_from_travel_and_rebuilds_alignment(self) -> None:
+        state = GameState(phase="playing")
+        state.story_completed = ["tide-whisper", "vein-rift", "demon-seal"]
+        state.story_choices = {"tide-whisper": "observe", "vein-rift": "seal", "demon-seal": "guard"}
+        state.visited_regions = ["东洲", "南疆"]
+        snapshot = StoryEngine.snapshot(state)
+        self.assertEqual(snapshot["total"], 6)
+        self.assertEqual(snapshot["title"], "魔潮越界")
+        guard = next(item for item in snapshot["alignments"] if item["id"] == "guard")
+        self.assertEqual(guard["value"], 3)
+        node = StoryEngine.begin(state)
+        self.assertEqual(node.id, "abyss-tide")
+        before_merit = state.player.merit
+        StoryEngine.resolve(state, "shelter")
+        self.assertEqual(state.player.merit, before_merit + 4)
+        self.assertEqual(StoryEngine.alignments(state)["guard"], 4)
+
+    def test_story_council_requires_zhongzhou_and_disables_unfunded_ward(self) -> None:
+        state = GameState(phase="playing")
+        state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide"]
+        state.player.location = "南疆·赤炎"
+        self.assertFalse(StoryEngine.snapshot(state)["available"])
+        self.assertIn("抵达中州", StoryEngine.next_hint(state))
+        state.player.location = "中州·天阙"
+        node = StoryEngine.begin(state)
+        self.assertEqual(node.id, "nine-realms-council")
+        state.player.spirit_stones = 0
+        decision = StoryEngine.decision(state)
+        ward = next(choice for choice in decision["choices"] if choice["action"] == "主线选择 great-ward")
+        self.assertTrue(ward["disabled"])
+        self.assertFalse(next(choice for choice in decision["choices"] if choice["action"] == "主线选择 bind-oath")["disabled"])
+
+    def test_story_finale_uses_previous_choices_and_writes_ending(self) -> None:
+        state = GameState(phase="playing", world_tension=40)
+        state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide", "nine-realms-council"]
+        state.story_choices = {
+            "tide-whisper": "observe",
+            "vein-rift": "seal",
+            "demon-seal": "guard",
+            "abyss-tide": "shelter",
+            "nine-realms-council": "great-ward",
+        }
+        state.player.realm_index = 2
+        state.player.realm = "结晶·初期"
+        node = StoryEngine.begin(state)
+        self.assertEqual(node.id, "tide-conclusion")
+        decision = StoryEngine.decision(state)
+        guard = next(choice for choice in decision["choices"] if choice["action"] == "主线选择 guard-world")
+        self.assertIn("守世共鸣 5/5", guard["summary"])
+        before_health_max = state.player.health_max
+        StoryEngine.resolve(state, "guard-world")
+        self.assertEqual(state.story_ending["title"], "人间长明")
+        self.assertTrue(state.story_ending["perfected"])
+        self.assertEqual(state.story_ending["resonance"], 5)
+        self.assertEqual(state.world_era, "灵潮新世")
+        self.assertEqual(state.world_tension, 10)
+        self.assertEqual(state.player.health_max, before_health_max + 10)
+        self.assertIn("九州守望", state.player.destiny_traits)
+        self.assertEqual(StoryEngine.snapshot(state)["completed"], 6)
+        restored = GameState.from_dict(state.to_dict())
+        self.assertEqual(restored.story_ending, state.story_ending)
+
+    def test_story_finale_allows_a_different_route_with_weaker_resonance(self) -> None:
+        state = GameState(phase="playing")
+        state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide", "nine-realms-council"]
+        state.story_choices = {
+            "tide-whisper": "observe",
+            "vein-rift": "seal",
+            "demon-seal": "guard",
+            "abyss-tide": "shelter",
+            "nine-realms-council": "great-ward",
+        }
+        state.player.realm_index = 2
+        StoryEngine.begin(state)
+        StoryEngine.resolve(state, "open-gate")
+        self.assertEqual(state.story_ending["title"], "天门初开")
+        self.assertFalse(state.story_ending["perfected"])
+        self.assertEqual(state.story_ending["resonance"], 0)
+        self.assertEqual(state.player.spirit_sense, 11)
+
+    def test_story_finale_command_advances_time_and_autosaves_ending(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide", "nine-realms-council"]
+            engine.state.story_choices = {
+                "tide-whisper": "seek-counsel",
+                "vein-rift": "report",
+                "demon-seal": "summon",
+                "abyss-tide": "rally",
+                "nine-realms-council": "bind-oath",
+            }
+            engine.state.player.realm_index = 2
+            self.assertIn("潮汐终局", engine.process("推进主线"))
+            before_turn = engine.state.turn
+            result = engine.process("主线选择 unite-realms")
+            self.assertIn("九州同盟", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            persisted = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertEqual(persisted.story_ending["title"], "九州同盟")
+            self.assertEqual(persisted.story_ending["resonance"], 5)
 
     def test_save_summaries_are_safe_and_newest_first(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
