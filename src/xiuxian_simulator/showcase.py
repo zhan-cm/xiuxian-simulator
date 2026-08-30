@@ -110,6 +110,21 @@ def _auction(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action(f"竞拍 {lot['id']}")
 
 
+def _travel(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 1
+    engine.state.player.realm = "筑基·初期"
+    engine.state.player.spirit_stones = 1200
+    return app.perform_action("前往 中州")
+
+
+def _map(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 1
+    engine.state.player.realm = "筑基·初期"
+    return app.perform_action("地图")
+
+
 SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("home", "洞府主界面", "查看新版三栏结构、根基状态和自由行动入口。", ["核心事件应最醒目", "属性数值应一眼可读", "未开放行动需要灰化"], _ready),
     ("journey", "道途章程", "检查长期目标、完成状态和分章奖励。", ["主界面只显示紧凑进度", "展开后四章结构清楚", "巡览中的领取按钮必须禁用"], _journey),
@@ -117,7 +132,8 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("story", "灵潮因果", "检查主线篇章、解锁条件与三项重大抉择。", ["篇章脉络应清楚", "抉择按钮接入真实状态机", "巡览中推进按钮必须禁用"], _story),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
-    ("map", "东洲探索", "验证地点风险、境界准入和响应式地图卡。", ["危险度含义明确", "高境界地点自动锁定", "地点增加后自动换行"], _action("地图")),
+    ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),
+    ("travel", "跨域行旅", "检查远行方式、真实时间成本与风险说明。", ["商队与御风的成本清楚", "资源不足时自动锁定", "取消行程不会推进时间"], _travel),
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
     ("relations", "人物牵绊", "验证人物组件、好感和关系路径。", ["人物信息拆成小组件", "关系层级清楚", "长身份不挤成一行"], _relations),

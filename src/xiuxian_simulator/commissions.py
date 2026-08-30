@@ -67,6 +67,10 @@ TEMPLATES: tuple[CommissionTemplate, ...] = (
         "cultivation-notes", "吐纳札记", "散修互助会", "counter", "累计修炼两个月，整理行功心得。", "cultivation_month", 2, 6,
         CommissionReward(100, merit=2, resources={"聚气丹": 1}),
     ),
+    CommissionTemplate(
+        "caravan-escort", "千里护运", "四海商会", "counter", "完成一次跨域行旅，把商路见闻带回悬榜。", "cross_region_travel", 1, 8,
+        CommissionReward(260, reputation=4, resources={"神行符": 1}), min_realm=1,
+    ),
 )
 
 TEMPLATE_BY_ID = {template.id: template for template in TEMPLATES}

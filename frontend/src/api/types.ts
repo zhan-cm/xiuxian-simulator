@@ -204,6 +204,17 @@ export interface AuctionSnapshot {
   pending: string; lots: AuctionLot[]; history: string[]
 }
 
+export interface TravelRegion {
+  key: string; name: string; minimum_realm: number; minimum_realm_label: string
+  danger: number; description: string; specialties: string[]; demands: string[]
+  months: number; current: boolean; visited: boolean; accessible: boolean; action: string
+}
+
+export interface TravelSnapshot {
+  current: string; current_name: string; visited: string[]; pending: Record<string, unknown>
+  trade_profit: number; regions: TravelRegion[]; history: string[]
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -217,6 +228,7 @@ export interface Snapshot {
   story: StorySnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
+  travel: TravelSnapshot
   output?: string
 }
 

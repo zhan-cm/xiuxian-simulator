@@ -38,6 +38,7 @@ from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
+from xiuxian_simulator.travel import TravelEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -568,14 +569,85 @@ class SimulatorSmokeTests(unittest.TestCase):
             engine.process("开始游戏")
             engine.process("确认默认创角")
             engine.state.player.spirit_stones = 1000
+            buy_price = EconomyEngine.regional_price(engine.state, "筑基丹", "买")
+            sell_price = EconomyEngine.regional_price(engine.state, "筑基丹", "卖")
             bought = engine.process("买 筑基丹")
             self.assertIn("坊市成交", bought)
-            self.assertEqual(engine.state.player.spirit_stones, 500)
+            self.assertEqual(engine.state.player.spirit_stones, 1000 - buy_price)
             self.assertEqual(engine.state.player.resources["筑基丹"], 1)
             sold = engine.process("卖 筑基丹")
-            self.assertIn("+300", sold)
+            self.assertIn(f"+{sell_price}", sold)
             self.assertNotIn("筑基丹", engine.state.player.resources)
-            self.assertEqual(engine.state.player.spirit_stones, 800)
+            self.assertEqual(engine.state.player.spirit_stones, 1000 - buy_price + sell_price)
+            self.assertEqual(engine.state.trade_profit, sell_price - buy_price)
+
+    def test_cross_region_travel_uses_a_real_choice_and_advances_world_time(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.realm_index = 1
+            engine.state.player.realm = "筑基·初期"
+            engine.state.player.spirit_stones = 1000
+            before_turn = engine.state.turn
+            planned = engine.process("前往 中州")
+            self.assertIn("行旅抉择", planned)
+            self.assertEqual(engine.state.phase, "travel_choice")
+            decision = TravelEngine.decision(engine.state)
+            self.assertEqual(len(decision["choices"]), 3)
+            arrived = engine.process("行旅选择 caravan")
+            self.assertIn("抵达中州·天阙", arrived)
+            self.assertEqual(engine.state.phase, "playing")
+            self.assertEqual(engine.state.player.location, "中州·天阙")
+            self.assertEqual(engine.state.turn, before_turn + 3)
+            self.assertEqual(engine.state.player.spirit_stones, 910)
+            self.assertIn("中州", engine.state.visited_regions)
+            self.assertEqual(len(engine.state.travel_history), 1)
+            self.assertEqual(engine.state.trade_profit, -90)
+            self.assertEqual(engine.state.journey_counters["cross_region_travel"], 1)
+
+    def test_travel_realm_gate_and_cancel_do_not_mutate_time_or_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before = engine.state.to_dict()
+            blocked = engine.process("前往 北原")
+            self.assertIn("至少需要元婴境", blocked)
+            self.assertEqual(engine.state.to_dict(), before)
+            engine.state.player.realm_index = 1
+            engine.state.player.realm = "筑基·初期"
+            engine.process("前往 中州")
+            turn = engine.state.turn
+            stones = engine.state.player.spirit_stones
+            cancelled = engine.process("行旅选择 cancel")
+            self.assertIn("没有消耗时间或资源", cancelled)
+            self.assertEqual(engine.state.turn, turn)
+            self.assertEqual(engine.state.player.spirit_stones, stones)
+            self.assertFalse(engine.state.pending_travel)
+
+    def test_regional_trade_route_tracks_cost_basis_and_real_profit(self) -> None:
+        state = GameState(phase="playing")
+        state.player.realm_index = 1
+        state.player.realm = "筑基·初期"
+        state.player.spirit_stones = 2000
+        east_buy = EconomyEngine.regional_price(state, "灵药", "买")
+        EconomyEngine.trade(state, "买", "灵药", 50)
+        TravelEngine.prepare(state, "南疆")
+        result = TravelEngine.resolve(state, "caravan")
+        self.assertIsNotNone(result)
+        self.assertEqual(TravelEngine.current_region(state), "南疆")
+        south_sell = EconomyEngine.regional_price(state, "灵药", "卖")
+        EconomyEngine.trade(state, "卖", "灵药", 50)
+        self.assertGreater(south_sell, east_buy)
+        self.assertEqual(state.trade_profit, (south_sell - east_buy) * 50 - int(result.stone_cost))
+        self.assertNotIn("灵药", state.trade_cargo)
+
+    def test_old_save_defaults_to_east_without_travel_fields(self) -> None:
+        state = GameState.from_dict({"version": "0.37.0", "phase": "playing", "player": {}})
+        self.assertEqual(TravelEngine.current_region(state), "东洲")
+        self.assertEqual(state.visited_regions, ["东洲"])
+        self.assertEqual(state.trade_profit, 0)
 
     def test_market_rejects_unaffordable_purchase_without_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1752,6 +1824,23 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertTrue(block["items"][0]["affordable"])
         self.assertFalse(block["items"][1]["affordable"])
         self.assertEqual(block["items"][0]["buy_action"], "买 聚气丹")
+
+    def test_world_atlas_becomes_structured_region_cards(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = (
+            "【九州舆图】\n"
+            "东洲·青岳｜炼气可达｜行程 0 月｜危险度 12｜特产 灵药、聚气丹｜求购 妖兽材料、雪晶｜散修汇聚之地。\n"
+            "南疆·赤炎｜筑基可达｜行程 3 月｜危险度 34｜特产 妖兽材料、烈酒｜求购 灵药、清茶｜火脉与妖兽并存。\n"
+            "北原·寒渊｜元婴可达｜行程 4 月｜危险度 72｜特产 冰莲、雪晶｜求购 疗伤丹、烈酒｜长夜雪暴笼罩寒渊。"
+        )
+        view = present_action("地图", output, state, state)
+        block = view["blocks"][0]
+        self.assertEqual(block["type"], "regions")
+        self.assertEqual(len(block["items"]), 3)
+        self.assertTrue(block["items"][0]["current"])
+        self.assertFalse(block["items"][0]["accessible"])
+        self.assertEqual(block["items"][1]["action"], "前往 南疆")
+        self.assertIn("元婴境", block["items"][2]["locked_reason"])
 
     def test_secret_realms_reuse_accessible_location_cards(self) -> None:
         state = GameState(phase="playing").to_dict()

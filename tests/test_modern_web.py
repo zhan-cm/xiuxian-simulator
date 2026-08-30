@@ -35,6 +35,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["story"]["total"], 3)
             self.assertEqual(snapshot.json()["inventory"]["total_types"], 0)
             self.assertFalse(snapshot.json()["auction"]["active"])
+            self.assertEqual(snapshot.json()["travel"]["current"], "东洲")
+            self.assertEqual(len(snapshot.json()["travel"]["regions"]), 5)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -69,7 +71,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 17)
+            self.assertGreaterEqual(len(pages), 18)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -93,6 +95,13 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(auction["closes_in"], 3)
             self.assertEqual(by_id["auction"]["snapshot"]["state"]["phase"], "auction_choice")
             self.assertEqual(len(by_id["auction"]["snapshot"]["decision"]["choices"]), 3)
+            atlas = by_id["map"]["snapshot"]["presentation"]["blocks"]
+            self.assertEqual([block["type"] for block in atlas[:2]], ["regions", "locations"])
+            self.assertEqual(len(atlas[0]["items"]), 5)
+            travel = by_id["travel"]["snapshot"]
+            self.assertEqual(travel["state"]["phase"], "travel_choice")
+            self.assertEqual(len(travel["decision"]["choices"]), 3)
+            self.assertEqual(travel["travel"]["pending"]["destination"], "中州")
 
 
 if __name__ == "__main__":

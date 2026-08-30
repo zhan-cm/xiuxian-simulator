@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.37.0"
+    version: str = "0.38.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -129,6 +129,11 @@ class GameState:
     pending_story_node: str = ""
     auction: dict[str, Any] = field(default_factory=dict)
     auction_history: list[str] = field(default_factory=list)
+    pending_travel: dict[str, Any] = field(default_factory=dict)
+    visited_regions: list[str] = field(default_factory=lambda: ["东洲"])
+    travel_history: list[str] = field(default_factory=list)
+    trade_cargo: dict[str, dict[str, int]] = field(default_factory=dict)
+    trade_profit: int = 0
 
     @property
     def time_label(self) -> str:

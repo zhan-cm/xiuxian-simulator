@@ -6,7 +6,7 @@ from .arts import ARTIFACTS, ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
-from .economy import AREAS, SECTS, SECT_TASKS, EconomyEngine
+from .economy import AREA_DESCRIPTIONS, AREA_REGIONS, AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
 from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
@@ -15,13 +15,14 @@ from .commissions import CommissionEngine
 from .story import StoryEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
+from .travel import REGIONS, TravelEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -82,6 +83,8 @@ class GameEngine:
             return self._story_choice(action)
         if self.state.phase == "auction_choice":
             return self._auction_choice(action)
+        if self.state.phase == "travel_choice":
+            return self._travel_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -120,8 +123,10 @@ class GameEngine:
             return self._resources()
         if action.startswith("使用"):
             return self._use_item(action)
-        if action == "地图":
+        if action in {"地图", "九州", "行旅"}:
             return self._map()
+        if action.startswith("前往 "):
+            return self._prepare_travel(action)
         if action.startswith("探索"):
             return self._explore(action)
         if action == "秘境":
@@ -432,16 +437,87 @@ class GameEngine:
         self._autosave()
         return f"【使用 · {name}】\n{result}\n\n{self._status()}"
 
-    @staticmethod
-    def _map() -> str:
+    def _map(self) -> str:
+        current_region = TravelEngine.current_region(self.state)
+        region = REGIONS[current_region]
+        atlas = "\n".join(TravelEngine.atlas_lines(self.state))
         lines = []
         for name, (minimum_realm, danger) in AREAS.items():
-            realm_hint = "炼气可入" if minimum_realm == 0 else f"至少第 {minimum_realm + 1} 大境界"
-            lines.append(f"{name}｜{realm_hint}｜危险度 {danger}")
-        return "【东洲探索地图】\n" + "\n".join(lines) + "\n输入：探索 青岳山麓（不写地点时默认青岳山麓）"
+            if AREA_REGIONS[name] != current_region:
+                continue
+            realm_hint = TravelEngine.requirement_label(minimum_realm)
+            lines.append(f"{name}｜{realm_hint}｜危险度 {danger}｜{AREA_DESCRIPTIONS[name]}")
+        return (
+            f"【九州舆图】\n{atlas}\n输入：前往 中州（随后选择商队或御风）\n\n"
+            f"【当地探索 · {region.name}】\n" + "\n".join(lines) + f"\n输入：探索 {lines and lines[0].split('｜', 1)[0] or '当地'}"
+        )
+
+    def _prepare_travel(self, action: str) -> str:
+        destination = action.removeprefix("前往").strip()
+        try:
+            route = TravelEngine.prepare(self.state, destination)
+        except ValueError as exc:
+            return str(exc)
+        origin = REGIONS[str(route["origin"])].name
+        target = REGIONS[str(route["destination"])].name
+        self.state.remember(f"规划跨域行程：{origin} → {target}")
+        self._autosave()
+        return (
+            f"【行旅抉择 · {origin}至{target}】\n"
+            f"直线行程约 {route['distance']} 个月；远行期间寿元、委托期限与天下局势都会照常推进。\n"
+            "可随商队同行求稳，也可御风独行赶路；请亲自选择。"
+        )
+
+    def _travel_choice(self, action: str) -> str:
+        raw = action.removeprefix("行旅选择").strip() if action.startswith("行旅选择") else action
+        aliases = {"随商队同行": "caravan", "商队": "caravan", "御风独行": "swift", "御风": "swift", "暂不启程": "cancel", "取消": "cancel"}
+        method = aliases.get(raw, raw)
+        try:
+            result = TravelEngine.resolve(self.state, method)
+        except ValueError as exc:
+            return str(exc)
+        if result is None:
+            self.state.remember("取消跨域行程")
+            self._autosave()
+            return "你收起舆图，暂时留在原地；没有消耗时间或资源。\n\n" + self._status()
+
+        died_of_age = self._advance_time(result.months)
+        if died_of_age and not result.fatal:
+            self.state.phase = "ended"
+            self.state.player.condition = "跨域途中寿元耗尽"
+        cost = f"灵石 -{result.stone_cost}" if result.stone_cost else f"灵力 -{result.spirit_cost}"
+        injury = f"｜气血 -{result.health_loss}" if result.health_loss else ""
+        destination = REGIONS[result.destination].name
+        event = f"跨域抵达{destination}：{result.method}，历时{result.months}月，{cost}{injury}"
+        if died_of_age and not result.fatal:
+            self.state.player.location = f"{REGIONS[result.origin].name}至{destination}商路"
+            self.state.remember(f"跨域途中寿元耗尽：{REGIONS[result.origin].name} → {destination}")
+            self._autosave()
+            return f"【跨域行旅 · 坐化】\n你未能走到{destination}，寿元已在漫长旅途中耗尽。"
+        if result.fatal:
+            self.state.remember(f"跨域途中陨落：{REGIONS[result.origin].name} → {destination}")
+            self._autosave()
+            return (
+                f"【跨域行旅 · 陨落】\n{result.event}\n"
+                f"判定 {result.roll}/{result.chance}｜气血 -{result.health_loss}\n道途止于商路荒野。"
+            )
+        CommissionEngine.mark(self.state, "cross_region_travel")
+        self.state.remember(event)
+        self._autosave()
+        return (
+            f"{self.state.time_label}\n【跨域行旅 · 抵达{destination}】\n"
+            f"{result.method}｜历时 {result.months} 月｜{cost}\n"
+            f"{result.event}\n判定 {result.roll}/{result.chance}{injury}\n\n"
+            f"【当地行情】\n特产：{'、'.join(REGIONS[result.destination].specialties)}\n"
+            f"求购：{'、'.join(REGIONS[result.destination].demands)}\n"
+            "可打开坊市比较价格，或查看地图探索当地险地。"
+        )
 
     def _explore(self, action: str) -> str:
-        area = action.removeprefix("探索").strip() or "青岳山麓"
+        area = action.removeprefix("探索").strip()
+        if not area:
+            current_region = TravelEngine.current_region(self.state)
+            area = next(name for name in AREAS if AREA_REGIONS[name] == current_region)
         try:
             result = EconomyEngine.explore(self.state, area)
         except ValueError as exc:
@@ -559,26 +635,33 @@ class GameEngine:
             f"下一阶段：{next_stage}。可继续谨慎/强行探索，或退出秘境带走已有收获。"
         )
 
-    @staticmethod
-    def _market() -> str:
+    def _market(self) -> str:
+        region_key = TravelEngine.current_region(self.state)
+        region = REGIONS[region_key]
+        specialties, demands, profit = EconomyEngine.market_context(self.state)
         return (
-            "【青岳坊市】\n"
-            + "\n".join(EconomyEngine.market_lines())
+            f"【{region.name}坊市】\n"
+            f"本地特产：{specialties}｜热门求购：{demands}｜商路盈亏：{profit} 灵石\n"
+            + "\n".join(EconomyEngine.market_lines(self.state))
             + "\n输入：买 筑基丹／卖 灵药 2（买卖本身不推进月份）"
         )
 
     def _trade(self, operation: str, item: str, count: int) -> str:
+        profit_before = self.state.trade_profit
         try:
             stone_change, item_change = EconomyEngine.trade(self.state, operation, item, count)
         except ValueError as exc:
             return str(exc)
         CommissionEngine.mark(self.state, "market_trade")
-        self.state.remember(f"坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}")
+        region = REGIONS[TravelEngine.current_region(self.state)].name
+        profit_change = self.state.trade_profit - profit_before
+        profit_text = f"｜商路盈亏 {profit_change:+d}" if profit_change else ""
+        self.state.remember(f"在{region}坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}{profit_text}")
         self._autosave()
         direction = "+" if item_change > 0 else ""
         return (
             f"【坊市成交】{operation}{item}×{count}\n"
-            f"灵石 {stone_change:+d}｜{item} {direction}{item_change}\n"
+            f"地点 {region}｜灵石 {stone_change:+d}｜{item} {direction}{item_change}{profit_text}\n"
             f"当前灵石：{self.state.player.spirit_stones}"
         )
 
@@ -1467,7 +1550,8 @@ class GameEngine:
             "委托｜查看东洲悬榜；接取/交付/放弃委托 [编号]；悬榜每三个月轮换\n"
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
-            "地图｜探索 [地点]｜坊市｜买/卖 [物品] [数量]\n"
+            "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
+            "坊市｜区域价格会随特产、求购与民生变化｜买/卖 [物品] [数量]\n"
             "拍卖会｜竞拍 [拍品编号]；竞价时可稳健举牌、强势压场或退出\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"

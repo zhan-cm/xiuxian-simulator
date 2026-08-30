@@ -1,8 +1,9 @@
-import { Coins, Compass, FlaskConical, Hammer, Landmark, MapPin, ScrollText, ShoppingBag, Sprout, UserRound } from 'lucide-react'
+import { ArrowRight, Check, Coins, Compass, FlaskConical, Hammer, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShoppingBag, Sprout, UserRound, Wind } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { Presentation, PresentationBlock } from '../api/types'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
+const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
 
 function FactsBlock({ block }: { block: PresentationBlock }) {
   return (
@@ -60,6 +61,39 @@ function LocationsBlock({ block, onAction }: { block: PresentationBlock; onActio
   )
 }
 
+function RegionsBlock({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
+  return (
+    <section className="semantic-block region-block">
+      <header><Route size={16} /><strong>{block.title || '九州舆图'}</strong><small>{block.legend}</small></header>
+      <div className="region-grid">
+        {(block.items || []).map((item, index) => {
+          const current = item.current === true
+          const accessible = item.accessible === true
+          const visited = item.visited === true
+          return (
+            <article className="region-card" data-tone={text(item.tone, 'safe')} data-current={current || undefined} key={`${text(item.key)}-${index}`}>
+              <header>
+                <span>{text(item.key, '州').slice(0, 1)}</span>
+                <div><small>{visited ? <><Check size={10} />已踏访</> : '未踏访'}</small><strong>{text(item.name, '无名地域')}</strong></div>
+                <em>{current ? '当前落脚' : `${text(item.danger_label)} · ${text(item.danger)}`}</em>
+              </header>
+              <p>{text(item.description)}</p>
+              <div className="route-facts"><span><Wind size={12} />{text(item.months)} 月</span><span>{text(item.requirement_label)}</span></div>
+              <dl>
+                <div><dt>本地特产</dt><dd>{words(item.specialties).join(' · ')}</dd></div>
+                <div><dt>热门求购</dt><dd>{words(item.demands).join(' · ')}</dd></div>
+              </dl>
+              <button type="button" disabled={!accessible} title={accessible ? '规划跨域行程' : text(item.locked_reason)} onClick={() => onAction(text(item.action))}>
+                {current ? <><MapPin size={13} />当前所在</> : accessible ? <><ArrowRight size={13} />规划行程</> : <><LockKeyhole size={13} />{text(item.locked_reason, '尚未解锁')}</>}
+              </button>
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function MeterBlock({ block }: { block: PresentationBlock }) {
   const value = Number(block.value || 0)
   const max = Number(block.max || 100)
@@ -79,6 +113,7 @@ function MarketBlock({ block, onAction }: { block: PresentationBlock; onAction: 
   return (
     <section className="semantic-block market-block">
       <header><ShoppingBag size={16} /><strong>{block.title || '坊市货架'}</strong><small><Coins size={13} />持有 {text(block.currency, '0')} 灵石</small></header>
+      <div className="market-context"><span><small>本地特产</small>{text(block.specialties, '行情平稳')}</span><span><small>热门求购</small>{text(block.demands, '暂无异动')}</span><span data-profit={Number(block.trade_profit || 0) >= 0 ? 'gain' : 'loss'}><small>商路累计</small>{Number(block.trade_profit || 0) >= 0 ? '+' : ''}{text(block.trade_profit, '0')} 灵石</span></div>
       <nav className="market-tabs" aria-label="货架分类">
         {categories.map((name) => <button type="button" data-active={category === name || undefined} onClick={() => setCategory(name)} key={name}>{name}</button>)}
       </nav>
@@ -165,6 +200,7 @@ function GenericBlock({ block }: { block: PresentationBlock }) {
 function Block({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
   if (block.type === 'people') return <PeopleBlock block={block} />
+  if (block.type === 'regions') return <RegionsBlock block={block} onAction={onAction} />
   if (block.type === 'locations') return <LocationsBlock block={block} onAction={onAction} />
   if (block.type === 'meter') return <MeterBlock block={block} />
   if (block.type === 'market') return <MarketBlock block={block} onAction={onAction} />

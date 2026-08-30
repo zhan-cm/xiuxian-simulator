@@ -34,7 +34,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "破", "breakthrough", "破境问道"
     if any(action_text.startswith(word) for word in ("情缘", "情劫", "对话", "交谈", "送礼", "论道", "结为道侣", "双修", "确立关系", "回应")):
         return "缘", "relation", "红尘一念"
-    if any(action_text.startswith(word) for word in ("秘境", "探索", "确认进入", "谨慎探索", "强行探索", "退出秘境")):
+    if any(action_text.startswith(word) for word in ("秘境", "探索", "确认进入", "谨慎探索", "强行探索", "退出秘境", "地图", "九州", "行旅", "前往 ")):
         return "游", "adventure", "山河游历"
     if any(action_text.startswith(word) for word in ("买 ", "卖 ", "坊市")):
         return "市", "trade", "坊市往来"
@@ -134,7 +134,8 @@ COLLECTION_SECTION_TITLES = (
     "指令大全",
 )
 TECHNICAL_PREFIXES = ("判定", "结算", "成功率", "尘缘波澜", "当前好感", "贡献：", "权限：")
-MAP_SECTION_TITLES = ("东洲探索地图",)
+REGION_SECTION_TITLES = ("九州舆图",)
+MAP_SECTION_TITLES = ("东洲探索地图", "当地探索")
 SECRET_REALM_SECTION_TITLES = ("九州秘境",)
 MARKET_SECTION_TITLES = ("青岳坊市",)
 CAVE_SECTION_TITLES = ("洞府",)
@@ -156,12 +157,16 @@ def _is_map_section(title: str) -> bool:
     return any(title.startswith(word) for word in MAP_SECTION_TITLES)
 
 
+def _is_region_section(title: str) -> bool:
+    return any(title.startswith(word) for word in REGION_SECTION_TITLES)
+
+
 def _is_secret_realm_section(title: str) -> bool:
     return any(title.startswith(word) for word in SECRET_REALM_SECTION_TITLES)
 
 
 def _is_market_section(title: str) -> bool:
-    return any(title.startswith(word) for word in MARKET_SECTION_TITLES)
+    return title.endswith("坊市") or any(title.startswith(word) for word in MARKET_SECTION_TITLES)
 
 
 def _is_cave_section(title: str) -> bool:
@@ -240,8 +245,9 @@ def _danger_profile(value: int) -> tuple[str, str, str]:
 
 
 def _minimum_realm(requirement: str) -> int:
-    if "炼气" in requirement:
-        return 0
+    for index, realm in enumerate(REALMS):
+        if realm in requirement:
+            return index
     match = re.search(r"(?:至少)?第?\s*(\d+)\s*(?:阶|大境界)", requirement)
     return max(0, int(match.group(1)) - 1) if match else 0
 
@@ -284,6 +290,54 @@ def _location_items(lines: list[str], state: dict[str, Any], action_prefix: str 
             }
         )
     return locations
+
+
+def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any]]:
+    player = state.get("player", {}) or {}
+    player_realm = int(player.get("realm_index", 0) or 0)
+    current_location = str(player.get("location", "东洲"))
+    current_region = next((name for name in ("东洲", "南疆", "西漠", "北原", "中州") if current_location.startswith(name)), "东洲")
+    visited = {str(name) for name in (state.get("visited_regions", []) or [])} | {current_region}
+    regions: list[dict[str, Any]] = []
+    for line in lines:
+        if line.startswith(("输入：", "指令：")):
+            continue
+        parts = [part.strip() for part in line.split("｜") if part.strip()]
+        if len(parts) < 7:
+            continue
+        realm_index = _minimum_realm(parts[1])
+        months_match = re.search(r"行程\s*(\d+)\s*月", parts[2])
+        danger_match = re.search(r"危险度\s*(\d+)", parts[3])
+        if not months_match or not danger_match:
+            continue
+        key = parts[0].split("·", 1)[0]
+        current = key == current_region
+        accessible = player_realm >= realm_index and not current
+        danger = int(danger_match.group(1))
+        danger_label, tone, danger_help = _danger_profile(danger)
+        realm_name = REALMS[min(realm_index, len(REALMS) - 1)]
+        regions.append(
+            {
+                "key": key,
+                "name": parts[0],
+                "requirement_label": f"{realm_name}境",
+                "minimum_realm": realm_index,
+                "months": int(months_match.group(1)),
+                "danger": danger,
+                "danger_label": danger_label,
+                "tone": tone,
+                "danger_help": danger_help,
+                "specialties": parts[4].removeprefix("特产 ").split("、"),
+                "demands": parts[5].removeprefix("求购 ").split("、"),
+                "description": parts[6],
+                "current": current,
+                "visited": key in visited,
+                "accessible": accessible,
+                "locked_reason": "当前所在" if current else "" if accessible else f"需要达到{realm_name}境才可前往",
+                "action": f"前往 {key}",
+            }
+        )
+    return regions
 
 
 def _market_category(name: str) -> str:
@@ -458,6 +512,7 @@ def _semantic_blocks(
         if (
             not _is_people_section(first_title)
             and not _is_collection_section(first_title)
+            and not _is_region_section(first_title)
             and not _is_map_section(first_title)
             and not _is_secret_realm_section(first_title)
             and not _is_market_section(first_title)
@@ -495,6 +550,8 @@ def _semantic_blocks(
         if _is_market_section(title):
             items = _market_items(lines, state)
             if items:
+                context = next((line for line in lines if line.startswith("本地特产：")), "")
+                context_parts = [part.strip() for part in context.split("｜") if part.strip()]
                 blocks.append(
                     {
                         "type": "market",
@@ -502,6 +559,9 @@ def _semantic_blocks(
                         "title": title,
                         "items": items,
                         "currency": int((state.get("player", {}) or {}).get("spirit_stones", 0) or 0),
+                        "specialties": context_parts[0].removeprefix("本地特产：") if context_parts else "",
+                        "demands": context_parts[1].removeprefix("热门求购：") if len(context_parts) > 1 else "",
+                        "trade_profit": int(state.get("trade_profit", 0) or 0),
                     }
                 )
             continue
@@ -517,6 +577,19 @@ def _semantic_blocks(
                         "items": items,
                         "aura": str(state.get("aura_level", "普通")),
                         "crops": crop_line,
+                    }
+                )
+            continue
+        if _is_region_section(title):
+            items = _region_items(lines, state)
+            if items:
+                blocks.append(
+                    {
+                        "type": "regions",
+                        "mark": "州",
+                        "title": title,
+                        "items": items,
+                        "legend": "跨域行程会推进数月；境界不足的地域会锁定，远行前仍需选择赶路方式。",
                     }
                 )
             continue
