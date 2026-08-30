@@ -37,6 +37,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertFalse(snapshot.json()["auction"]["active"])
             self.assertEqual(snapshot.json()["travel"]["current"], "东洲")
             self.assertEqual(len(snapshot.json()["travel"]["regions"]), 5)
+            self.assertEqual(snapshot.json()["regional"]["current_rank"], "初来乍到")
+            self.assertEqual(len(snapshot.json()["regional"]["standings"]), 5)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -71,7 +73,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 18)
+            self.assertGreaterEqual(len(pages), 19)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -102,6 +104,13 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(travel["state"]["phase"], "travel_choice")
             self.assertEqual(len(travel["decision"]["choices"]), 3)
             self.assertEqual(travel["travel"]["pending"]["destination"], "中州")
+            regional = by_id["regional"]["snapshot"]
+            self.assertEqual(regional["state"]["phase"], "regional_choice")
+            self.assertEqual(regional["regional"]["current_rank"], "略有薄名")
+            self.assertEqual(regional["presentation"]["title"], "地方机缘 · 南疆")
+            self.assertEqual(len(regional["decision"]["choices"]), 3)
+            donation = next(choice for choice in regional["decision"]["choices"] if choice["action"] == "地方选择 lure")
+            self.assertFalse(donation["disabled"])
 
 
 if __name__ == "__main__":

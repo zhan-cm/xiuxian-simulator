@@ -122,7 +122,18 @@ def _map(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.realm_index = 1
     engine.state.player.realm = "筑基·初期"
+    engine.state.regional_reputation.update({"东洲": 28, "南疆": -8, "中州": 14})
     return app.perform_action("地图")
+
+
+def _regional(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 1
+    engine.state.player.realm = "筑基·初期"
+    engine.state.player.location = "南疆·赤炎"
+    engine.state.visited_regions.append("南疆")
+    engine.state.regional_reputation["南疆"] = 18
+    return app.perform_action("地方机缘")
 
 
 SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
@@ -134,6 +145,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),
     ("travel", "跨域行旅", "检查远行方式、真实时间成本与风险说明。", ["商队与御风的成本清楚", "资源不足时自动锁定", "取消行程不会推进时间"], _travel),
+    ("regional", "地方机缘", "检查五域声望、资源门槛和会被世界记住的地方抉择。", ["三项应对的后果清楚", "资源不足选项自动锁定", "巡览中的选择不会改动正式存档"], _regional),
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
     ("relations", "人物牵绊", "验证人物组件、好感和关系路径。", ["人物信息拆成小组件", "关系层级清楚", "长身份不挤成一行"], _relations),

@@ -79,6 +79,9 @@ function RegionsBlock({ block, onAction }: { block: PresentationBlock; onAction:
               </header>
               <p>{text(item.description)}</p>
               <div className="route-facts"><span><Wind size={12} />{text(item.months)} 月</span><span>{text(item.requirement_label)}</span></div>
+              <div className="region-standing" title="地方声望会影响坊市价格、探索判定与行旅安全">
+                <Landmark size={12} /><strong>{text(item.rank, '初来乍到')}</strong><span>{Number(item.reputation || 0) >= 0 ? '+' : ''}{text(item.reputation, '0')}</span>
+              </div>
               <dl>
                 <div><dt>本地特产</dt><dd>{words(item.specialties).join(' · ')}</dd></div>
                 <div><dt>热门求购</dt><dd>{words(item.demands).join(' · ')}</dd></div>
@@ -113,7 +116,7 @@ function MarketBlock({ block, onAction }: { block: PresentationBlock; onAction: 
   return (
     <section className="semantic-block market-block">
       <header><ShoppingBag size={16} /><strong>{block.title || '坊市货架'}</strong><small><Coins size={13} />持有 {text(block.currency, '0')} 灵石</small></header>
-      <div className="market-context"><span><small>本地特产</small>{text(block.specialties, '行情平稳')}</span><span><small>热门求购</small>{text(block.demands, '暂无异动')}</span><span data-profit={Number(block.trade_profit || 0) >= 0 ? 'gain' : 'loss'}><small>商路累计</small>{Number(block.trade_profit || 0) >= 0 ? '+' : ''}{text(block.trade_profit, '0')} 灵石</span></div>
+      <div className="market-context"><span><small>本地特产</small>{text(block.specialties, '行情平稳')}</span><span><small>热门求购</small>{text(block.demands, '暂无异动')}</span><span><small>地方声望</small>{text(block.standing, '初来乍到 · +0')}</span><span data-profit={Number(block.trade_profit || 0) >= 0 ? 'gain' : 'loss'}><small>商路累计</small>{Number(block.trade_profit || 0) >= 0 ? '+' : ''}{text(block.trade_profit, '0')} 灵石</span></div>
       <nav className="market-tabs" aria-label="货架分类">
         {categories.map((name) => <button type="button" data-active={category === name || undefined} onClick={() => setCategory(name)} key={name}>{name}</button>)}
       </nav>

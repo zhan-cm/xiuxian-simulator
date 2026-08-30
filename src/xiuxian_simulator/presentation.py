@@ -316,6 +316,8 @@ def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
         danger = int(danger_match.group(1))
         danger_label, tone, danger_help = _danger_profile(danger)
         realm_name = REALMS[min(realm_index, len(REALMS) - 1)]
+        reputation_match = re.search(r"声望\s*([+-]?\d+)（(.+?)）", parts[7]) if len(parts) > 7 else None
+        benefit_match = re.search(r"买价优惠\s*([+-]?\d+)%·卖价礼遇\s*([+-]?\d+)%", parts[8]) if len(parts) > 8 else None
         regions.append(
             {
                 "key": key,
@@ -335,6 +337,10 @@ def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
                 "accessible": accessible,
                 "locked_reason": "当前所在" if current else "" if accessible else f"需要达到{realm_name}境才可前往",
                 "action": f"前往 {key}",
+                "reputation": int(reputation_match.group(1)) if reputation_match else 0,
+                "rank": reputation_match.group(2) if reputation_match else "初来乍到",
+                "buy_discount": int(benefit_match.group(1)) if benefit_match else 0,
+                "sell_bonus": int(benefit_match.group(2)) if benefit_match else 0,
             }
         )
     return regions
@@ -562,6 +568,7 @@ def _semantic_blocks(
                         "specialties": context_parts[0].removeprefix("本地特产：") if context_parts else "",
                         "demands": context_parts[1].removeprefix("热门求购：") if len(context_parts) > 1 else "",
                         "trade_profit": int(state.get("trade_profit", 0) or 0),
+                        "standing": context_parts[3].removeprefix("地方声望：") if len(context_parts) > 3 else "初来乍到 · +0",
                     }
                 )
             continue

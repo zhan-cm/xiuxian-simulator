@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .progression import ProgressionEngine, REALMS
+from .regional import RegionalEngine
 from .state import GameState
 
 
@@ -29,6 +30,7 @@ class TravelResult:
     spirit_cost: int
     health_loss: int
     fatal: bool
+    first_visit: bool
     event: str
 
 
@@ -190,6 +192,7 @@ class TravelEngine:
         origin = str(state.pending_travel["origin"])
         destination = str(state.pending_travel["destination"])
         region = REGIONS[destination]
+        first_visit = destination not in state.visited_regions
         state.player.spirit_stones -= stones
         state.player.spirit -= spirit
         if stones:
@@ -199,6 +202,7 @@ class TravelEngine:
             chance = 94 - region.danger // 8 + advantage * 3 + (state.player.fortune - 10) // 2
         else:
             chance = 82 - region.danger // 5 + advantage * 4 + (state.player.speed - 10)
+        chance += int(RegionalEngine.benefits(state, destination)["travel_bonus"])
         chance = max(25, min(97, chance))
         roll = ProgressionEngine.deterministic_roll(state, f"travel:{origin}:{destination}:{method}:{state.turn}")
         health_loss = 0
@@ -234,6 +238,7 @@ class TravelEngine:
             spirit,
             health_loss,
             fatal,
+            first_visit,
             event,
         )
 
@@ -244,9 +249,11 @@ class TravelEngine:
         for key in REGION_ORDER:
             region = REGIONS[key]
             months = cls.distance(current, key)
+            benefit = RegionalEngine.benefits(state, key)
             lines.append(
                 f"{region.name}｜{cls.requirement_label(region.minimum_realm)}｜行程 {months} 月｜"
-                f"危险度 {region.danger}｜特产 {'、'.join(region.specialties)}｜求购 {'、'.join(region.demands)}｜{region.description}"
+                f"危险度 {region.danger}｜特产 {'、'.join(region.specialties)}｜求购 {'、'.join(region.demands)}｜{region.description}｜"
+                f"声望 {benefit['reputation']:+d}（{benefit['rank']}）｜买价优惠 {benefit['buy_discount']:+d}%·卖价礼遇 {benefit['sell_bonus']:+d}%"
             )
         return lines
 
@@ -257,6 +264,7 @@ class TravelEngine:
         regions = []
         for key in REGION_ORDER:
             region = REGIONS[key]
+            benefit = RegionalEngine.benefits(state, key)
             regions.append(
                 {
                     "key": key,
@@ -272,6 +280,7 @@ class TravelEngine:
                     "visited": key in visited,
                     "accessible": state.player.realm_index >= region.minimum_realm,
                     "action": f"前往 {key}",
+                    **benefit,
                 }
             )
         return {
@@ -280,6 +289,7 @@ class TravelEngine:
             "visited": sorted(visited, key=REGION_ORDER.index),
             "pending": dict(state.pending_travel),
             "trade_profit": state.trade_profit,
+            "current_reputation": RegionalEngine.benefits(state, current),
             "regions": regions,
             "history": list(state.travel_history[-8:]),
         }

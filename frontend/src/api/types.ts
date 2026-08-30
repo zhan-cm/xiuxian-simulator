@@ -208,11 +208,24 @@ export interface TravelRegion {
   key: string; name: string; minimum_realm: number; minimum_realm_label: string
   danger: number; description: string; specialties: string[]; demands: string[]
   months: number; current: boolean; visited: boolean; accessible: boolean; action: string
+  reputation: number; rank: string; buy_discount: number; sell_bonus: number
+  travel_bonus: number; exploration_bonus: number
 }
 
 export interface TravelSnapshot {
   current: string; current_name: string; visited: string[]; pending: Record<string, unknown>
-  trade_profit: number; regions: TravelRegion[]; history: string[]
+  trade_profit: number; current_reputation: Record<string, unknown>; regions: TravelRegion[]; history: string[]
+}
+
+export interface RegionalStanding {
+  key: string; reputation: number; rank: string; buy_discount: number; sell_bonus: number
+  travel_bonus: number; exploration_bonus: number; trade_volume: number; explorations: number
+  encounter_title: string; encounter_completed: boolean
+}
+
+export interface RegionalSnapshot {
+  current: string; current_rank: string; pending: Record<string, unknown>
+  standings: RegionalStanding[]; history: string[]
 }
 
 export interface Snapshot {
@@ -229,6 +242,7 @@ export interface Snapshot {
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot
+  regional: RegionalSnapshot
   output?: string
 }
 

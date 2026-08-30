@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.38.0"
+    version: str = "0.39.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -134,6 +134,14 @@ class GameState:
     travel_history: list[str] = field(default_factory=list)
     trade_cargo: dict[str, dict[str, int]] = field(default_factory=dict)
     trade_profit: int = 0
+    regional_reputation: dict[str, int] = field(
+        default_factory=lambda: {"东洲": 0, "南疆": 0, "西漠": 0, "北原": 0, "中州": 0}
+    )
+    regional_trade_volume: dict[str, int] = field(default_factory=dict)
+    regional_explorations: dict[str, int] = field(default_factory=dict)
+    regional_encounters_completed: list[str] = field(default_factory=list)
+    pending_regional_encounter: dict[str, Any] = field(default_factory=dict)
+    regional_history: list[str] = field(default_factory=list)
 
     @property
     def time_label(self) -> str:

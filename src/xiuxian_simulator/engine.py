@@ -16,13 +16,14 @@ from .story import StoryEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
+from .regional import RegionalEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
 
 
 class GameEngine:
@@ -85,6 +86,8 @@ class GameEngine:
             return self._auction_choice(action)
         if self.state.phase == "travel_choice":
             return self._travel_choice(action)
+        if self.state.phase == "regional_choice":
+            return self._regional_choice(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -125,6 +128,10 @@ class GameEngine:
             return self._use_item(action)
         if action in {"地图", "九州", "行旅"}:
             return self._map()
+        if action in {"地方", "声望", "五域声名"}:
+            return RegionalEngine.panel_text(self.state)
+        if action in {"地方机缘", "触发机缘"}:
+            return self._begin_regional_encounter()
         if action.startswith("前往 "):
             return self._prepare_travel(action)
         if action.startswith("探索"):
@@ -502,15 +509,50 @@ class GameEngine:
                 f"判定 {result.roll}/{result.chance}｜气血 -{result.health_loss}\n道途止于商路荒野。"
             )
         CommissionEngine.mark(self.state, "cross_region_travel")
+        arrival_reputation = RegionalEngine.record_arrival(self.state, result.destination, result.first_visit)
+        regional_event = RegionalEngine.prepare(self.state, result.destination)
         self.state.remember(event)
         self._autosave()
+        reputation_text = f"｜{result.destination}声望 +{arrival_reputation}" if arrival_reputation else ""
+        encounter_text = f"\n\n{RegionalEngine.encounter_text(self.state, result.destination)}" if regional_event else ""
         return (
             f"{self.state.time_label}\n【跨域行旅 · 抵达{destination}】\n"
-            f"{result.method}｜历时 {result.months} 月｜{cost}\n"
+            f"{result.method}｜历时 {result.months} 月｜{cost}{reputation_text}\n"
             f"{result.event}\n判定 {result.roll}/{result.chance}{injury}\n\n"
             f"【当地行情】\n特产：{'、'.join(REGIONS[result.destination].specialties)}\n"
             f"求购：{'、'.join(REGIONS[result.destination].demands)}\n"
             "可打开坊市比较价格，或查看地图探索当地险地。"
+            f"{encounter_text}"
+        )
+
+    def _begin_regional_encounter(self) -> str:
+        event = RegionalEngine.prepare(self.state)
+        if event is None:
+            return RegionalEngine.panel_text(self.state)
+        region = RegionalEngine.current_region(self.state)
+        self.state.remember(f"{region}地方机缘《{event['title']}》浮现")
+        self._autosave()
+        return RegionalEngine.encounter_text(self.state, region)
+
+    def _regional_choice(self, action: str) -> str:
+        raw = action.removeprefix("地方选择").strip() if action.startswith("地方选择") else action
+        try:
+            result = RegionalEngine.resolve(self.state, raw)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        effect_text = "、".join(result.effects)
+        self.state.remember(f"{result.region}《{result.title}》选择{result.choice}：{effect_text}")
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "地方机缘后寿元耗尽"
+        self._autosave()
+        ending = "\n你在此事落定后寿元耗尽，道途止于此地。" if died_of_age else ""
+        return (
+            f"{self.state.time_label}\n【地方机缘 · {result.title}】\n"
+            f"你选择了“{result.choice}”。\n结算：{effect_text}\n"
+            f"当前{result.region}评价：{RegionalEngine.rank(self.state, result.region)} "
+            f"({RegionalEngine.reputation(self.state, result.region):+d}){ending}"
         )
 
     def _explore(self, action: str) -> str:
@@ -518,6 +560,8 @@ class GameEngine:
         if not area:
             current_region = TravelEngine.current_region(self.state)
             area = next(name for name in AREAS if AREA_REGIONS[name] == current_region)
+        region_key = TravelEngine.current_region(self.state)
+        reputation_before = RegionalEngine.reputation(self.state, region_key)
         try:
             result = EconomyEngine.explore(self.state, area)
         except ValueError as exc:
@@ -529,6 +573,9 @@ class GameEngine:
         if result.health_loss:
             rewards.append(f"气血 -{result.health_loss}")
         reward_text = "、".join(rewards) if rewards else "无"
+        reputation_change = RegionalEngine.reputation(self.state, region_key) - reputation_before
+        if reputation_change:
+            reward_text += f"、{region_key}声望 {reputation_change:+d}"
         self.state.remember(f"探索{result.area}：{result.event}；收获 {reward_text}")
         if died_of_age and not result.fatal:
             self.state.phase = "ended"
@@ -544,9 +591,13 @@ class GameEngine:
         if self.state.phase == "ended":
             ending = "寿元耗尽，坐化荒野" if died_of_age and not result.fatal else result.event
             return f"{self.state.time_label}\n{ending}。\n【陨落结局】道途止于 {result.area}。"
+        regional_event = RegionalEngine.prepare(self.state, region_key)
+        if regional_event:
+            self._autosave()
+        encounter_text = f"\n\n{RegionalEngine.encounter_text(self.state, region_key)}" if regional_event else ""
         return (
             f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
-            f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}"
+            f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}{encounter_text}"
         )
 
     @staticmethod
@@ -638,30 +689,34 @@ class GameEngine:
     def _market(self) -> str:
         region_key = TravelEngine.current_region(self.state)
         region = REGIONS[region_key]
-        specialties, demands, profit = EconomyEngine.market_context(self.state)
+        specialties, demands, profit, standing = EconomyEngine.market_context(self.state)
         return (
             f"【{region.name}坊市】\n"
-            f"本地特产：{specialties}｜热门求购：{demands}｜商路盈亏：{profit} 灵石\n"
+            f"本地特产：{specialties}｜热门求购：{demands}｜商路盈亏：{profit} 灵石｜地方声望：{standing}\n"
             + "\n".join(EconomyEngine.market_lines(self.state))
             + "\n输入：买 筑基丹／卖 灵药 2（买卖本身不推进月份）"
         )
 
     def _trade(self, operation: str, item: str, count: int) -> str:
         profit_before = self.state.trade_profit
+        region_key = TravelEngine.current_region(self.state)
+        reputation_before = RegionalEngine.reputation(self.state, region_key)
         try:
             stone_change, item_change = EconomyEngine.trade(self.state, operation, item, count)
         except ValueError as exc:
             return str(exc)
         CommissionEngine.mark(self.state, "market_trade")
-        region = REGIONS[TravelEngine.current_region(self.state)].name
+        region = REGIONS[region_key].name
         profit_change = self.state.trade_profit - profit_before
         profit_text = f"｜商路盈亏 {profit_change:+d}" if profit_change else ""
-        self.state.remember(f"在{region}坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}{profit_text}")
+        reputation_change = RegionalEngine.reputation(self.state, region_key) - reputation_before
+        reputation_text = f"｜{region_key}声望 {reputation_change:+d}" if reputation_change else ""
+        self.state.remember(f"在{region}坊市{operation}{item}×{count}，灵石变动 {stone_change:+d}{profit_text}{reputation_text}")
         self._autosave()
         direction = "+" if item_change > 0 else ""
         return (
             f"【坊市成交】{operation}{item}×{count}\n"
-            f"地点 {region}｜灵石 {stone_change:+d}｜{item} {direction}{item_change}{profit_text}\n"
+            f"地点 {region}｜灵石 {stone_change:+d}｜{item} {direction}{item_change}{profit_text}{reputation_text}\n"
             f"当前灵石：{self.state.player.spirit_stones}"
         )
 
@@ -1551,7 +1606,8 @@ class GameEngine:
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
-            "坊市｜区域价格会随特产、求购与民生变化｜买/卖 [物品] [数量]\n"
+            "地方｜查看五域声名与礼遇｜地方机缘后从三项应对中亲自选择\n"
+            "坊市｜区域价格会随特产、求购、民生与地方声望变化｜买/卖 [物品] [数量]\n"
             "拍卖会｜竞拍 [拍品编号]；竞价时可稳健举牌、强势压场或退出\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"

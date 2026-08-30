@@ -10,6 +10,7 @@ from .state import GameState
 from .story import StoryEngine
 from .auctions import AuctionEngine
 from .travel import TravelEngine
+from .regional import RegionalEngine
 
 
 class DecisionCatalog:
@@ -129,6 +130,8 @@ class DecisionCatalog:
             return AuctionEngine.decision(state)
         if state.phase == "travel_choice":
             return TravelEngine.decision(state)
+        if state.phase == "regional_choice":
+            return RegionalEngine.decision(state)
         if state.phase == "major_breakthrough_choice":
             return self._major_breakthrough(state)
         if state.phase == "breakthrough_talent_choice":

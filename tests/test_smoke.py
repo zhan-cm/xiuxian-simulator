@@ -39,6 +39,7 @@ from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
+from xiuxian_simulator.regional import RegionalEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -597,14 +598,101 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(len(decision["choices"]), 3)
             arrived = engine.process("行旅选择 caravan")
             self.assertIn("抵达中州·天阙", arrived)
-            self.assertEqual(engine.state.phase, "playing")
+            self.assertEqual(engine.state.phase, "regional_choice")
             self.assertEqual(engine.state.player.location, "中州·天阙")
             self.assertEqual(engine.state.turn, before_turn + 3)
             self.assertEqual(engine.state.player.spirit_stones, 910)
             self.assertIn("中州", engine.state.visited_regions)
+            self.assertEqual(engine.state.regional_reputation["中州"], 3)
             self.assertEqual(len(engine.state.travel_history), 1)
             self.assertEqual(engine.state.trade_profit, -90)
             self.assertEqual(engine.state.journey_counters["cross_region_travel"], 1)
+            resolved = engine.process("地方选择 debate")
+            self.assertIn("登台论道", resolved)
+            self.assertEqual(engine.state.phase, "playing")
+            self.assertEqual(engine.state.turn, before_turn + 4)
+
+    def test_local_encounter_is_button_backed_and_persistent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before_turn = engine.state.turn
+            opened = engine.process("地方机缘")
+            self.assertIn("青岳灵泉之争", opened)
+            self.assertEqual(engine.state.phase, "regional_choice")
+            decision = RegionalEngine.decision(engine.state)
+            self.assertEqual(len(decision["choices"]), 3)
+            self.assertTrue(all(choice["action"].startswith("地方选择") for choice in decision["choices"]))
+            result = engine.process("地方选择 share")
+            self.assertIn("开渠共饮", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            self.assertEqual(engine.state.regional_reputation["东洲"], 10)
+            self.assertEqual(engine.state.player.merit, 2)
+            self.assertIn("qingyue-spring", engine.state.regional_encounters_completed)
+            saved = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["regional_reputation"]["东洲"], 10)
+
+    def test_first_safe_local_exploration_surfaces_regional_encounter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.fortune = 30
+            explored = engine.process("探索 青岳山麓")
+            self.assertIn("地方机缘", explored)
+            self.assertEqual(engine.state.phase, "regional_choice")
+            self.assertEqual(engine.state.pending_regional_encounter["region"], "东洲")
+
+    def test_regional_choice_enforces_resource_requirements(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.location = "北原·寒渊"
+            engine.state.visited_regions.append("北原")
+            engine.process("地方机缘")
+            decision = RegionalEngine.decision(engine.state)
+            donation = next(choice for choice in decision["choices"] if choice["action"] == "地方选择 donate")
+            self.assertTrue(donation["disabled"])
+            blocked = engine.process("地方选择 donate")
+            self.assertIn("疗伤丹×2", blocked)
+            self.assertEqual(engine.state.phase, "regional_choice")
+            engine.state.player.resources["疗伤丹"] = 2
+            resolved = engine.process("地方选择 donate")
+            self.assertIn("开囊赠药", resolved)
+            self.assertNotIn("疗伤丹", engine.state.player.resources)
+            self.assertEqual(engine.state.regional_reputation["北原"], 18)
+
+    def test_regional_reputation_changes_prices_and_travel_safety(self) -> None:
+        neutral = GameState(phase="playing")
+        honored = GameState.from_dict(neutral.to_dict())
+        honored.regional_reputation["南疆"] = 60
+        neutral.player.location = honored.player.location = "南疆·赤炎"
+        neutral_buy = EconomyEngine.regional_price(neutral, "灵药", "买")
+        neutral_sell = EconomyEngine.regional_price(neutral, "妖兽材料", "卖")
+        honored_buy = EconomyEngine.regional_price(honored, "灵药", "买")
+        honored_sell = EconomyEngine.regional_price(honored, "妖兽材料", "卖")
+        neutral.player.location = honored.player.location = "东洲·青岳"
+        neutral.player.realm_index = honored.player.realm_index = 1
+        neutral.player.spirit_stones = honored.player.spirit_stones = 1000
+        TravelEngine.prepare(neutral, "南疆")
+        TravelEngine.prepare(honored, "南疆")
+        neutral_travel = TravelEngine.resolve(neutral, "caravan")
+        honored_travel = TravelEngine.resolve(honored, "caravan")
+        self.assertLess(honored_buy, neutral_buy)
+        self.assertGreater(honored_sell, neutral_sell)
+        self.assertGreater(honored_travel.chance, neutral_travel.chance)
+
+    def test_trade_and_exploration_build_local_reputation(self) -> None:
+        state = GameState(phase="playing")
+        state.player.spirit_stones = 2000
+        EconomyEngine.trade(state, "买", "青木长生诀残卷", 1)
+        self.assertEqual(state.regional_reputation["东洲"], 1)
+        EconomyEngine.explore(state, "青岳山麓")
+        EconomyEngine.explore(state, "青岳山麓")
+        self.assertEqual(state.regional_reputation["东洲"], 2)
+        self.assertEqual(state.regional_explorations["东洲"], 2)
 
     def test_travel_realm_gate_and_cancel_do_not_mutate_time_or_resources(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -648,6 +736,8 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(TravelEngine.current_region(state), "东洲")
         self.assertEqual(state.visited_regions, ["东洲"])
         self.assertEqual(state.trade_profit, 0)
+        self.assertEqual(state.regional_reputation["东洲"], 0)
+        self.assertEqual(state.regional_encounters_completed, [])
 
     def test_market_rejects_unaffordable_purchase_without_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1816,7 +1906,7 @@ class SimulatorSmokeTests(unittest.TestCase):
 
     def test_market_output_becomes_filterable_trade_items(self) -> None:
         state = GameState(phase="playing").to_dict()
-        output = "【青岳坊市】\n聚气丹：买 20／卖 12 灵石\n筑基丹：买 500／卖 300 灵石\n灵药：买 12／卖 7 灵石"
+        output = "【青岳坊市】\n本地特产：灵药｜热门求购：雪晶｜商路盈亏：+30 灵石｜地方声望：略有薄名 · +12\n聚气丹：买 20／卖 12 灵石\n筑基丹：买 500／卖 300 灵石\n灵药：买 12／卖 7 灵石"
         view = present_action("坊市", output, state, state)
         block = view["blocks"][0]
         self.assertEqual(block["type"], "market")
@@ -1824,12 +1914,13 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertTrue(block["items"][0]["affordable"])
         self.assertFalse(block["items"][1]["affordable"])
         self.assertEqual(block["items"][0]["buy_action"], "买 聚气丹")
+        self.assertEqual(block["standing"], "略有薄名 · +12")
 
     def test_world_atlas_becomes_structured_region_cards(self) -> None:
         state = GameState(phase="playing").to_dict()
         output = (
             "【九州舆图】\n"
-            "东洲·青岳｜炼气可达｜行程 0 月｜危险度 12｜特产 灵药、聚气丹｜求购 妖兽材料、雪晶｜散修汇聚之地。\n"
+            "东洲·青岳｜炼气可达｜行程 0 月｜危险度 12｜特产 灵药、聚气丹｜求购 妖兽材料、雪晶｜散修汇聚之地。｜声望 +26（受人敬重）｜买价优惠 +5%·卖价礼遇 +3%\n"
             "南疆·赤炎｜筑基可达｜行程 3 月｜危险度 34｜特产 妖兽材料、烈酒｜求购 灵药、清茶｜火脉与妖兽并存。\n"
             "北原·寒渊｜元婴可达｜行程 4 月｜危险度 72｜特产 冰莲、雪晶｜求购 疗伤丹、烈酒｜长夜雪暴笼罩寒渊。"
         )
@@ -1839,6 +1930,9 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(len(block["items"]), 3)
         self.assertTrue(block["items"][0]["current"])
         self.assertFalse(block["items"][0]["accessible"])
+        self.assertEqual(block["items"][0]["rank"], "受人敬重")
+        self.assertEqual(block["items"][0]["reputation"], 26)
+        self.assertEqual(block["items"][0]["buy_discount"], 5)
         self.assertEqual(block["items"][1]["action"], "前往 南疆")
         self.assertIn("元婴境", block["items"][2]["locked_reason"])
 

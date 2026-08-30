@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass, field
 
 from .progression import ProgressionEngine
+from .regional import RegionalEngine
 from .state import GameState
 from .travel import REGIONS, TravelEngine
 
@@ -179,11 +180,13 @@ class EconomyEngine:
         if operation == "买":
             supply = REGIONAL_SUPPLY.get(region, {}).get(item, 1.0)
             prosperity_factor = 1.0 + (60 - prosperity) * 0.003
-            return max(1, round(base * supply * prosperity_factor))
+            reputation_factor = RegionalEngine.price_multiplier(state, region, operation)
+            return max(1, round(base * supply * prosperity_factor * reputation_factor))
         if operation == "卖":
             demand = REGIONAL_DEMAND.get(region, {}).get(item, 1.0)
             prosperity_factor = 1.0 + (prosperity - 60) * 0.002
-            return max(1, round(base * 0.6 * demand * prosperity_factor))
+            reputation_factor = RegionalEngine.price_multiplier(state, region, operation)
+            return max(1, round(base * 0.6 * demand * prosperity_factor * reputation_factor))
         raise ValueError("交易指令必须是买或卖。")
 
     @classmethod
@@ -194,10 +197,12 @@ class EconomyEngine:
         ]
 
     @staticmethod
-    def market_context(state: GameState) -> tuple[str, str, str]:
+    def market_context(state: GameState) -> tuple[str, str, str, str]:
         key = TravelEngine.current_region(state)
         region = REGIONS[key]
-        return "、".join(region.specialties), "、".join(region.demands), f"{state.trade_profit:+d}"
+        benefit = RegionalEngine.benefits(state, key)
+        standing = f"{benefit['rank']} · {benefit['reputation']:+d}"
+        return "、".join(region.specialties), "、".join(region.demands), f"{state.trade_profit:+d}", standing
 
     @staticmethod
     def parse_trade(action: str) -> tuple[str, str, int] | None:
@@ -225,6 +230,7 @@ class EconomyEngine:
             cargo = state.trade_cargo.setdefault(item, {"quantity": 0, "cost": 0})
             cargo["quantity"] = int(cargo.get("quantity", 0)) + count
             cargo["cost"] = int(cargo.get("cost", 0)) + total
+            RegionalEngine.record_trade(state, TravelEngine.current_region(state), total)
             return -total, count
         if operation == "卖":
             owned = state.player.resources.get(item, 0)
@@ -252,6 +258,7 @@ class EconomyEngine:
                 if state.player.equipped_armor == item:
                     state.player.equipped_armor = ""
             state.player.spirit_stones += total
+            RegionalEngine.record_trade(state, TravelEngine.current_region(state), total)
             return total, -count
         raise ValueError("交易指令必须是买或卖。")
 
@@ -271,7 +278,7 @@ class EconomyEngine:
                 f"当前为{player.realm}，贸然深入近乎送死。"
             )
         roll = ProgressionEngine.deterministic_roll(state, f"explore:{area}:{state.turn}")
-        score = roll + (player.fortune - 10) + player.realm_index * 2
+        score = roll + (player.fortune - 10) + player.realm_index * 2 + int(RegionalEngine.benefits(state, area_region)["exploration_bonus"])
         rewards: dict[str, int] = {}
         stones = 0
         health_loss = 0
@@ -306,6 +313,7 @@ class EconomyEngine:
         player.location = f"{REGIONS[area_region].name}·{area}"
         player.spirit_stones += stones
         cls.add_resources(state, rewards)
+        RegionalEngine.record_exploration(state, area_region)
         return ExplorationResult(area, roll, event, rewards, stones, health_loss, fatal, encounter)
 
     @staticmethod
