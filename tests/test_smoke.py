@@ -42,7 +42,7 @@ from xiuxian_simulator.travel import TravelEngine
 from xiuxian_simulator.regional import RegionalEngine
 from xiuxian_simulator.cave import CaveEngine
 from xiuxian_simulator.npc_lifecycle import NpcLifecycleEngine
-from xiuxian_simulator.npc_lifecycle import NpcLifecycleEngine
+from xiuxian_simulator.npc_network import NpcNetworkEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -1643,6 +1643,95 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.npc_lifecycle_log, [])
         self.assertEqual(state.npc_memorials, [])
         self.assertEqual(state.last_npc_lifecycle_event, "")
+
+    def test_npc_network_seed_bonds_and_snapshot_are_read_only(self) -> None:
+        state = GameState(phase="playing")
+        before = state.to_dict()
+        snapshot = NpcNetworkEngine.snapshot(state)
+        self.assertEqual(state.to_dict(), before)
+        self.assertEqual(snapshot["connected_count"], 6)
+        self.assertGreaterEqual(snapshot["bond_count"], 7)
+        rivalry = next(item for item in snapshot["bonds"] if {item["left"], item["right"]} == {"顾清玄", "谢无咎"})
+        self.assertEqual(rivalry["label"], "嫌隙")
+
+    def test_npc_network_tick_is_reproducible_and_never_links_self(self) -> None:
+        left = GameState(phase="playing", turn=3, rng_seed=42)
+        right = GameState.from_dict(left.to_dict())
+        self.assertEqual(NpcNetworkEngine.tick(left), NpcNetworkEngine.tick(right))
+        self.assertEqual(left.npc_bonds, right.npc_bonds)
+        for bond in left.npc_bonds.values():
+            self.assertNotEqual(bond["left"], bond["right"])
+
+    def test_npc_conflict_can_surface_as_player_decision(self) -> None:
+        found = None
+        for seed in range(1, 500):
+            state = GameState(phase="playing", turn=3, rng_seed=seed)
+            NpcNetworkEngine.tick(state)
+            if state.pending_npc_network_event:
+                found = state
+                break
+        self.assertIsNotNone(found)
+        decision = DecisionCatalog({}).for_state(found)
+        self.assertEqual(decision["eyebrow"], "众生缘网")
+        self.assertEqual(len(decision["choices"]), 4)
+        self.assertEqual(decision["choices"][-1]["action"], "介入人情 旁观")
+
+    def test_mediating_npc_dispute_consumes_spirit_and_changes_bond(self) -> None:
+        state = GameState(phase="playing", rng_seed=17)
+        state.player.reputation = 20
+        NpcNetworkEngine.create_dispute(state, "顾清玄", "谢无咎", "灵地归属")
+        before_spirit = state.player.spirit
+        before_score = int(NpcNetworkEngine.bond(state, "顾清玄", "谢无咎")["score"])
+        result = NpcNetworkEngine.intervene(state, "调停")
+        after_score = int(NpcNetworkEngine.bond(state, "顾清玄", "谢无咎")["score"])
+        self.assertEqual(state.player.spirit, before_spirit - 20)
+        self.assertEqual(result.spirit_cost, 20)
+        self.assertNotEqual(after_score, before_score)
+        self.assertEqual(state.pending_npc_network_event, {})
+
+    def test_favoring_one_npc_has_two_sided_relationship_cost(self) -> None:
+        state = GameState(phase="playing")
+        RelationshipEngine.relation(state, "顾清玄")["affinity"] = 20
+        RelationshipEngine.relation(state, "谢无咎")["affinity"] = 20
+        NpcNetworkEngine.create_dispute(state, "顾清玄", "谢无咎", "旧怨斗法")
+        result = NpcNetworkEngine.intervene(state, "偏袒", "顾清玄")
+        self.assertEqual(result.choice, "偏袒顾清玄")
+        self.assertEqual(RelationshipEngine.affinity(state, "顾清玄"), 25)
+        self.assertEqual(RelationshipEngine.affinity(state, "谢无咎"), 15)
+        self.assertEqual(state.player.karma, 2)
+
+    def test_unanswered_npc_dispute_expires_into_world_history(self) -> None:
+        state = GameState(phase="playing", turn=10)
+        NpcNetworkEngine.create_dispute(state, "顾清玄", "谢无咎", "旧怨斗法")
+        before_score = int(NpcNetworkEngine.bond(state, "顾清玄", "谢无咎")["score"])
+        state.turn = 15
+        description = NpcNetworkEngine.expire_pending(state)
+        self.assertIn("无人介入", description)
+        self.assertEqual(state.pending_npc_network_event, {})
+        self.assertEqual(int(NpcNetworkEngine.bond(state, "顾清玄", "谢无咎")["score"]), before_score - 4)
+        self.assertIn(description, state.npc_network_log[-1])
+
+    def test_network_intervention_command_advances_month_and_autosaves(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            NpcNetworkEngine.create_dispute(engine.state, "顾清玄", "谢无咎", "灵地归属")
+            before_turn = engine.state.turn
+            result = engine.process("介入人情 旁观")
+            self.assertIn("人情介入", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            persisted = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertEqual(persisted.turn, engine.state.turn)
+            self.assertEqual(persisted.pending_npc_network_event, {})
+
+    def test_v041_save_receives_npc_network_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.41.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.npc_bonds, {})
+        self.assertEqual(state.pending_npc_network_event, {})
+        self.assertEqual(state.npc_network_log, [])
+        self.assertEqual(state.last_npc_network_event, "")
+        self.assertEqual(state.npc_network_counter, 0)
 
     def test_world_timeline_triggers_calendar_events_once(self) -> None:
         state = GameState(phase="playing", calendar_year=390, month=1)

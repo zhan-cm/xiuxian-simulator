@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -32,10 +32,13 @@ function ErrorScreen({ message }: { message: string }) {
 
 function Relations({ snapshot, onAction }: { snapshot: Snapshot; onAction: (action: string) => void }) {
   const known = Object.entries(snapshot.state.npc_relations || {}).filter(([, relation]) => Number(relation.affinity || 0) !== 0 || relation.path)
-  const pending = snapshot.npc_lives?.pending_count || 0
+  const lifePending = snapshot.npc_lives?.pending_count || 0
+  const networkPending = snapshot.npc_network?.pending?.id ? 1 : 0
+  const pendingMeta = [lifePending ? `${lifePending} 封护道书` : '', networkPending ? '1 桩人情待决' : ''].filter(Boolean).join(' · ')
   return (
-    <Panel title="人物牵绊" icon={<HeartHandshake size={18} />} meta={pending ? `${pending} 封护道书` : known.length ? `${known.length} 位` : '缘分未定'} className="balanced-panel">
+    <Panel title="人物牵绊" icon={<HeartHandshake size={18} />} meta={pendingMeta || (known.length ? `${known.length} 位` : '缘分未定')} className="balanced-panel">
       {known.length ? <div className="relation-stack">{known.slice(0, 4).map(([name, relation]) => { const profile = snapshot.npc_profiles[name]; return <button type="button" onClick={() => onAction('情缘')} title="打开完整人物生平" key={name} data-alive={profile?.alive !== false || undefined}><span>{name.slice(0, 1)}</span><div><strong>{name}</strong><small>{profile?.realm || '境界未明'} · {profile?.age ?? '?'}岁 · {profile?.status || '近况未明'}</small><i><b style={{ width: `${Math.max(0, Math.min(100, Number(relation.affinity || 0)))}%` }} /></i></div><em>{relation.path || '相识'}<small>好感 {relation.affinity || 0}</small></em></button>})}</div> : <div className="empty-state"><UserRound size={24} /><strong>尘缘尚未落笔</strong><p>结识人物后，这里会显示关系、好感与最近变化。</p></div>}
+      <button className="network-shortcut" type="button" onClick={() => onAction('人脉')}><Waypoints size={13} /><span>查看众生缘网</span>{networkPending ? <em>有新纷争</em> : <small>{snapshot.npc_network?.bond_count || 0} 段因缘</small>}</button>
     </Panel>
   )
 }
@@ -70,6 +73,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const { player } = state
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = ['playing', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)
+  const networkSurface = ['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')
   return (
     <TooltipProvider>
       <div className="game-shell" data-showcase={showcase || undefined}>
@@ -109,10 +113,10 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
             <AnimatePresence mode="wait">
               <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} readOnly={showcase} onAction={onAction} />
+                <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase} onAction={onAction} />
               </motion.div>
             </AnimatePresence>
-            <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />
+            {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
             <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />
           </section>
@@ -125,7 +129,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.41 浮生故人版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.42 众生缘网版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

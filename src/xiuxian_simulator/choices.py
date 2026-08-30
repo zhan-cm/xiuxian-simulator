@@ -11,6 +11,7 @@ from .story import StoryEngine
 from .auctions import AuctionEngine
 from .travel import TravelEngine
 from .regional import RegionalEngine
+from .npc_network import NpcNetworkEngine
 
 
 class DecisionCatalog:
@@ -123,6 +124,53 @@ class DecisionCatalog:
             "choices": choices,
         }
 
+    @staticmethod
+    def _network_dispute(state: GameState) -> dict[str, Any]:
+        pending = NpcNetworkEngine.snapshot(state)["pending"]
+        if not pending:
+            return DecisionCatalog._empty()
+        left, right = str(pending["left"]), str(pending["right"])
+        return {
+            "eyebrow": "众生缘网",
+            "title": f"{left}与{right}尚有一桩纷争",
+            "hint": f"缘由：{pending['cause']} · {pending['expires_in']} 个月后将自行落幕",
+            "exclusive": True,
+            "choices": [
+                {
+                    "label": "出面调停",
+                    "action": "介入人情 调停",
+                    "summary": f"预计成功率 {pending['mediate_chance']}% · 消耗灵力 20",
+                    "description": "兼顾双方立场；成功可修复缘分并提升声望，失败则可能加深嫌隙。",
+                    "tooltip": "成功率受道心、声望、双方好感和当前缘势影响。",
+                    "tone": "primary",
+                    "disabled": not bool(pending["can_mediate"]),
+                    "disabled_reason": str(pending["mediate_reason"]),
+                },
+                {
+                    "label": f"偏袒{left}",
+                    "action": f"介入人情 偏袒 {left}",
+                    "description": f"{left}好感上升，{right}好感下降；双方嫌隙会明显加深。",
+                    "tone": "danger",
+                    "disabled": not bool(pending["can_favor_left"]),
+                    "disabled_reason": f"与{left}好感需达到 10",
+                },
+                {
+                    "label": f"偏袒{right}",
+                    "action": f"介入人情 偏袒 {right}",
+                    "description": f"{right}好感上升，{left}好感下降；双方嫌隙会明显加深。",
+                    "tone": "danger",
+                    "disabled": not bool(pending["can_favor_right"]),
+                    "disabled_reason": f"与{right}好感需达到 10",
+                },
+                {
+                    "label": "静观其变",
+                    "action": "介入人情 旁观",
+                    "description": "不消耗资源，由二人自行处理；关系可能缓和，也可能恶化。",
+                    "tone": "quiet",
+                },
+            ],
+        }
+
     def for_state(self, state: GameState) -> dict[str, Any]:
         if state.phase == "main_story_choice":
             return StoryEngine.decision(state)
@@ -136,6 +184,8 @@ class DecisionCatalog:
             return self._major_breakthrough(state)
         if state.phase == "breakthrough_talent_choice":
             return self._destiny_choices(state)
+        if state.phase == "playing" and state.pending_npc_network_event:
+            return self._network_dispute(state)
         if state.phase == "playing" and state.npc_invitations:
             return self._invitations(state)
 

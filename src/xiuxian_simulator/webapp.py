@@ -14,6 +14,7 @@ from .engine import GameEngine
 from .presentation import present_action, welcome_presentation
 from .relationships import NPCS
 from .npc_lifecycle import NpcLifecycleEngine
+from .npc_network import NpcNetworkEngine
 from .state import GameState
 from .journey import JourneyEngine
 from .commissions import CommissionEngine
@@ -43,6 +44,7 @@ class WebApplication:
     def snapshot(self) -> dict[str, Any]:
         life_state = GameState.from_dict(self.engine.state.to_dict())
         npc_lives = NpcLifecycleEngine.snapshot(life_state)
+        npc_network = NpcNetworkEngine.snapshot(life_state)
         life_by_name = {item["name"]: item for item in npc_lives["profiles"]}
         npc_profiles = {
             name: {
@@ -80,6 +82,7 @@ class WebApplication:
             "regional": RegionalEngine.snapshot(self.engine.state),
             "cave": CaveEngine.snapshot(self.engine.state),
             "npc_lives": npc_lives,
+            "npc_network": npc_network,
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:
@@ -134,7 +137,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.41"
+        server_version = "XiuxianSimulator/0.42"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

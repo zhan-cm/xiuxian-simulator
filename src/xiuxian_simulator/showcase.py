@@ -12,6 +12,7 @@ from .commissions import CommissionEngine
 from .auctions import AuctionEngine
 from .cave import CaveEngine
 from .npc_lifecycle import NpcLifecycleEngine
+from .npc_network import NpcNetworkEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -43,6 +44,19 @@ def _relations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     record.update({"stage_index": 3, "realm": "筑基·圆满", "cultivation_progress": 220, "age": 191})
     NpcLifecycleEngine.prepare_guard_request(engine.state, "顾清玄", "寿元将尽")
     return app.perform_action("情缘")
+
+
+def _network(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.npc_relations = {
+        "顾清玄": {"affinity": 36, "path": "知己"},
+        "谢无咎": {"affinity": 24, "path": "相识"},
+    }
+    engine.state.player.reputation = 22
+    bond = NpcNetworkEngine.bond(engine.state, "顾清玄", "谢无咎")
+    bond.update({"score": -28, "encounters": 3, "last_event": "二人在青岳灵地归属上各执一词。"})
+    NpcNetworkEngine.create_dispute(engine.state, "顾清玄", "谢无咎", "青岳灵地归属")
+    return app.perform_action("人脉")
 
 
 def _battle(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
@@ -158,6 +172,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
     ("relations", "浮生故人", "验证人物寿元、生平、护道抉择和关系路径。", ["年龄、境界与在世状态来自真实存档", "护道资源门槛与三种选择清楚", "故人生平不挤成一行"], _relations),
+    ("network", "众生缘网", "验证人物彼此结交、嫌隙、往来履历与玩家介入。", ["关系方向和强度可快速辨认", "纷争介入有真实门槛与后果", "巡览中的所有介入按钮必须禁用"], _network),
     ("battle", "临阵抉择", "查看战前敌情和所有可点击战斗抉择。", ["敌我风险明确", "危险操作视觉统一", "选择按钮状态清楚"], _battle),
     ("realms", "九州秘境", "验证秘境危险度、准入境界和确认流程。", ["致命区域必须锁定", "描述与操作分层", "进入前仍有二次确认"], _action("秘境")),
     ("breakthrough", "筑基之门", "检查三条突破路线的材料和风险反馈。", ["路线选中态统一", "缺少材料明确灰化", "心魔雷劫概率可读"], _breakthrough),

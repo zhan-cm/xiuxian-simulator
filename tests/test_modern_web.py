@@ -44,6 +44,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["cave"]["spirit_energy_cap"], 24)
             self.assertEqual(snapshot.json()["npc_lives"]["living_count"], 6)
             self.assertEqual(len(snapshot.json()["npc_lives"]["profiles"]), 6)
+            self.assertEqual(snapshot.json()["npc_network"]["connected_count"], 6)
+            self.assertGreaterEqual(snapshot.json()["npc_network"]["bond_count"], 7)
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -128,6 +130,10 @@ class ModernWebTests(unittest.TestCase):
             self.assertTrue(guardian["pending"])
             self.assertEqual(guardian["pending_kind"], "寿元将尽")
             self.assertTrue(guardian["can_gift_pill"])
+            network = by_id["network"]["snapshot"]["npc_network"]
+            self.assertEqual(network["pending"]["cause"], "青岳灵地归属")
+            self.assertTrue(network["pending"]["can_mediate"])
+            self.assertEqual(len(by_id["network"]["snapshot"]["decision"]["choices"]), 4)
 
 
 if __name__ == "__main__":

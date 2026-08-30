@@ -270,6 +270,23 @@ export interface NpcLifeSnapshot {
   history: string[]; last_event: string
 }
 
+export interface NpcNetworkBond {
+  id: string; left: string; right: string; score: number; label: string
+  tone: 'allied' | 'friendly' | 'neutral' | 'strained' | 'hostile'
+  encounters: number; origin: string; last_event: string; events: string[]
+}
+
+export interface NpcNetworkPending {
+  id?: string; left?: string; right?: string; cause?: string; expires_turn?: number
+  expires_in?: number; can_mediate?: boolean; mediate_chance?: number; mediate_reason?: string
+  can_favor_left?: boolean; can_favor_right?: boolean
+}
+
+export interface NpcNetworkSnapshot {
+  connected_count: number; bond_count: number; allied_count: number; rival_count: number
+  bonds: NpcNetworkBond[]; pending: NpcNetworkPending; history: string[]; last_event: string
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -287,6 +304,7 @@ export interface Snapshot {
   regional: RegionalSnapshot
   cave: CaveSnapshot
   npc_lives: NpcLifeSnapshot
+  npc_network: NpcNetworkSnapshot
   output?: string
 }
 

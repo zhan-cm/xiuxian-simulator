@@ -9,6 +9,7 @@ from .relationships import NPCS, RelationshipEngine
 from .economy import AREA_DESCRIPTIONS, AREA_REGIONS, AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
 from .npc_lifecycle import NpcLifecycleEngine
+from .npc_network import NpcNetworkEngine
 from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .journey import JourneyEngine
@@ -25,7 +26,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 对话 存档 帮助"
+COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -213,6 +214,10 @@ class GameEngine:
             return self._prepare_heart_trial()
         if action in {"世情", "人物动态"}:
             return self._npc_world()
+        if action in {"人脉", "缘网", "众生缘网"}:
+            return self._npc_network()
+        if action.startswith("介入人情"):
+            return self._intervene_network(action)
         if action.startswith("回应"):
             return self._respond_invitation(action)
         if action.startswith("护道"):
@@ -1436,6 +1441,55 @@ class GameEngine:
             + "\n指令：回应 [姓名] 接受／回应 [姓名] 婉拒／护道 [姓名] [赠丹/护持/守候]"
         )
 
+    def _npc_network(self) -> str:
+        network = NpcNetworkEngine.snapshot(self.state)
+        lines = [
+            f"{item['left']} ↔ {item['right']}｜{item['label']} {int(item['score']):+d}｜{item['last_event']}"
+            for item in network["bonds"]
+        ]
+        pending = network["pending"]
+        pending_text = "当前没有需要你表态的人物纷争。"
+        if pending:
+            pending_text = (
+                f"{pending['left']}与{pending['right']}因【{pending['cause']}】相持不下，"
+                f"还可在 {pending['expires_in']} 个月内介入。"
+            )
+        return (
+            "【众生因缘网】\n"
+            + "\n".join(lines)
+            + f"\n\n【缘网概览】相连人物 {network['connected_count']}｜结缘 {network['allied_count']}｜嫌隙 {network['rival_count']}"
+            + f"\n【待决人情】{pending_text}"
+            + "\n指令：介入人情 调停／介入人情 偏袒 [姓名]／介入人情 旁观"
+        )
+
+    def _intervene_network(self, action: str) -> str:
+        parts = action.removeprefix("介入人情").strip().split()
+        if not parts:
+            return "格式：介入人情 调停／介入人情 偏袒 [姓名]／介入人情 旁观。"
+        choice = parts[0]
+        favored = parts[1] if len(parts) == 2 and choice == "偏袒" else ""
+        if choice not in {"调停", "偏袒", "旁观"} or (choice == "偏袒" and not favored) or len(parts) > 2:
+            return "格式：介入人情 调停／介入人情 偏袒 [姓名]／介入人情 旁观。"
+        try:
+            result = NpcNetworkEngine.intervene(self.state, choice, favored)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        self.state.remember(f"介入人物纷争：{result.choice}；{'成功' if result.success else '未成'}")
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "调停人情后寿元耗尽"
+        self._autosave()
+        verdict = ""
+        if result.chance:
+            verdict = f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+        cost = f"｜灵力 -{result.spirit_cost}" if result.spirit_cost else ""
+        ending = "\n【坐化结局】你在人情风波落定后走完此生。" if died_of_age else ""
+        return (
+            f"{self.state.time_label}\n【人情介入 · {result.choice}】\n{result.description}{verdict}{cost}{ending}\n\n"
+            + self._npc_network()
+        )
+
     def _guard_npc(self, action: str) -> str:
         parts = action.removeprefix("护道").strip().split()
         if len(parts) != 2:
@@ -1687,10 +1741,16 @@ class GameEngine:
             expired_life_events = NpcLifecycleEngine.expire_pending(self.state)
             for result in expired_life_events:
                 self.state.remember(f"{result.name}的护道书逾期：{result.description}")
+            expired_network_event = NpcNetworkEngine.expire_pending(self.state)
+            if expired_network_event:
+                self.state.remember(f"众生缘网：{expired_network_event}")
             if self.state.calendar_year != previous_year:
                 for event in NpcLifecycleEngine.advance_year(self.state):
                     self.state.remember(f"浮生录：{event}")
             NpcEcologyEngine.tick(self.state)
+            network_event = NpcNetworkEngine.tick(self.state)
+            if network_event:
+                self.state.remember(f"众生缘网：{network_event}")
             WorldTimelineEngine.tick(self.state)
             CommissionEngine.expire_overdue(self.state)
             AuctionEngine.expire(self.state)
@@ -1724,5 +1784,6 @@ class GameEngine:
             "情劫｜当两段以上暧昧或道侣关系交汇时，可选择坦诚相告、暂避锋芒或一心问道\n"
             "世情｜回应 [姓名] 接受/婉拒｜确立关系 [姓名] [纯友谊/结义/师徒/宿敌]\n"
             "故人护道｜护道 [姓名] [赠丹/护持/守候]；人物会真实老去、破境与辞世\n"
+            "人脉｜查看人物之间的结交与嫌隙｜介入人情 [调停/偏袒 姓名/旁观]\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

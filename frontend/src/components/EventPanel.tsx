@@ -1,6 +1,6 @@
-import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, UserRound, Wind, X } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { CaveSnapshot, NpcLifeSnapshot, Presentation, PresentationBlock } from '../api/types'
+import type { CaveSnapshot, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock } from '../api/types'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -47,6 +47,42 @@ function PeopleBlock({ block, lives, readOnly, onAction }: { block: Presentation
         })}
       </div>
       {lives?.memorials.length ? <details className="memorial-book"><summary>故人名录 · {lives.memorials.length}</summary><ol>{lives.memorials.map((entry) => <li key={`${entry.name}-${entry.year}`}><span>{entry.name}</span><strong>{entry.realm} · 享年 {entry.age}</strong><small>{entry.cause}</small></li>)}</ol></details> : null}
+    </section>
+  )
+}
+
+function NpcNetworkBlock({ network, readOnly, onAction }: { network: NpcNetworkSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
+  const pending = network.pending?.id ? network.pending : null
+  return (
+    <section className="semantic-block npc-network-block">
+      <header><Waypoints size={16} /><strong>众生因缘网</strong><small>{network.connected_count} 人相连 · {network.bond_count} 段因缘</small></header>
+      <div className="network-summary">
+        <span><strong>{network.allied_count}</strong><small>深交同盟</small></span>
+        <span><strong>{network.rival_count}</strong><small>嫌隙宿敌</small></span>
+        <span><strong>{network.history.length}</strong><small>近世传闻</small></span>
+      </div>
+      {pending && <article className="network-dispute">
+        <header><Scale size={16} /><div><small>四个月内可介入</small><strong>{pending.left} · {pending.cause} · {pending.right}</strong></div><em>余 {pending.expires_in} 月</em></header>
+        <p>你可以居中调停、公开偏袒一方，或把结果交还给二人自己决定。</p>
+        <div>
+          <button type="button" disabled={readOnly || !pending.can_mediate} title={pending.can_mediate ? `成功率 ${pending.mediate_chance}%，消耗灵力 20` : pending.mediate_reason} onClick={() => onAction('介入人情 调停')}><Scale size={12} />调停 {pending.mediate_chance || '—'}%</button>
+          <button type="button" disabled={readOnly || !pending.can_favor_left} title={pending.can_favor_left ? `偏袒${pending.left}会加深双方嫌隙` : `与${pending.left}好感需达到 10`} onClick={() => onAction(`介入人情 偏袒 ${pending.left}`)}>偏袒 {pending.left}</button>
+          <button type="button" disabled={readOnly || !pending.can_favor_right} title={pending.can_favor_right ? `偏袒${pending.right}会加深双方嫌隙` : `与${pending.right}好感需达到 10`} onClick={() => onAction(`介入人情 偏袒 ${pending.right}`)}>偏袒 {pending.right}</button>
+          <button type="button" disabled={readOnly} title="不消耗资源，结果由二人自行决定" onClick={() => onAction('介入人情 旁观')}>静观其变</button>
+        </div>
+      </article>}
+      <div className="network-bond-grid">
+        {network.bonds.map((bond) => {
+          const position = Math.max(0, Math.min(100, (bond.score + 100) / 2))
+          return <article className="network-bond" data-tone={bond.tone} key={bond.id}>
+            <header><span>{bond.left.slice(0, 1)}</span><div><strong>{bond.left}</strong><i><b style={{ width: `${position}%` }} /></i><small>{bond.score > 0 ? '相契' : bond.score < 0 ? '相左' : '未定'} {Math.abs(bond.score)}</small></div><span>{bond.right.slice(0, 1)}</span></header>
+            <div><strong>{bond.label}</strong><small>{bond.encounters ? `${bond.encounters} 次交集` : '旧缘底色'}</small></div>
+            <p>{bond.last_event}</p>
+            {bond.events.length > 1 && <details><summary>查看往来</summary><ol>{bond.events.map((entry, index) => <li key={`${entry}-${index}`}>{entry}</li>)}</ol></details>}
+          </article>
+        })}
+      </div>
+      {network.history.length > 0 && <details className="network-rumors"><summary><Swords size={12} />展开最近九州人情传闻</summary><ol>{[...network.history].reverse().map((entry, index) => <li key={`${entry}-${index}`}>{entry}</li>)}</ol></details>}
     </section>
   )
 }
@@ -249,7 +285,9 @@ function Block({ block, cave, lives, readOnly, onAction }: { block: Presentation
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, readOnly = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; readOnly?: boolean; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; readOnly?: boolean; onAction: (action: string) => void }) {
+  const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
+  const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
   return (
     <article className="event-panel" data-tone={presentation.tone || 'story'}>
       <div className="event-ornament" aria-hidden="true" />
@@ -257,16 +295,17 @@ export function EventPanel({ presentation, cave, npcLives, readOnly = false, onA
         <span className="event-seal">{presentation.seal || '道'}</span>
         <div><p>{presentation.eyebrow || '当前道途'}</p><h2>{presentation.title || '灵气潮汐将至'}</h2></div>
       </header>
-      <div className="event-copy">
+      {(!showNetwork || showNetworkOutcome) && <div className="event-copy">
         {(presentation.paragraphs || []).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-      </div>
+      </div>}
       {presentation.changes?.length > 0 && (
         <div className="change-row">
           {presentation.changes.map((change, index) => <span key={`${change.label}-${index}`}><small>{change.label}</small><strong>{change.value}</strong></span>)}
         </div>
       )}
       <div className="event-blocks">
-        {(presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={onAction} key={`${block.type}-${index}`} />)}
+        {!showNetwork && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={onAction} key={`${block.type}-${index}`} />)}
+        {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={onAction} />}
       </div>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>
