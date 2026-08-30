@@ -1,6 +1,6 @@
-import { ArrowRight, Check, Coins, Compass, FlaskConical, Hammer, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShoppingBag, Sprout, UserRound, Wind } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShoppingBag, Sparkles, Sprout, UserRound, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { Presentation, PresentationBlock } from '../api/types'
+import type { CaveSnapshot, Presentation, PresentationBlock } from '../api/types'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -137,25 +137,47 @@ function MarketBlock({ block, onAction }: { block: PresentationBlock; onAction: 
   )
 }
 
-function FacilitiesBlock({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
+function FacilitiesBlock({ block, cave, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; onAction: (action: string) => void }) {
+  const energyPercent = cave ? Math.max(0, Math.min(100, Math.round(cave.spirit_energy / Math.max(1, cave.spirit_energy_cap) * 100))) : 0
   return (
     <section className="semantic-block facility-block">
-      <header><Landmark size={16} /><strong>{block.title || '洞府设施'}</strong><small>灵气 {text(block.aura, '普通')} · 灵田 {text(block.crops, '无作物')}</small></header>
-      <div className="facility-grid">
-        {(block.items || []).map((item) => {
-          const level = Number(item.level || 0)
-          const materials = item.materials && typeof item.materials === 'object' ? Object.entries(item.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') : ''
-          const available = item.affordable === true
-          return (
-            <article className="facility-card" key={text(item.name)}>
-              <header><span><Hammer size={15} /></span><div><strong>{text(item.name)}</strong><small>{level ? `${level} 级设施` : '尚未营造'}</small></div><div className="level-pips">{[1, 2, 3].map((value) => <i data-filled={value <= level || undefined} key={value} />)}</div></header>
-              <p>灵石 {text(item.cost_stones)}{materials ? ` · ${materials}` : ''}</p>
-              <button type="button" disabled={!available} title={available ? '升级会推进一个月' : text(item.disabled_reason)} onClick={() => onAction(text(item.action))}>{level >= 3 ? '已达上限' : available ? `升至 ${level + 1} 级` : text(item.disabled_reason, '材料不足')}</button>
-            </article>
-          )
-        })}
-      </div>
+      <header><Landmark size={16} /><strong>{cave?.name || block.title || '洞府设施'}</strong><small>灵气 {cave?.aura || text(block.aura, '普通')} · 灵田 {text(block.crops, '无作物')}</small></header>
+      {cave && <>
+        <div className="cave-overview">
+          <article className="cave-energy"><span><Sparkles size={17} /></span><div><small>洞府灵蕴</small><strong>{cave.spirit_energy} <i>/ {cave.spirit_energy_cap}</i></strong><div><b style={{ width: `${energyPercent}%` }} /></div></div><em>每月 +{cave.monthly_generation}</em></article>
+          <article className="cave-operation"><Gauge size={17} /><div><small>当前方针</small><strong>{cave.focus}</strong><p>{cave.last_event || '洞府正在安稳运转'}</p></div><button type="button" disabled={!cave.can_recuperate} title={cave.can_recuperate ? '消耗 10 灵蕴并推进一个月' : cave.recuperate_reason} onClick={() => onAction('洞府调息')}>调息养元</button></article>
+        </div>
+        <div className="cave-focus-grid" aria-label="洞府运转方针">
+          {cave.focuses.map((focus) => <button type="button" data-active={focus.active || undefined} disabled={focus.active || !focus.available} title={!focus.available ? focus.disabled_reason : focus.summary} onClick={() => onAction(focus.action)} key={focus.name}><span>{focus.active ? <Check size={13} /> : <Wind size={13} />}</span><strong>{focus.name}</strong><small>{focus.summary}</small></button>)}
+        </div>
+        <section className="cave-workshop">
+          <header><Clock3 size={15} /><div><strong>后台工坊</strong><small>{cave.active_jobs}/{cave.capacity} 个生产位运转中</small></div></header>
+          {cave.jobs.length ? <div className="cave-job-grid">{cave.jobs.map((job) => <article key={job.id}><span>{job.recipe.slice(0, 1)}</span><div><strong>{job.recipe}<small>{job.facility} · 成功率 {job.chance}%</small></strong><div><b style={{ width: `${job.progress}%` }} /></div><p>{job.months_left ? `还需 ${job.months_left} 个月` : '本月结算'} · {job.output}×{job.output_count}</p></div><button type="button" title="取消后取回全部预留材料" onClick={() => onAction(job.cancel_action)}><X size={13} />取消</button></article>)}</div> : <div className="cave-empty-job"><Clock3 size={18} /><span><strong>尚无后台生产</strong><small>先建成对应设施，再从下方配方安排任务。</small></span></div>}
+        </section>
+      </>}
+      <details className="cave-fold" open>
+        <summary><span>洞府设施</span><small>升级设施会推进一个月，并提升对应能力</small></summary>
+        <div className="facility-grid">
+          {(block.items || []).map((item) => {
+            const level = Number(item.level || 0)
+            const materials = item.materials && typeof item.materials === 'object' ? Object.entries(item.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') : ''
+            const available = item.affordable === true
+            return (
+              <article className="facility-card" key={text(item.name)}>
+                <header><span><Hammer size={15} /></span><div><strong>{text(item.name)}</strong><small>{level ? `${level} 级设施` : '尚未营造'}</small></div><div className="level-pips">{[1, 2, 3].map((value) => <i data-filled={value <= level || undefined} key={value} />)}</div></header>
+                <p>灵石 {text(item.cost_stones)}{materials ? ` · ${materials}` : ''}</p>
+                <button type="button" disabled={!available} title={available ? '升级会推进一个月' : text(item.disabled_reason)} onClick={() => onAction(text(item.action))}>{level >= 3 ? '已达上限' : available ? `升至 ${level + 1} 级` : text(item.disabled_reason, '材料不足')}</button>
+              </article>
+            )
+          })}
+        </div>
+      </details>
+      {cave && <details className="cave-fold">
+        <summary><span>生产配方</span><small>{cave.blueprints.length} 种 · 材料在安排时预留</small></summary>
+        <div className="cave-blueprints">{cave.blueprints.map((item) => { const ingredients = Object.entries(item.ingredients).map(([name, count]) => `${name}×${count}`).join('、'); return <article key={item.name}><span>{item.craft.slice(0, 1)}</span><div><strong>{item.name}<small>{item.facility} · {item.duration} 个月 · {item.chance}%</small></strong><p>{ingredients} → {item.output}×{item.output_count}</p></div><button type="button" disabled={!item.available} title={item.available ? '安排后台生产，不立即推进时间' : item.disabled_reason} onClick={() => onAction(item.action)}>{item.available ? '安排生产' : item.disabled_reason}</button></article> })}</div>
+      </details>}
       <div className="crop-actions"><button type="button" onClick={() => onAction('种植 灵药')}><Sprout size={14} />种植灵药</button><button type="button" onClick={() => onAction('收获 灵药')}><FlaskConical size={14} />收获灵药</button></div>
+      {cave?.ledger.length ? <details className="cave-ledger"><summary>查看最近洞府月报</summary><ol>{cave.ledger.map((entry, index) => <li key={`${entry}-${index}`}>{entry}</li>)}</ol></details> : null}
     </section>
   )
 }
@@ -200,20 +222,20 @@ function GenericBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
-function Block({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
+function Block({ block, cave, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; onAction: (action: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
   if (block.type === 'people') return <PeopleBlock block={block} />
   if (block.type === 'regions') return <RegionsBlock block={block} onAction={onAction} />
   if (block.type === 'locations') return <LocationsBlock block={block} onAction={onAction} />
   if (block.type === 'meter') return <MeterBlock block={block} />
   if (block.type === 'market') return <MarketBlock block={block} onAction={onAction} />
-  if (block.type === 'facilities') return <FacilitiesBlock block={block} onAction={onAction} />
+  if (block.type === 'facilities') return <FacilitiesBlock block={block} cave={cave} onAction={onAction} />
   if (block.type === 'recipes') return <RecipesBlock block={block} onAction={onAction} />
   if (block.type === 'sects') return <SectsBlock block={block} onAction={onAction} />
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, onAction }: { presentation: Presentation; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, onAction }: { presentation: Presentation; cave?: CaveSnapshot; onAction: (action: string) => void }) {
   return (
     <article className="event-panel" data-tone={presentation.tone || 'story'}>
       <div className="event-ornament" aria-hidden="true" />
@@ -230,7 +252,7 @@ export function EventPanel({ presentation, onAction }: { presentation: Presentat
         </div>
       )}
       <div className="event-blocks">
-        {(presentation.blocks || []).map((block, index) => <Block block={block} onAction={onAction} key={`${block.type}-${index}`} />)}
+        {(presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} onAction={onAction} key={`${block.type}-${index}`} />)}
       </div>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>

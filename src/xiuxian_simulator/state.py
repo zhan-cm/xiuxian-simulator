@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.39.0"
+    version: str = "0.40.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -87,6 +87,13 @@ class GameState:
     pending_loot: dict[str, int] = field(default_factory=dict)
     cave_facilities: dict[str, int] = field(default_factory=dict)
     spirit_crops: dict[str, int] = field(default_factory=dict)
+    cave_name: str = "青岳石屋"
+    cave_spirit_energy: int = 0
+    cave_focus: str = "蕴养灵脉"
+    cave_workshop_jobs: list[dict[str, Any]] = field(default_factory=list)
+    cave_job_counter: int = 0
+    cave_ledger: list[str] = field(default_factory=list)
+    last_cave_event: str = ""
     npc_relations: dict[str, dict[str, Any]] = field(default_factory=dict)
     dao_partners: list[str] = field(default_factory=list)
     relationship_tension: int = 0

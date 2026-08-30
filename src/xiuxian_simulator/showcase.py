@@ -10,6 +10,7 @@ from .save_manager import SaveManager
 from .webapp import WebApplication
 from .commissions import CommissionEngine
 from .auctions import AuctionEngine
+from .cave import CaveEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -64,7 +65,10 @@ def _cave(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.spirit_stones = 1200
     engine.state.player.resources.update({"灵药": 3, "灵铁": 12, "五行灵珠": 1})
-    engine.state.cave_facilities.update({"静室": 1, "灵田": 1})
+    engine.state.cave_facilities.update({"静室": 1, "丹房": 2, "灵田": 1, "聚灵阵": 1})
+    engine.state.cave_spirit_energy = 31
+    engine.state.cave_focus = "百艺轮转"
+    CaveEngine.queue_recipe(engine.state, "聚气丹")
     return app.perform_action("洞府")
 
 
@@ -153,7 +157,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("realms", "九州秘境", "验证秘境危险度、准入境界和确认流程。", ["致命区域必须锁定", "描述与操作分层", "进入前仍有二次确认"], _action("秘境")),
     ("breakthrough", "筑基之门", "检查三条突破路线的材料和风险反馈。", ["路线选中态统一", "缺少材料明确灰化", "心魔雷劫概率可读"], _breakthrough),
     ("crafts", "修仙百艺", "验证配方材料、成功率和制作入口。", ["配方可快速比较", "缺少材料自动锁定", "制作会推进时间"], _crafts),
-    ("cave", "洞府营造", "查看设施等级、升级消耗和灵田操作。", ["设施等级组件化", "升级条件真实计算", "灵田操作集中展示"], _cave),
+    ("cave", "洞天经营", "查看洞府灵蕴、运转方针、后台生产与设施营造。", ["灵蕴与月度产量清楚", "后台工坊展示真实工期", "设施、方针与配方分层收纳"], _cave),
     ("world", "九州天下", "检查势力、民生、世界阶段和大事记。", ["世界状态不挤占主剧情", "势力数值易比较", "旧事件按需展开"], _action("天下")),
     ("arts", "道法构筑", "查看主修、辅修、法术与装备信息。", ["构筑关系应结构化", "未装备内容不占大段文字", "后续可扩展装备详情"], _action("道法")),
 )

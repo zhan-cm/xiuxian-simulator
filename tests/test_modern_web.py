@@ -39,6 +39,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(len(snapshot.json()["travel"]["regions"]), 5)
             self.assertEqual(snapshot.json()["regional"]["current_rank"], "初来乍到")
             self.assertEqual(len(snapshot.json()["regional"]["standings"]), 5)
+            self.assertEqual(snapshot.json()["cave"]["focus"], "蕴养灵脉")
+            self.assertEqual(snapshot.json()["cave"]["spirit_energy_cap"], 24)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -111,6 +113,11 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(len(regional["decision"]["choices"]), 3)
             donation = next(choice for choice in regional["decision"]["choices"] if choice["action"] == "地方选择 lure")
             self.assertFalse(donation["disabled"])
+            cave = by_id["cave"]["snapshot"]["cave"]
+            self.assertEqual(cave["focus"], "百艺轮转")
+            self.assertEqual(cave["active_jobs"], 1)
+            self.assertEqual(cave["jobs"][0]["recipe"], "聚气丹")
+            self.assertGreater(cave["capacity"], cave["active_jobs"])
 
 
 if __name__ == "__main__":

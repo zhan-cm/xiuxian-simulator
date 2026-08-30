@@ -69,12 +69,15 @@ class CraftingEngine:
             lines.append(f"{recipe.craft} {recipe.name}｜{ingredients} → {recipe.output}×{recipe.output_count}")
         return lines
 
+    @staticmethod
+    def success_chance(state: GameState, recipe: Recipe, bonus: int = 0) -> int:
+        skill_level = state.player.craft_skills.get(recipe.craft, 0)
+        facility_level = state.cave_facilities.get(recipe.facility, 0)
+        sense_bonus = (state.player.spirit_sense - 10) * 2
+        return max(5, min(98, recipe.base_chance + skill_level * 8 + facility_level * 5 + sense_bonus + bonus))
+
     @classmethod
-    def craft(cls, state: GameState, craft: str, name: str) -> CraftResult:
-        if name not in RECIPES or RECIPES[name].craft != craft:
-            choices = [recipe.name for recipe in RECIPES.values() if recipe.craft == craft]
-            raise ValueError(f"未知{craft}配方。可制作：" + "、".join(choices))
-        recipe = RECIPES[name]
+    def consume_ingredients(cls, state: GameState, recipe: Recipe) -> None:
         missing = [
             f"{item}×{count}"
             for item, count in recipe.ingredients.items()
@@ -87,23 +90,33 @@ class CraftingEngine:
             if state.player.resources[item] <= 0:
                 state.player.resources.pop(item, None)
 
-        skill_level = state.player.craft_skills.get(craft, 0)
-        facility_level = state.cave_facilities.get(recipe.facility, 0)
-        sense_bonus = (state.player.spirit_sense - 10) * 2
-        chance = max(5, min(98, recipe.base_chance + skill_level * 8 + facility_level * 5 + sense_bonus))
+    @classmethod
+    def record_success(cls, state: GameState, recipe: Recipe) -> bool:
+        cls.add_resource(state, recipe.output, recipe.output_count)
+        skill_level = state.player.craft_skills.get(recipe.craft, 0)
+        successes = state.player.craft_successes.get(recipe.craft, 0) + 1
+        state.player.craft_successes[recipe.craft] = successes
+        new_level = min(4, successes // 3)
+        leveled_up = new_level > skill_level
+        if leveled_up:
+            state.player.craft_skills[recipe.craft] = new_level
+        if recipe.craft == "炼丹":
+            state.player.alchemy_level = state.player.craft_skills.get("炼丹", 0)
+        return leveled_up
+
+    @classmethod
+    def craft(cls, state: GameState, craft: str, name: str) -> CraftResult:
+        if name not in RECIPES or RECIPES[name].craft != craft:
+            choices = [recipe.name for recipe in RECIPES.values() if recipe.craft == craft]
+            raise ValueError(f"未知{craft}配方。可制作：" + "、".join(choices))
+        recipe = RECIPES[name]
+        cls.consume_ingredients(state, recipe)
+        chance = cls.success_chance(state, recipe)
         roll = ProgressionEngine.deterministic_roll(state, f"craft:{craft}:{name}:{state.turn}")
         success = roll <= chance
         leveled_up = False
         if success:
-            cls.add_resource(state, recipe.output, recipe.output_count)
-            successes = state.player.craft_successes.get(craft, 0) + 1
-            state.player.craft_successes[craft] = successes
-            new_level = min(4, successes // 3)
-            if new_level > skill_level:
-                state.player.craft_skills[craft] = new_level
-                leveled_up = True
-            if craft == "炼丹":
-                state.player.alchemy_level = state.player.craft_skills.get("炼丹", 0)
+            leveled_up = cls.record_success(state, recipe)
         return CraftResult(recipe, success, roll, chance, leveled_up)
 
     @staticmethod

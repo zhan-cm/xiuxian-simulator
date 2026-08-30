@@ -17,6 +17,7 @@ from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
 from .regional import RegionalEngine
+from .cave import CaveEngine
 from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
@@ -191,6 +192,14 @@ class GameEngine:
             return self._craft(action, "制符", "符箓")
         if action == "洞府":
             return self._cave()
+        if action.startswith("洞府方针"):
+            return self._set_cave_focus(action)
+        if action.startswith("洞府生产"):
+            return self._queue_cave_production(action)
+        if action.startswith("取消洞府生产"):
+            return self._cancel_cave_production(action)
+        if action == "洞府调息":
+            return self._cave_recuperate()
         if action.startswith("升级洞府"):
             return self._upgrade_cave(action)
         if action.startswith("种植"):
@@ -1231,16 +1240,69 @@ class GameEngine:
         )
 
     def _cave(self) -> str:
+        cave = CaveEngine.snapshot(self.state)
         facilities = "\n".join(f"{name}：{self.state.cave_facilities.get(name, 0)} 级" for name in FACILITIES)
         crops = []
         for name, ready_turn in self.state.spirit_crops.items():
             remaining = max(0, ready_turn - self.state.turn)
             crops.append(f"{name}：{'可收获' if remaining == 0 else f'{remaining}个月后成熟'}")
         return (
-            f"【洞府】灵气：{self.state.aura_level}\n{facilities}\n"
+            f"【洞府】{cave['name']}｜灵气：{self.state.aura_level}\n"
+            f"灵蕴：{cave['spirit_energy']}/{cave['spirit_energy_cap']}｜每月 +{cave['monthly_generation']}｜方针：{cave['focus']}\n"
+            f"工坊：{cave['active_jobs']}/{cave['capacity']} 项进行中\n{facilities}\n"
             f"灵田：{'、'.join(crops) if crops else '无作物'}\n"
-            "指令：升级洞府 [设施]／种植 灵药／收获 灵药"
+            "指令：洞府方针 [名称]／洞府生产 [配方]／洞府调息／升级洞府 [设施]／种植/收获 灵药"
         )
+
+    def _set_cave_focus(self, action: str) -> str:
+        focus = action.removeprefix("洞府方针").strip()
+        try:
+            CaveEngine.set_focus(self.state, focus)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"洞府运转方针改为{focus}")
+        self._autosave()
+        return f"洞府已经改按“{focus}”运转；从下个月起按新方针结算。\n\n{self._cave()}"
+
+    def _queue_cave_production(self, action: str) -> str:
+        name = action.removeprefix("洞府生产").strip()
+        try:
+            job = CaveEngine.queue_recipe(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        ingredients = "、".join(f"{item}×{count}" for item, count in dict(job["ingredients"]).items())
+        self.state.remember(f"安排洞府后台制作{name}，预留{ingredients}")
+        self._autosave()
+        return (
+            f"【洞府生产已安排】{name}\n"
+            f"工坊：{job['facility']}｜工期：{job['duration']} 个月｜成功率：{job['chance']}%\n"
+            f"预留材料：{ingredients}；你可照常修炼、游历或处理其他事务。\n\n{self._cave()}"
+        )
+
+    def _cancel_cave_production(self, action: str) -> str:
+        job_id = action.removeprefix("取消洞府生产").strip()
+        try:
+            job = CaveEngine.cancel_job(self.state, job_id)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"取消洞府生产{job_id}，取回全部预留材料")
+        self._autosave()
+        return f"已取消{job.get('recipe', '该项生产')}，预留材料已全部放回乾坤袋。\n\n{self._cave()}"
+
+    def _cave_recuperate(self) -> str:
+        try:
+            health, spirit, cost = CaveEngine.recuperate(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "洞府调息时寿元耗尽"
+        self.state.remember(f"洞府调息消耗灵蕴{cost}，气血+{health}、灵力+{spirit}")
+        self._autosave()
+        if died_of_age:
+            return "你在静室调息时寿元耗尽。\n【坐化结局】"
+        return f"{self.state.time_label}\n【洞府调息】气血 +{health}｜灵力 +{spirit}｜灵蕴 -{cost}\n\n{self._cave()}"
 
     def _upgrade_cave(self, action: str) -> str:
         facility = action.removeprefix("升级洞府").strip()
@@ -1593,6 +1655,9 @@ class GameEngine:
             WorldTimelineEngine.tick(self.state)
             CommissionEngine.expire_overdue(self.state)
             AuctionEngine.expire(self.state)
+            cave_tick = CaveEngine.tick(self.state)
+            for event in cave_tick.events:
+                self.state.remember(f"洞府月报：{event}")
         return died_of_age
 
     @staticmethod
@@ -1615,7 +1680,7 @@ class GameEngine:
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "背包｜使用 [丹药/灵食]｜装备法宝/卸下法宝 [名称]\n"
             "道法｜参悟 [功法/法术]｜装备功法/法术/法宝 [名称]｜辅修功法 [名称]\n"
-            "技艺｜炼丹/炼器/制符 [名称]｜洞府｜升级洞府 [设施]｜种植/收获 灵药\n"
+            "技艺｜炼丹/炼器/制符 [名称]｜洞府｜洞府方针/生产/调息｜升级洞府 [设施]｜种植/收获 灵药\n"
             "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"
             "情劫｜当两段以上暧昧或道侣关系交汇时，可选择坦诚相告、暂避锋芒或一心问道\n"
             "世情｜回应 [姓名] 接受/婉拒｜确立关系 [姓名] [纯友谊/结义/师徒/宿敌]\n"

@@ -40,6 +40,7 @@ from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
 from xiuxian_simulator.regional import RegionalEngine
+from xiuxian_simulator.cave import CaveEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -738,6 +739,77 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.trade_profit, 0)
         self.assertEqual(state.regional_reputation["东洲"], 0)
         self.assertEqual(state.regional_encounters_completed, [])
+
+    def test_cave_background_job_reserves_materials_and_completes_over_time(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.cave_facilities["丹房"] = 1
+            engine.state.player.resources["灵药"] = 4
+            turn = engine.state.turn
+            queued = engine.process("洞府生产 聚气丹")
+            self.assertIn("生产已安排", queued)
+            self.assertEqual(engine.state.turn, turn)
+            self.assertEqual(engine.state.player.resources["灵药"], 2)
+            self.assertEqual(len(engine.state.cave_workshop_jobs), 1)
+            engine.state.cave_workshop_jobs[0]["chance"] = 100
+            engine.process("修炼")
+            self.assertEqual(len(engine.state.cave_workshop_jobs), 1)
+            engine.process("修炼")
+            self.assertEqual(engine.state.cave_workshop_jobs, [])
+            self.assertEqual(engine.state.player.resources["聚气丹"], 2)
+            self.assertIn("完成聚气丹", engine.state.last_cave_event)
+            saved = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["cave_workshop_jobs"], [])
+            self.assertEqual(saved["player"]["resources"]["聚气丹"], 2)
+
+    def test_cave_queue_capacity_and_cancellation_are_lossless(self) -> None:
+        state = GameState(phase="playing")
+        state.cave_facilities["丹房"] = 1
+        state.player.resources["灵药"] = 5
+        job = CaveEngine.queue_recipe(state, "聚气丹")
+        with self.assertRaisesRegex(ValueError, "生产位已满"):
+            CaveEngine.queue_recipe(state, "疗伤丹")
+        CaveEngine.cancel_job(state, str(job["id"]))
+        self.assertEqual(state.cave_workshop_jobs, [])
+        self.assertEqual(state.player.resources["灵药"], 5)
+
+    def test_cave_focus_converts_monthly_energy_into_persistent_progress(self) -> None:
+        state = GameState(phase="playing")
+        state.cave_facilities["静室"] = 1
+        CaveEngine.set_focus(state, "潜修养元")
+        for _ in range(2):
+            state.advance_month()
+            CaveEngine.tick(state)
+        self.assertEqual(state.player.cultivation, 2)
+        self.assertEqual(state.cave_spirit_energy, 1)
+        snapshot = CaveEngine.snapshot(state)
+        self.assertEqual(snapshot["focus"], "潜修养元")
+        self.assertEqual(snapshot["spirit_energy_cap"], 24)
+        self.assertEqual(len(snapshot["blueprints"]), 7)
+
+    def test_cave_recuperation_enforces_facility_energy_and_no_waste(self) -> None:
+        state = GameState(phase="playing")
+        with self.assertRaisesRegex(ValueError, "静室"):
+            CaveEngine.recuperate(state)
+        state.cave_facilities["静室"] = 1
+        state.cave_spirit_energy = 20
+        with self.assertRaisesRegex(ValueError, "无需"):
+            CaveEngine.recuperate(state)
+        state.player.health = 50
+        state.player.spirit = 60
+        health, spirit, cost = CaveEngine.recuperate(state)
+        self.assertEqual((health, spirit, cost), (35, 35, 10))
+        self.assertEqual(state.cave_spirit_energy, 10)
+
+    def test_old_save_receives_cave_management_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.39.0", "phase": "playing", "player": {}})
+        self.assertEqual(state.cave_name, "青岳石屋")
+        self.assertEqual(state.cave_focus, "蕴养灵脉")
+        self.assertEqual(state.cave_spirit_energy, 0)
+        self.assertEqual(state.cave_workshop_jobs, [])
+        self.assertEqual(CaveEngine.snapshot(state)["monthly_generation"], 3)
 
     def test_market_rejects_unaffordable_purchase_without_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -20,6 +20,7 @@ from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import TravelEngine
 from .regional import RegionalEngine
+from .cave import CaveEngine
 
 
 CONTENT_TYPES = {
@@ -69,6 +70,7 @@ class WebApplication:
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),
             "regional": RegionalEngine.snapshot(self.engine.state),
+            "cave": CaveEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:
@@ -123,7 +125,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.39"
+        server_version = "XiuxianSimulator/0.40"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

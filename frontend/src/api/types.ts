@@ -228,6 +228,30 @@ export interface RegionalSnapshot {
   standings: RegionalStanding[]; history: string[]
 }
 
+export interface CaveFocus {
+  name: string; summary: string; active: boolean; available: boolean
+  disabled_reason: string; action: string
+}
+
+export interface CaveJob {
+  id: string; recipe: string; craft: string; facility: string; duration: number
+  months_left: number; progress: number; chance: number; output: string
+  output_count: number; ingredients: Record<string, number>; cancel_action: string
+}
+
+export interface CaveBlueprint {
+  name: string; craft: string; facility: string; duration: number
+  ingredients: Record<string, number>; output: string; output_count: number
+  chance: number; available: boolean; disabled_reason: string; action: string
+}
+
+export interface CaveSnapshot {
+  name: string; aura: string; spirit_energy: number; spirit_energy_cap: number
+  monthly_generation: number; focus: string; focuses: CaveFocus[]
+  capacity: number; active_jobs: number; jobs: CaveJob[]; blueprints: CaveBlueprint[]
+  last_event: string; ledger: string[]; can_recuperate: boolean; recuperate_reason: string
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -243,6 +267,7 @@ export interface Snapshot {
   auction: AuctionSnapshot
   travel: TravelSnapshot
   regional: RegionalSnapshot
+  cave: CaveSnapshot
   output?: string
 }
 
