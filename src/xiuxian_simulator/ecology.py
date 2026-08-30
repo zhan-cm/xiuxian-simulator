@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
+from .npc_lifecycle import NpcLifecycleEngine
 from .relationships import NPCS, RelationshipEngine
 from .state import GameState
 
@@ -29,18 +30,7 @@ class NpcEcologyEngine:
 
     @classmethod
     def world_record(cls, state: GameState, name: str) -> dict[str, object]:
-        npc = RelationshipEngine.npc(name)
-        return state.npc_world.setdefault(
-            name,
-            {
-                "location": npc.location,
-                "activity": "各循其道",
-                "cultivation_progress": 0,
-                "spirit_stones": 100,
-                "wounded": False,
-                "events": 0,
-            },
-        )
+        return NpcLifecycleEngine.world_record(state, name)
 
     @classmethod
     def tick(cls, state: GameState) -> EcologyEvent:
@@ -48,9 +38,16 @@ class NpcEcologyEngine:
             if int(state.npc_invitations[name].get("expires_turn", 0)) < state.turn:
                 state.npc_invitations.pop(name, None)
 
-        names = tuple(NPCS)
+        names = tuple(name for name in NPCS if bool(cls.world_record(state, name).get("alive", True)))
+        if not names:
+            return EcologyEvent("九州", "故人寂寥", "昔日故人皆已走完自己的道途，天地仍照常运转。")
         name = names[cls._number(state, "npc-feature", len(names))]
         record = cls.world_record(state, name)
+        if name in state.pending_npc_life_events:
+            alternatives = tuple(candidate for candidate in names if candidate not in state.pending_npc_life_events)
+            if alternatives:
+                name = alternatives[cls._number(state, "npc-feature-alternative", len(alternatives))]
+                record = cls.world_record(state, name)
         relation = RelationshipEngine.relation(state, name)
         action_index = cls._number(state, f"npc-action:{name}", 5)
         record["events"] = int(record.get("events", 0)) + 1
@@ -100,6 +97,8 @@ class NpcEcologyEngine:
     @classmethod
     def respond(cls, state: GameState, name: str, decision: str) -> tuple[str, int, str]:
         RelationshipEngine.npc(name)
+        if not bool(cls.world_record(state, name).get("alive", True)):
+            raise ValueError(f"{name}已不在人世，旧日邀约也随风而散。")
         if name not in state.npc_invitations:
             raise ValueError(f"当前没有{name}发来的待回应邀约。")
         if decision not in {"接受", "婉拒"}:

@@ -26,6 +26,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(health.headers["x-content-type-options"], "nosniff")
             self.assertEqual(health.headers["cache-control"], "no-store")
 
+            before_snapshot = engine.state.to_dict()
             snapshot = client.get("/api/v1/state")
             self.assertEqual(snapshot.status_code, 200)
             self.assertEqual(snapshot.json()["state"]["phase"], "new")
@@ -41,6 +42,9 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(len(snapshot.json()["regional"]["standings"]), 5)
             self.assertEqual(snapshot.json()["cave"]["focus"], "蕴养灵脉")
             self.assertEqual(snapshot.json()["cave"]["spirit_energy_cap"], 24)
+            self.assertEqual(snapshot.json()["npc_lives"]["living_count"], 6)
+            self.assertEqual(len(snapshot.json()["npc_lives"]["profiles"]), 6)
+            self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -118,6 +122,12 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(cave["active_jobs"], 1)
             self.assertEqual(cave["jobs"][0]["recipe"], "聚气丹")
             self.assertGreater(cave["capacity"], cave["active_jobs"])
+            relations = by_id["relations"]["snapshot"]["npc_lives"]
+            self.assertEqual(relations["pending_count"], 1)
+            guardian = next(item for item in relations["profiles"] if item["name"] == "顾清玄")
+            self.assertTrue(guardian["pending"])
+            self.assertEqual(guardian["pending_kind"], "寿元将尽")
+            self.assertTrue(guardian["can_gift_pill"])
 
 
 if __name__ == "__main__":

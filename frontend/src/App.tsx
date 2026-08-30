@@ -30,11 +30,12 @@ function ErrorScreen({ message }: { message: string }) {
   return <main className="loading-screen error"><CircleAlert /><h1>暂时未能连通本地世界</h1><p>{message}</p><button type="button" onClick={() => window.location.reload()}>重新尝试</button></main>
 }
 
-function Relations({ snapshot }: { snapshot: Snapshot }) {
+function Relations({ snapshot, onAction }: { snapshot: Snapshot; onAction: (action: string) => void }) {
   const known = Object.entries(snapshot.state.npc_relations || {}).filter(([, relation]) => Number(relation.affinity || 0) !== 0 || relation.path)
+  const pending = snapshot.npc_lives?.pending_count || 0
   return (
-    <Panel title="人物牵绊" icon={<HeartHandshake size={18} />} meta={known.length ? `${known.length} 位` : '缘分未定'} className="balanced-panel">
-      {known.length ? <div className="relation-stack">{known.slice(0, 4).map(([name, relation]) => { const profile = snapshot.npc_profiles[name]; return <button type="button" key={name}><span>{name.slice(0, 1)}</span><div><strong>{name}</strong><small>{profile?.identity || '身份未明'}</small><i><b style={{ width: `${Math.max(0, Number(relation.affinity || 0))}%` }} /></i></div><em>{relation.path || '相识'}<small>好感 {relation.affinity || 0}</small></em></button>})}</div> : <div className="empty-state"><UserRound size={24} /><strong>尘缘尚未落笔</strong><p>结识人物后，这里会显示关系、好感与最近变化。</p></div>}
+    <Panel title="人物牵绊" icon={<HeartHandshake size={18} />} meta={pending ? `${pending} 封护道书` : known.length ? `${known.length} 位` : '缘分未定'} className="balanced-panel">
+      {known.length ? <div className="relation-stack">{known.slice(0, 4).map(([name, relation]) => { const profile = snapshot.npc_profiles[name]; return <button type="button" onClick={() => onAction('情缘')} title="打开完整人物生平" key={name} data-alive={profile?.alive !== false || undefined}><span>{name.slice(0, 1)}</span><div><strong>{name}</strong><small>{profile?.realm || '境界未明'} · {profile?.age ?? '?'}岁 · {profile?.status || '近况未明'}</small><i><b style={{ width: `${Math.max(0, Math.min(100, Number(relation.affinity || 0)))}%` }} /></i></div><em>{relation.path || '相识'}<small>好感 {relation.affinity || 0}</small></em></button>})}</div> : <div className="empty-state"><UserRound size={24} /><strong>尘缘尚未落笔</strong><p>结识人物后，这里会显示关系、好感与最近变化。</p></div>}
     </Panel>
   )
 }
@@ -108,7 +109,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
             <AnimatePresence mode="wait">
               <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                <EventPanel presentation={presentation} cave={snapshot.cave} onAction={onAction} />
+                <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} readOnly={showcase} onAction={onAction} />
               </motion.div>
             </AnimatePresence>
             <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />
@@ -117,14 +118,14 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           </section>
 
           <aside className="right-rail">
-            <Relations snapshot={snapshot} />
+            <Relations snapshot={snapshot} onAction={onAction} />
             <HistoryPanel snapshot={snapshot} />
             <Panel title="九州风声" icon={<CloudSun size={18} />} meta={state.world_era} className="balanced-panel world-panel">
               <div><span aria-hidden="true">闻</span><p>{state.last_world_event || '灵气潮汐尚在暗中酝酿，九州表面仍显平静。'}</p></div>
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.40 洞天经营版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.41 浮生故人版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

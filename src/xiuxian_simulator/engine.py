@@ -8,6 +8,7 @@ from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
 from .economy import AREA_DESCRIPTIONS, AREA_REGIONS, AREAS, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
+from .npc_lifecycle import NpcLifecycleEngine
 from .world import SectProgressionEngine, SectWarEngine, WorldEvolutionEngine, WorldTimelineEngine
 from .narrator import Narrator
 from .journey import JourneyEngine
@@ -214,6 +215,8 @@ class GameEngine:
             return self._npc_world()
         if action.startswith("回应"):
             return self._respond_invitation(action)
+        if action.startswith("护道"):
+            return self._guard_npc(action)
         if action.startswith("确立关系"):
             return self._set_relation_path(action)
         if action.startswith("对话"):
@@ -1356,7 +1359,6 @@ class GameEngine:
 
     def _relationships(self) -> str:
         lines = []
-        elapsed_years = max(0, self.state.calendar_year - 387)
         for npc in NPCS.values():
             affinity = RelationshipEngine.affinity(self.state, npc.name)
             relation = RelationshipEngine.relation(self.state, npc.name)
@@ -1364,16 +1366,19 @@ class GameEngine:
                 affinity, npc.name in self.state.dao_partners, str(relation.get("path", ""))
             )
             world = NpcEcologyEngine.world_record(self.state, npc.name)
+            life = "已故" if not world.get("alive", True) else str(world.get("status", "安然"))
             lines.append(
-                f"{npc.name}｜{npc.gender}｜{npc.identity}｜{npc.age + elapsed_years}岁｜"
-                f"{npc.realm}｜好感 {affinity}（{bond}）｜所在地 {world['location']}"
+                f"{npc.name}｜{npc.gender}｜{npc.identity}｜{world['age']}岁（寿元 {world['lifespan']}）｜"
+                f"{world['realm']}｜好感 {affinity}（{bond}）｜所在地 {world['location']}｜近况 {life}"
             )
+        pending = "、".join(f"{name}·{event['kind']}" for name, event in self.state.pending_npc_life_events.items()) or "无"
         recent_trial = self.state.relationship_events[-1] if self.state.relationship_events else "尚无情劫记录"
         return (
             "【人物与情缘】\n"
             + "\n".join(lines)
             + f"\n\n【尘缘波澜】{self.state.relationship_tension}/100｜{recent_trial}"
-            + "\n指令：对话/论道 [姓名]／送礼 [姓名] [物品]／确立关系 [姓名] [类型]／结为道侣/双修 [姓名]"
+            + f"\n【待回应护道书】{pending}"
+            + "\n指令：对话/论道 [姓名]／送礼 [姓名] [物品]／护道 [姓名] [赠丹/护持/守候]／确立关系 [姓名] [类型]／结为道侣/双修 [姓名]"
         )
 
     def _prepare_heart_trial(self) -> str:
@@ -1421,12 +1426,38 @@ class GameEngine:
             world = NpcEcologyEngine.world_record(self.state, name)
             invitation = self.state.npc_invitations.get(name)
             invite_text = f"｜待回应：{invitation['kind']}" if invitation else ""
-            injury = "负伤" if world.get("wounded") else "安然"
-            lines.append(f"{name}｜{world['location']}｜{world['activity']}｜{injury}{invite_text}")
+            injury = "已故" if not world.get("alive", True) else ("负伤" if world.get("wounded") else str(world.get("status", "安然")))
+            lines.append(f"{name}｜{world['realm']}｜{world['age']}/{world['lifespan']}岁｜{world['location']}｜{world['activity']}｜{injury}{invite_text}")
         recent = "\n".join(self.state.npc_event_log[-5:]) or "尚无人物动态"
+        lives = "\n".join(self.state.npc_lifecycle_log[-5:]) or "尚无生平变故"
         return (
             "【九州人物动态】\n" + "\n".join(lines) + "\n\n【最近动态】\n" + recent
-            + "\n指令：回应 [姓名] 接受／回应 [姓名] 婉拒"
+            + "\n\n【浮生录】\n" + lives
+            + "\n指令：回应 [姓名] 接受／回应 [姓名] 婉拒／护道 [姓名] [赠丹/护持/守候]"
+        )
+
+    def _guard_npc(self, action: str) -> str:
+        parts = action.removeprefix("护道").strip().split()
+        if len(parts) != 2:
+            return "格式：护道 [姓名] [赠丹/护持/守候]。"
+        name, choice = parts
+        try:
+            result = NpcLifecycleEngine.resolve(self.state, name, choice)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        self.state.remember(
+            f"为{name}护道：{result.choice}，{'破境成功' if result.success else '未能破境'}；判定{result.roll}/{result.chance}"
+        )
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "为故人护道后寿元耗尽"
+        self._autosave()
+        consequence = "" if not result.cost or result.cost == "无" else f"｜消耗 {result.cost}"
+        ending = "\n【坐化结局】你护住故人此劫，自己的寿元却在归途中走到尽头。" if died_of_age else ""
+        return (
+            f"{self.state.time_label}\n【故人护道 · {name}】\n{result.description}\n"
+            f"判定 {result.roll}/{result.chance}{consequence}{ending}\n\n{self._relationships()}"
         )
 
     def _respond_invitation(self, action: str) -> str:
@@ -1649,8 +1680,16 @@ class GameEngine:
 
     def _advance_time(self, months: int = 1) -> bool:
         died_of_age = False
+        NpcLifecycleEngine.ensure_all(self.state)
         for _ in range(months):
+            previous_year = self.state.calendar_year
             died_of_age = self.state.advance_month() or died_of_age
+            expired_life_events = NpcLifecycleEngine.expire_pending(self.state)
+            for result in expired_life_events:
+                self.state.remember(f"{result.name}的护道书逾期：{result.description}")
+            if self.state.calendar_year != previous_year:
+                for event in NpcLifecycleEngine.advance_year(self.state):
+                    self.state.remember(f"浮生录：{event}")
             NpcEcologyEngine.tick(self.state)
             WorldTimelineEngine.tick(self.state)
             CommissionEngine.expire_overdue(self.state)
@@ -1684,5 +1723,6 @@ class GameEngine:
             "情缘｜对话/论道 [姓名]｜送礼 [姓名] [物品]｜结为道侣/双修 [姓名]\n"
             "情劫｜当两段以上暧昧或道侣关系交汇时，可选择坦诚相告、暂避锋芒或一心问道\n"
             "世情｜回应 [姓名] 接受/婉拒｜确立关系 [姓名] [纯友谊/结义/师徒/宿敌]\n"
+            "故人护道｜护道 [姓名] [赠丹/护持/守候]；人物会真实老去、破境与辞世\n"
             "其余任何文字都视为自由行动；本地叙事器会推进一个月并记录历史。"
         )

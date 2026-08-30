@@ -42,7 +42,7 @@ NPCS = {
 
 
 class RelationshipEngine:
-    NON_ROMANTIC_PATHS = {"纯友谊", "结义", "师徒", "宿敌", "旧缘"}
+    NON_ROMANTIC_PATHS = {"纯友谊", "结义", "师徒", "宿敌", "旧缘", "故人"}
 
     @staticmethod
     def bond_label(affinity: int, partnered: bool = False, path: str = "") -> str:
@@ -67,6 +67,12 @@ class RelationshipEngine:
         if name not in NPCS:
             raise ValueError("未知人物。可互动：" + "、".join(NPCS))
         return NPCS[name]
+
+    @classmethod
+    def ensure_alive(cls, state: GameState, name: str) -> None:
+        cls.npc(name)
+        if state.npc_world.get(name, {}).get("alive") is False:
+            raise ValueError(f"{name}已不在人世，只余生平可供追忆。")
 
     @classmethod
     def relation(cls, state: GameState, name: str) -> dict[str, object]:
@@ -171,12 +177,14 @@ class RelationshipEngine:
 
     @classmethod
     def talk(cls, state: GameState, name: str) -> tuple[str, int]:
+        cls.ensure_alive(state, name)
         npc = cls.npc(name)
         affinity = cls.add_affinity(state, name, 2)
         return npc.greeting, affinity
 
     @classmethod
     def gift(cls, state: GameState, name: str, item: str) -> tuple[int, int]:
+        cls.ensure_alive(state, name)
         npc = cls.npc(name)
         if state.player.resources.get(item, 0) < 1:
             raise ValueError(f"乾坤袋中没有{item}。")
@@ -188,6 +196,7 @@ class RelationshipEngine:
 
     @classmethod
     def discuss_dao(cls, state: GameState, name: str) -> tuple[bool, int, int, int]:
+        cls.ensure_alive(state, name)
         npc = cls.npc(name)
         chance = max(10, min(95, 55 + (state.player.comprehension - npc.dao_difficulty) * 4 + (state.player.dao_heart - 10) * 2))
         roll = ProgressionEngine.deterministic_roll(state, f"discuss-dao:{name}:{state.turn}")
@@ -201,6 +210,7 @@ class RelationshipEngine:
 
     @classmethod
     def become_partners(cls, state: GameState, name: str) -> int:
+        cls.ensure_alive(state, name)
         cls.npc(name)
         affinity = cls.affinity(state, name)
         if affinity < 80:
@@ -212,6 +222,7 @@ class RelationshipEngine:
 
     @classmethod
     def dual_cultivate(cls, state: GameState, name: str) -> tuple[int, int]:
+        cls.ensure_alive(state, name)
         if name not in state.dao_partners:
             raise ValueError(f"{name}尚不是你的道侣。")
         breakdown = ProgressionEngine.cultivation_gain(state, retreat=False)

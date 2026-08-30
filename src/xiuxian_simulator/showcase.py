@@ -11,6 +11,7 @@ from .webapp import WebApplication
 from .commissions import CommissionEngine
 from .auctions import AuctionEngine
 from .cave import CaveEngine
+from .npc_lifecycle import NpcLifecycleEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -37,6 +38,10 @@ def _relations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
         "墨尘": {"affinity": 22, "path": "相识"},
     }
     engine.state.dao_partners = ["顾清玄"]
+    engine.state.player.resources["凝晶丹"] = 1
+    record = NpcLifecycleEngine.world_record(engine.state, "顾清玄")
+    record.update({"stage_index": 3, "realm": "筑基·圆满", "cultivation_progress": 220, "age": 191})
+    NpcLifecycleEngine.prepare_guard_request(engine.state, "顾清玄", "寿元将尽")
     return app.perform_action("情缘")
 
 
@@ -152,7 +157,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("regional", "地方机缘", "检查五域声望、资源门槛和会被世界记住的地方抉择。", ["三项应对的后果清楚", "资源不足选项自动锁定", "巡览中的选择不会改动正式存档"], _regional),
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
-    ("relations", "人物牵绊", "验证人物组件、好感和关系路径。", ["人物信息拆成小组件", "关系层级清楚", "长身份不挤成一行"], _relations),
+    ("relations", "浮生故人", "验证人物寿元、生平、护道抉择和关系路径。", ["年龄、境界与在世状态来自真实存档", "护道资源门槛与三种选择清楚", "故人生平不挤成一行"], _relations),
     ("battle", "临阵抉择", "查看战前敌情和所有可点击战斗抉择。", ["敌我风险明确", "危险操作视觉统一", "选择按钮状态清楚"], _battle),
     ("realms", "九州秘境", "验证秘境危险度、准入境界和确认流程。", ["致命区域必须锁定", "描述与操作分层", "进入前仍有二次确认"], _action("秘境")),
     ("breakthrough", "筑基之门", "检查三条突破路线的材料和风险反馈。", ["路线选中态统一", "缺少材料明确灰化", "心魔雷劫概率可读"], _breakthrough),

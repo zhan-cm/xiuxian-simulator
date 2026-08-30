@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.40.0"
+    version: str = "0.41.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -104,6 +104,10 @@ class GameState:
     npc_invitations: dict[str, dict[str, Any]] = field(default_factory=dict)
     npc_event_log: list[str] = field(default_factory=list)
     last_npc_event: str = ""
+    pending_npc_life_events: dict[str, dict[str, Any]] = field(default_factory=dict)
+    npc_lifecycle_log: list[str] = field(default_factory=list)
+    npc_memorials: list[dict[str, Any]] = field(default_factory=list)
+    last_npc_lifecycle_event: str = ""
     sect_privileges: list[str] = field(default_factory=list)
     sect_tournament_results: dict[str, str] = field(default_factory=dict)
     world_events: list[str] = field(default_factory=list)

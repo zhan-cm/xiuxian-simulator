@@ -41,6 +41,8 @@ from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
 from xiuxian_simulator.regional import RegionalEngine
 from xiuxian_simulator.cave import CaveEngine
+from xiuxian_simulator.npc_lifecycle import NpcLifecycleEngine
+from xiuxian_simulator.npc_lifecycle import NpcLifecycleEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -1564,6 +1566,84 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.npc_event_log, [])
         self.assertEqual(state.last_npc_event, "")
 
+    def test_npc_lifecycle_ages_and_advances_realms_on_new_year(self) -> None:
+        state = GameState(phase="playing", calendar_year=387, month=12, turn=11, rng_seed=91)
+        record = NpcLifecycleEngine.world_record(state, "顾清玄")
+        record.update({"stage_index": 1, "realm": "筑基·中期", "cultivation_progress": 199})
+        before_age = int(record["age"])
+        state.advance_month()
+        events = NpcLifecycleEngine.advance_year(state)
+        self.assertEqual(record["age"], before_age + 1)
+        self.assertEqual(record["realm"], "筑基·后期")
+        self.assertTrue(events)
+        self.assertTrue(record["life_events"])
+
+    def test_known_npc_requests_guarding_before_major_breakthrough(self) -> None:
+        state = GameState(phase="playing", calendar_year=388, turn=12, rng_seed=73)
+        relation = RelationshipEngine.relation(state, "顾清玄")
+        relation["affinity"] = 40
+        record = NpcLifecycleEngine.world_record(state, "顾清玄")
+        record.update({"stage_index": 3, "realm": "筑基·圆满", "cultivation_progress": 999, "last_lifecycle_year": 387})
+        events = NpcLifecycleEngine.advance_year(state)
+        self.assertIn("顾清玄", state.pending_npc_life_events)
+        self.assertTrue(any("传信求援" in event for event in events))
+        snapshot = NpcLifecycleEngine.snapshot(state)
+        profile = next(item for item in snapshot["profiles"] if item["name"] == "顾清玄")
+        self.assertTrue(profile["pending"])
+        self.assertEqual(profile["pending_kind"], "破境护道")
+
+    def test_guarding_with_pill_consumes_resource_and_resolves_request(self) -> None:
+        state = GameState(phase="playing", rng_seed=1)
+        state.player.resources["凝晶丹"] = 1
+        record = NpcLifecycleEngine.world_record(state, "顾清玄")
+        record.update({"stage_index": 3, "realm": "筑基·圆满", "cultivation_progress": 220})
+        NpcLifecycleEngine.prepare_guard_request(state, "顾清玄")
+        result = NpcLifecycleEngine.resolve(state, "顾清玄", "赠丹")
+        self.assertNotIn("凝晶丹", state.player.resources)
+        self.assertNotIn("顾清玄", state.pending_npc_life_events)
+        self.assertEqual(result.cost, "凝晶丹×1")
+        self.assertTrue(result.success)
+        self.assertEqual(record["realm"], "结晶·初期")
+
+    def test_guarding_command_advances_one_month_and_autosaves(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            record = NpcLifecycleEngine.world_record(engine.state, "顾清玄")
+            record.update({"stage_index": 3, "realm": "筑基·圆满", "cultivation_progress": 220})
+            NpcLifecycleEngine.prepare_guard_request(engine.state, "顾清玄")
+            before_turn = engine.state.turn
+            result = engine.process("护道 顾清玄 守候")
+            self.assertIn("故人护道", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            persisted = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertEqual(persisted.turn, engine.state.turn)
+
+    def test_deceased_npc_is_memorialized_and_cannot_be_contacted(self) -> None:
+        state = GameState(phase="playing", rng_seed=5)
+        record = NpcLifecycleEngine.world_record(state, "顾清玄")
+        record.update({"age": 200, "lifespan": 200, "stage_index": 3, "realm": "筑基·圆满"})
+        NpcLifecycleEngine.prepare_guard_request(state, "顾清玄", "寿元将尽")
+        result = NpcLifecycleEngine.resolve(state, "顾清玄", "守候")
+        if not result.fatal:
+            record["age"] = 200
+            record["lifespan"] = 200
+            NpcLifecycleEngine.prepare_guard_request(state, "顾清玄", "寿元将尽")
+            result = NpcLifecycleEngine.resolve(state, "顾清玄", "守候")
+        self.assertTrue(result.fatal)
+        self.assertFalse(record["alive"])
+        self.assertEqual(state.npc_memorials[-1]["name"], "顾清玄")
+        with self.assertRaisesRegex(ValueError, "已不在人世"):
+            RelationshipEngine.talk(state, "顾清玄")
+
+    def test_v040_save_receives_npc_lifecycle_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.40.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.pending_npc_life_events, {})
+        self.assertEqual(state.npc_lifecycle_log, [])
+        self.assertEqual(state.npc_memorials, [])
+        self.assertEqual(state.last_npc_lifecycle_event, "")
+
     def test_world_timeline_triggers_calendar_events_once(self) -> None:
         state = GameState(phase="playing", calendar_year=390, month=1)
         events = WorldTimelineEngine.tick(state)
@@ -1580,8 +1660,11 @@ class SimulatorSmokeTests(unittest.TestCase):
             engine.process("确认默认创角")
             engine.state.calendar_year = 389
             engine.state.month = 12
+            npc = NpcLifecycleEngine.world_record(engine.state, "顾清玄")
+            before_age = int(npc["age"])
             engine.process("静候新岁")
             self.assertEqual((engine.state.calendar_year, engine.state.month), (390, 1))
+            self.assertEqual(npc["age"], before_age + 1)
             self.assertTrue(any("升仙大会" in event for event in engine.state.world_events))
             self.assertTrue(any("宗门大比" in event for event in engine.state.world_events))
 

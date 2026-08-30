@@ -86,11 +86,14 @@ export interface NpcProfile {
   gender: string
   identity: string
   age: number
+  lifespan: number
   realm: string
   location: string
   greeting: string
   affinity: number
   relation: string
+  alive: boolean
+  status: string
 }
 
 export interface JourneyTask {
@@ -252,6 +255,21 @@ export interface CaveSnapshot {
   last_event: string; ledger: string[]; can_recuperate: boolean; recuperate_reason: string
 }
 
+export interface NpcLifeProfile {
+  name: string; gender: string; identity: string; realm: string
+  age: number; lifespan: number; years_remaining: number; life_percent: number
+  location: string; activity: string; status: string; alive: boolean; wounded: boolean
+  affinity: number; relation: string; likes: string[]
+  pending: boolean; pending_kind: string; expires_in: number; pill: string
+  can_gift_pill: boolean; can_guard: boolean; life_events: string[]; cause_of_death: string
+}
+
+export interface NpcLifeSnapshot {
+  living_count: number; pending_count: number; profiles: NpcLifeProfile[]
+  memorials: Array<{ name: string; year: number; age: number; realm: string; cause: string }>
+  history: string[]; last_event: string
+}
+
 export interface Snapshot {
   state: GameState
   narrator: string
@@ -268,6 +286,7 @@ export interface Snapshot {
   travel: TravelSnapshot
   regional: RegionalSnapshot
   cave: CaveSnapshot
+  npc_lives: NpcLifeSnapshot
   output?: string
 }
 

@@ -1,6 +1,6 @@
-import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShoppingBag, Sparkles, Sprout, UserRound, Wind, X } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, UserRound, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { CaveSnapshot, Presentation, PresentationBlock } from '../api/types'
+import type { CaveSnapshot, NpcLifeSnapshot, Presentation, PresentationBlock } from '../api/types'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -20,19 +20,33 @@ function FactsBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
-function PeopleBlock({ block }: { block: PresentationBlock }) {
+function PeopleBlock({ block, lives, readOnly, onAction }: { block: PresentationBlock; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
+  const lifeByName = useMemo(() => new Map((lives?.profiles || []).map((profile) => [profile.name, profile])), [lives])
   return (
-    <section className="semantic-block">
-      <header><UserRound size={16} /><strong>{block.title || '人物牵绊'}</strong></header>
+    <section className="semantic-block people-block">
+      <header><UserRound size={16} /><strong>{block.title || '人物牵绊'}</strong><small>{lives ? `${lives.living_count} 位尚在世 · ${lives.pending_count} 封护道书` : '众生各循其道'}</small></header>
       <div className="person-grid">
-        {(block.items || []).map((item, index) => (
-          <article className="person-card" key={`${text(item.name)}-${index}`}>
-            <span className="person-avatar">{text(item.name, '人').slice(0, 1)}</span>
-            <div><strong>{text(item.name, '未知道友')}</strong><small>{text(item.identity || item.descriptor, '身份未明')}</small></div>
-            <div className="person-tags"><span>{text(item.realm, '境界未明')}</span><span>好感 {text(item.affinity, '0')}</span></div>
-          </article>
-        ))}
+        {(block.items || []).map((item, index) => {
+          const name = text(item.name, '未知道友')
+          const profile = lifeByName.get(name)
+          const alive = profile?.alive !== false
+          return (
+            <article className="person-card life-card" data-alive={alive || undefined} data-pending={profile?.pending || undefined} key={`${name}-${index}`}>
+              <span className="person-avatar">{name.slice(0, 1)}</span>
+              <div className="person-heading"><strong>{name}</strong><small>{profile?.identity || text(item.identity || item.descriptor, '身份未明')}</small></div>
+              <div className="person-tags"><span>{profile?.realm || text(item.realm, '境界未明')}</span><span>{profile?.relation || text(item.relation, '缘分未定')} · 好感 {profile?.affinity ?? text(item.affinity, '0')}</span></div>
+              {profile && <>
+                <div className="life-meter" title={`年龄 ${profile.age} 岁，寿元上限 ${profile.lifespan} 岁`}><span><HeartPulse size={11} />{alive ? `${profile.age}岁 · 尚余 ${profile.years_remaining} 年` : `${profile.age}岁 · 已故`}</span><i><b style={{ width: `${Math.max(3, 100 - profile.life_percent)}%` }} /></i></div>
+                <div className="life-status"><span>{profile.location}</span><em>{profile.activity}</em><b data-danger={profile.wounded || !alive || undefined}>{profile.status}</b></div>
+                {profile.pending && <div className="guard-request"><header><ShieldCheck size={14} /><span><strong>{profile.pending_kind}</strong><small>{profile.expires_in} 个月内回应</small></span></header><p>可赠 {profile.pill} 提高胜算，或亲自消耗灵力护持。</p><div><button type="button" disabled={readOnly || !profile.can_gift_pill} title={profile.can_gift_pill ? `消耗 ${profile.pill}×1` : `乾坤袋中没有${profile.pill}`} onClick={() => onAction(`护道 ${name} 赠丹`)}>赠丹</button><button type="button" disabled={readOnly || !profile.can_guard} title={profile.can_guard ? '消耗灵力 30，失败时可能受反噬' : '灵力不足 30'} onClick={() => onAction(`护道 ${name} 护持`)}>亲自护持</button><button type="button" disabled={readOnly} onClick={() => onAction(`护道 ${name} 守候`)}>静候天命</button></div></div>}
+                {!alive && profile.cause_of_death && <p className="memorial-line">{profile.cause_of_death}</p>}
+                {profile.life_events.length > 0 && <details className="life-events"><summary>查看生平近事</summary><ol>{profile.life_events.map((entry) => <li key={entry}>{entry}</li>)}</ol></details>}
+              </>}
+            </article>
+          )
+        })}
       </div>
+      {lives?.memorials.length ? <details className="memorial-book"><summary>故人名录 · {lives.memorials.length}</summary><ol>{lives.memorials.map((entry) => <li key={`${entry.name}-${entry.year}`}><span>{entry.name}</span><strong>{entry.realm} · 享年 {entry.age}</strong><small>{entry.cause}</small></li>)}</ol></details> : null}
     </section>
   )
 }
@@ -222,9 +236,9 @@ function GenericBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
-function Block({ block, cave, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; onAction: (action: string) => void }) {
+function Block({ block, cave, lives, readOnly, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
-  if (block.type === 'people') return <PeopleBlock block={block} />
+  if (block.type === 'people') return <PeopleBlock block={block} lives={lives} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'regions') return <RegionsBlock block={block} onAction={onAction} />
   if (block.type === 'locations') return <LocationsBlock block={block} onAction={onAction} />
   if (block.type === 'meter') return <MeterBlock block={block} />
@@ -235,7 +249,7 @@ function Block({ block, cave, onAction }: { block: PresentationBlock; cave?: Cav
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, onAction }: { presentation: Presentation; cave?: CaveSnapshot; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, readOnly = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; readOnly?: boolean; onAction: (action: string) => void }) {
   return (
     <article className="event-panel" data-tone={presentation.tone || 'story'}>
       <div className="event-ornament" aria-hidden="true" />
@@ -252,7 +266,7 @@ export function EventPanel({ presentation, cave, onAction }: { presentation: Pre
         </div>
       )}
       <div className="event-blocks">
-        {(presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} onAction={onAction} key={`${block.type}-${index}`} />)}
+        {(presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={onAction} key={`${block.type}-${index}`} />)}
       </div>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>

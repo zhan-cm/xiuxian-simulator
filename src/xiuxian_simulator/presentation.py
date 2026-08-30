@@ -222,13 +222,14 @@ def _person_items(lines: list[str], priority_names: set[str]) -> list[dict[str, 
             {
                 "name": parts[0],
                 "gender": parts[1] if len(parts) > 1 else "",
-                "age": next((part for part in parts if part.endswith("岁")), ""),
+                "age": next((part for part in parts if "岁" in part and re.match(r"^\d+岁", part)), ""),
                 "identity": identity,
                 "descriptor": descriptor,
                 "realm": next((part for part in parts if any(word in part for word in ("炼气", "筑基", "金丹", "元婴", "化神"))), ""),
                 "relation": affinity_match.group(2) if affinity_match and affinity_match.group(2) else "缘分未定",
                 "affinity": affinity_match.group(1) if affinity_match else "",
                 "location": next((part.removeprefix("所在地 ") for part in parts if part.startswith("所在地 ")), ""),
+                "status": next((part.removeprefix("近况 ") for part in parts if part.startswith("近况 ")), ""),
             }
         )
     return sorted(people, key=lambda person: (person["name"] not in priority_names, -int(person["affinity"] or 0)))
