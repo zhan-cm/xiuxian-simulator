@@ -16,6 +16,7 @@ from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
 from .new_era import NewEraEngine
+from .dao import DaoEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -113,6 +114,14 @@ class GameEngine:
             return NewEraEngine.panel_text(self.state)
         if action == "处置余波":
             return self._begin_new_era_event()
+        if action in {"悟道", "悟道树", "悟道九途", "大道"}:
+            return DaoEngine.panel_text(self.state)
+        if action == "观想":
+            return self._contemplate()
+        if action in {"闭关悟道", "消化感悟"}:
+            return self._digest_insight()
+        if action.startswith("点亮"):
+            return self._enlighten_dao(action)
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
         if action in {"委托", "悬赏", "悬榜"}:
@@ -313,10 +322,12 @@ class GameEngine:
         gain, breakdown, months_used = ProgressionEngine.cultivate(self.state, months=months, retreat=retreat)
         if months_used == 0:
             return f"修为已圆满：{player.cultivation}/{player.cultivation_required}。请先尝试突破。"
+        dao_points = DaoEngine.digest(self.state, limit=months_used, required=False) if retreat else 0
         CommissionEngine.mark(self.state, "cultivation_month", months_used)
         died_of_age = self._advance_time(months_used)
         mode = "闭关" if retreat else "吐纳"
-        self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}")
+        dao_note = f"，悟道点 +{dao_points}" if dao_points else ""
+        self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}{dao_note}")
         if died_of_age:
             self.state.phase = "ended"
             self.state.remember("寿元耗尽，坐化")
@@ -330,9 +341,53 @@ class GameEngine:
         return (
             f"{self.state.time_label}\n你在石屋中{mode}{months_used}月{early_stop}，灵气沿经脉缓缓流转。\n"
             f"修为 +{gain}（{player.cultivation}/{player.cultivation_required}）\n"
-            f"结算：{breakdown.summary()}／月\n\n"
+            + (f"感悟化真：悟道点 +{dao_points}\n" if dao_points else "")
+            + f"结算：{breakdown.summary()}／月\n\n"
             + self._status()
         )
+
+    def _contemplate(self) -> str:
+        try:
+            gain = DaoEngine.contemplate(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        self.state.remember(f"静坐观想，感悟 +{gain}")
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "观想中寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return "你在天地道韵中坐忘此身，寿元也在此刻走到尽头。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【静坐观想】灵力 -10，感悟 +{gain}，"
+            f"当前 {self.state.player.dao_insight}/{20}。\n\n{DaoEngine.panel_text(self.state)}"
+        )
+
+    def _digest_insight(self) -> str:
+        try:
+            points = DaoEngine.digest(self.state, limit=3)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        self.state.remember(f"闭关消化感悟，悟道点 +{points}")
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "悟道中寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return "大道似有所得，你却已走到此世尽头。\n【坐化结局】"
+        return f"{self.state.time_label}\n感悟凝成悟道点 +{points}。\n\n{DaoEngine.panel_text(self.state)}"
+
+    def _enlighten_dao(self, action: str) -> str:
+        branch = action.removeprefix("点亮").strip()
+        try:
+            level = DaoEngine.enlighten(self.state, branch)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"点亮{branch}第 {level} 层")
+        self._autosave()
+        return f"【悟道有成】{branch}已达第 {level} 层。\n\n{DaoEngine.panel_text(self.state)}"
 
     def _free_action(self, action: str) -> str:
         died_of_age = self._advance_time()
@@ -1078,6 +1133,7 @@ class GameEngine:
 
         if result.victory:
             JourneyEngine.mark(self.state, "combat_victory")
+            insight = DaoEngine.gain_insight(self.state, 8, f"战胜{enemy}")
             died_of_age = self._advance_combat_time()
             if died_of_age:
                 self.state.phase = "ended"
@@ -1090,9 +1146,9 @@ class GameEngine:
                 loot = "、".join(f"{name}×{count}" for name, count in self.state.pending_loot.items()) or "无"
                 return (
                     f"【胜利】{result.player_text}\n{result.enemy_text}\n"
-                    f"杀伐业力 +5\n【待取战利品】{loot}\n选择：拾取全部／离开"
+                    f"杀伐业力 +5｜实战感悟 +{insight}\n【待取战利品】{loot}\n选择：拾取全部／离开"
                 )
-            return f"【切磋获胜】声望 +3\n{result.player_text}\n{result.enemy_text}\n\n{self._status()}"
+            return f"【切磋获胜】声望 +3｜实战感悟 +{insight}\n{result.player_text}\n{result.enemy_text}\n\n{self._status()}"
 
         if result.defeat:
             died_of_age = self._advance_combat_time()
@@ -1559,6 +1615,7 @@ class GameEngine:
 
     def _talk(self, action: str) -> str:
         name = action.removeprefix("对话").strip()
+        affinity_before = RelationshipEngine.affinity(self.state, name) if name in NPCS else 0
         try:
             line, affinity = RelationshipEngine.talk(self.state, name)
         except ValueError as exc:
@@ -1566,7 +1623,8 @@ class GameEngine:
         died = self._finish_social_action(f"与{name}交谈，好感升至{affinity}")
         if died:
             return "交谈之后，你在归途中寿元耗尽。\n【坐化结局】"
-        return f"{self.state.time_label}\n【{name}】“{line}”\n好感 +2，当前 {affinity}。\n\n{self._relationships()}"
+        change = affinity - affinity_before
+        return f"{self.state.time_label}\n【{name}】“{line}”\n好感 {change:+d}，当前 {affinity}。\n\n{self._relationships()}"
 
     def _gift(self, action: str) -> str:
         parts = action.removeprefix("送礼").strip().split()
@@ -1585,15 +1643,19 @@ class GameEngine:
 
     def _discuss_dao(self, action: str) -> str:
         name = action.removeprefix("论道").strip()
+        insight_before = self.state.player.dao_insight
+        affinity_before = RelationshipEngine.affinity(self.state, name) if name in NPCS else 0
         try:
             success, roll, chance, affinity = RelationshipEngine.discuss_dao(self.state, name)
         except ValueError as exc:
             return str(exc)
-        verdict = "彼此印证所得，修为有所精进，好感 +6" if success else "道途分歧，只作浅谈，好感 +1"
+        affinity_change = affinity - affinity_before
+        verdict = f"彼此印证所得，修为有所精进，好感 {affinity_change:+d}" if success else f"道途分歧，只作浅谈，好感 {affinity_change:+d}"
         died = self._finish_social_action(f"与{name}论道：{'成功' if success else '未能契合'}，好感{affinity}")
         if died:
             return "论道之后，你的寿元走到尽头。\n【坐化结局】"
-        return f"{self.state.time_label}\n【与{name}论道】{verdict}\n判定 {roll}/{chance}｜当前好感 {affinity}。\n\n{self._status()}"
+        insight = self.state.player.dao_insight - insight_before
+        return f"{self.state.time_label}\n【与{name}论道】{verdict}\n判定 {roll}/{chance}｜当前好感 {affinity}｜感悟 +{insight}。\n\n{self._status()}"
 
     def _become_partners(self, action: str) -> str:
         name = action.removeprefix("结为道侣").strip()
@@ -1631,6 +1693,7 @@ class GameEngine:
             f"灵石 {p.spirit_stones}｜功德 {p.merit}｜业力 {p.karma}｜声望 {p.reputation}｜异常 {p.condition}\n"
             f"天赋：{'、'.join(p.talents) if p.talents else '无'}\n"
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
+            f"悟道：感悟 {p.dao_insight}/20｜悟道点 {p.dao_points}｜已点亮 {sum(p.dao_levels.values())} 层\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"尘缘波澜：{self.state.relationship_tension}/100｜情劫记录 {len(self.state.relationship_events)}\n"
@@ -1808,6 +1871,7 @@ class GameEngine:
             "委托｜查看东洲悬榜；接取/交付/放弃委托 [编号]；悬榜每三个月轮换\n"
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
+            "悟道｜观想积累感悟｜闭关悟道凝成悟道点｜点亮 [剑道/丹道等九途]\n"
             "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
             "地方｜查看五域声名与礼遇｜地方机缘后从三项应对中亲自选择\n"
             "坊市｜区域价格会随特产、求购、民生与地方声望变化｜买/卖 [物品] [数量]\n"

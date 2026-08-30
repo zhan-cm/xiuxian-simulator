@@ -204,6 +204,18 @@ export interface NewEraSnapshot {
   scores: NewEraScore[]; event: NewEraEvent; history: string[]; ending_route: string
 }
 
+export interface DaoBranch {
+  id: string; name: string; mark: string; subtitle: string; summary: string
+  level: number; max_level: number; effect: string; next_effect: string
+  eligible: boolean; disabled_reason: string; action: string
+}
+
+export interface DaoSnapshot {
+  insight: number; insight_required: number; points: number; total_levels: number
+  branches: DaoBranch[]; history: string[]; contemplate_action: string; digest_action: string
+  can_contemplate: boolean; contemplate_reason: string; can_digest: boolean; digest_reason: string
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -319,6 +331,7 @@ export interface Snapshot {
   commissions: CommissionSnapshot
   story: StorySnapshot
   new_era: NewEraSnapshot
+  dao: DaoSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .dao import DaoEngine
 from .progression import ProgressionEngine
 from .state import GameState, PlayerState
 
@@ -169,14 +170,15 @@ class ArtsEngine:
     @staticmethod
     def attack_multiplier(player: PlayerState) -> float:
         main = TECHNIQUES.get(player.primary_technique, TECHNIQUES["聚气诀"])
-        multiplier = main.attack_multiplier
+        multiplier = main.attack_multiplier * (1 + DaoEngine.player_level(player, "剑道") * 0.05)
         for name in player.equipped_auxiliary_techniques:
             auxiliary = TECHNIQUES.get(name)
             if auxiliary:
                 multiplier *= 1 + (auxiliary.attack_multiplier - 1) * 0.5
         weapon = ARTIFACTS.get(player.equipped_weapon)
         if weapon:
-            multiplier *= weapon.attack_multiplier
+            artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
+            multiplier *= 1 + (weapon.attack_multiplier - 1) * artifact_scale
         return multiplier
 
     @staticmethod
@@ -188,7 +190,8 @@ class ArtsEngine:
             if auxiliary:
                 bonus += auxiliary.defense_bonus // 2
         armor = ARTIFACTS.get(player.equipped_armor)
-        return bonus + (armor.defense_bonus if armor else 0)
+        artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
+        return bonus + (round(armor.defense_bonus * artifact_scale) if armor else 0)
 
     @staticmethod
     def effective_speed(player: PlayerState) -> int:

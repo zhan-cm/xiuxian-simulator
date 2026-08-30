@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .dao import DaoEngine
 from .progression import ProgressionEngine
 from .state import GameState
 
@@ -106,7 +107,8 @@ class AdventureEngine:
         advantage = max(0, state.player.realm_index - realm.minimum_realm) * 8
         fortune = state.player.fortune - 10
         stage_penalty = int(state.adventure.get("stage", 0)) * 4
-        return max(5, min(95, base - realm.danger // 5 + advantage + fortune - stage_penalty))
+        dao_bonus = DaoEngine.adventure_bonus(state)
+        return max(5, min(95, base - realm.danger // 5 + advantage + fortune + dao_bonus - stage_penalty))
 
     @classmethod
     def resolve(cls, state: GameState, mode: str) -> AdventureResult:
@@ -184,7 +186,8 @@ class AdventureEngine:
             description = f"灵雨洗涤经脉，修为增长 {gain} 点。"
         elif title == "上古残碑共鸣":
             player.comprehension = min(30, player.comprehension + 1)
-            description = "残碑道纹一闪即逝，你的悟性永久提升 1 点。"
+            insight = DaoEngine.gain_insight(state, 10, "上古残碑共鸣")
+            description = f"残碑道纹一闪即逝，你的悟性永久提升 1 点，感悟 +{insight}。"
         elif title == "妖兽袭村":
             player.health = max(1, player.health - 8)
             player.reputation += 2

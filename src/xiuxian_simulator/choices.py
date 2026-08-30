@@ -43,7 +43,7 @@ class DecisionCatalog:
             requirements = ProgressionEngine.major_requirements(state.player, route)
             needs = "、".join(f"{name}×{count}" for name, count in requirements.items())
             missing = [f"{name}×{count}" for name, count in requirements.items() if state.player.resources.get(name, 0) < count]
-            heart_chance, thunder_chance = ProgressionEngine.major_chances(state.player, route)
+            heart_chance, thunder_chance = ProgressionEngine.major_chances_for_state(state, route)
             route_meaning = {
                 "人道": "风险最低，成功后气血与灵力小幅增长。",
                 "地道": "风险与潜力均衡，成功后六维与根基同步成长。",

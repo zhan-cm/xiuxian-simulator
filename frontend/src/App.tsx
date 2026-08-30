@@ -10,6 +10,7 @@ import { AuctionHouse } from './components/AuctionHouse'
 import { CharacterSheet } from './components/CharacterSheet'
 import { CommissionBoard } from './components/CommissionBoard'
 import { DecisionPanel } from './components/DecisionPanel'
+import { DaoTree } from './components/DaoTree'
 import { EventPanel } from './components/EventPanel'
 import { GameTooltip, TooltipProvider } from './components/GameTooltip'
 import { JourneyTracker } from './components/JourneyTracker'
@@ -111,6 +112,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
             <NewEraChronicle era={snapshot.new_era} busy={busy} readOnly={showcase} onAction={onAction} />
+            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <DaoTree dao={snapshot.dao} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
             {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
             <AnimatePresence mode="wait">
@@ -131,7 +133,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.44 新世演化版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.45 悟道九途版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

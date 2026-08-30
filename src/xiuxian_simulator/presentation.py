@@ -21,6 +21,8 @@ METRICS = (
     ("reputation", "声望", "名", "reputation"),
     ("merit", "功德", "德", "merit"),
     ("karma", "业力", "业", "danger"),
+    ("dao_insight", "感悟", "悟", "cultivation"),
+    ("dao_points", "悟道点", "道", "story"),
 )
 
 
@@ -40,7 +42,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "市", "trade", "坊市往来"
     if any(action_text.startswith(word) for word in ("拍卖", "竞拍", "天机拍卖")):
         return "槌", "trade", "天机竞价"
-    if any(action_text.startswith(word) for word in ("修炼", "闭关", "参悟")):
+    if any(action_text.startswith(word) for word in ("修炼", "闭关", "参悟", "悟道", "观想", "消化感悟", "点亮")):
         return "修", "cultivation", "静修问心"
     if action_text in {"道途", "章程", "历练"} or action_text.startswith("领取道途奖励"):
         return "程", "story", "道途章程"

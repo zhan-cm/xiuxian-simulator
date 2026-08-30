@@ -75,6 +75,7 @@ class OpenAINarrator(Narrator):
                 "health": f"{player.health}/{player.health_max}",
                 "spirit": f"{player.spirit}/{player.spirit_max}",
                 "condition": player.condition,
+                "dao": player.dao_levels,
             },
             "main_quest": state.main_quest,
             "last_npc_event": state.last_npc_event,

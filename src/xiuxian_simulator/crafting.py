@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .dao import DaoEngine
 from .progression import ProgressionEngine
 from .state import GameState
 
@@ -74,7 +75,8 @@ class CraftingEngine:
         skill_level = state.player.craft_skills.get(recipe.craft, 0)
         facility_level = state.cave_facilities.get(recipe.facility, 0)
         sense_bonus = (state.player.spirit_sense - 10) * 2
-        return max(5, min(98, recipe.base_chance + skill_level * 8 + facility_level * 5 + sense_bonus + bonus))
+        dao_bonus = DaoEngine.craft_bonus(state, recipe.craft)
+        return max(5, min(98, recipe.base_chance + skill_level * 8 + facility_level * 5 + sense_bonus + dao_bonus + bonus))
 
     @classmethod
     def consume_ingredients(cls, state: GameState, recipe: Recipe) -> None:

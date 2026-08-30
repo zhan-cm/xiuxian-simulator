@@ -65,11 +65,15 @@ class PlayerState:
     resources: dict[str, int] = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
     modifiers: dict[str, float] = field(default_factory=dict)
+    dao_insight: int = 0
+    dao_points: int = 0
+    dao_levels: dict[str, int] = field(default_factory=dict)
+    dao_history: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.44.0"
+    version: str = "0.45.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387

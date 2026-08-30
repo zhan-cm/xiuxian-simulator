@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .crafting import RECIPES, CraftingEngine, Recipe
+from .dao import DaoEngine
 from .progression import ProgressionEngine
 from .state import GameState
 
@@ -47,7 +48,7 @@ class CaveEngine:
 
     @staticmethod
     def monthly_generation(state: GameState) -> int:
-        base = 2 + state.cave_facilities.get("聚灵阵", 0) * 3
+        base = 2 + state.cave_facilities.get("聚灵阵", 0) * 3 + DaoEngine.cave_energy_bonus(state)
         if state.cave_focus == "蕴养灵脉":
             base = (base * 3 + 1) // 2
         return base

@@ -19,7 +19,7 @@ from xiuxian_simulator.choices import DecisionCatalog
 from xiuxian_simulator.economy import EconomyEngine
 from xiuxian_simulator.combat import CombatEngine
 from xiuxian_simulator.arts import ArtsEngine
-from xiuxian_simulator.crafting import CraftingEngine
+from xiuxian_simulator.crafting import CraftingEngine, RECIPES
 from xiuxian_simulator.relationships import RelationshipEngine
 from xiuxian_simulator.adventures import AdventureEngine
 from xiuxian_simulator.ecology import NpcEcologyEngine
@@ -37,6 +37,7 @@ from xiuxian_simulator.journey import JourneyEngine
 from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.new_era import NewEraEngine
+from xiuxian_simulator.dao import DaoEngine, INSIGHT_PER_POINT
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -2602,6 +2603,110 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertIn("东洲", state.regional_prosperity)
         self.assertEqual(state.world_milestones, [])
         self.assertEqual(state.world_interventions, {})
+
+    def test_dao_insight_digest_and_branch_levels_persist(self) -> None:
+        state = GameState(phase="playing")
+        DaoEngine.gain_insight(state, 47, "测试论道")
+        converted = DaoEngine.digest(state)
+        self.assertEqual(converted, 2)
+        self.assertEqual(state.player.dao_insight, 7)
+        self.assertEqual(state.player.dao_points, 2)
+        level = DaoEngine.enlighten(state, "剑道")
+        self.assertEqual(level, 1)
+        restored = GameState.from_dict(state.to_dict())
+        self.assertEqual(restored.player.dao_levels["剑道"], 1)
+        self.assertEqual(restored.player.dao_points, 1)
+        self.assertTrue(any("测试论道" in entry for entry in restored.player.dao_history))
+
+    def test_dao_branch_tiers_respect_realm_and_point_requirements(self) -> None:
+        state = GameState(phase="playing")
+        state.player.dao_points = 3
+        DaoEngine.enlighten(state, "剑道")
+        eligible, reason = DaoEngine.eligibility(state, "剑道")
+        self.assertFalse(eligible)
+        self.assertIn("筑基", reason)
+        state.player.realm_index = 1
+        self.assertTrue(DaoEngine.eligibility(state, "剑道")[0])
+        DaoEngine.enlighten(state, "剑道")
+        eligible, reason = DaoEngine.eligibility(state, "剑道")
+        self.assertFalse(eligible)
+        self.assertIn("金丹", reason)
+
+    def test_dao_passives_affect_existing_rule_engines(self) -> None:
+        baseline = GameState(phase="playing")
+        state = GameState.from_dict(baseline.to_dict())
+        state.player.dao_levels = {
+            "剑道": 2,
+            "丹道": 2,
+            "器道": 2,
+            "符道": 1,
+            "阵道": 2,
+            "御兽道": 2,
+            "无情道": 1,
+        }
+        baseline.player.resources["青锋剑"] = 1
+        state.player.resources["青锋剑"] = 1
+        ArtsEngine.equip_artifact(baseline.player, "青锋剑")
+        ArtsEngine.equip_artifact(state.player, "青锋剑")
+        self.assertGreater(ArtsEngine.attack_multiplier(state.player), ArtsEngine.attack_multiplier(baseline.player))
+        self.assertEqual(
+            CraftingEngine.success_chance(state, RECIPES["筑基丹"]),
+            CraftingEngine.success_chance(baseline, RECIPES["筑基丹"]) + 10,
+        )
+        self.assertGreater(CaveEngine.monthly_generation(state), CaveEngine.monthly_generation(baseline))
+        baseline.adventure = {"name": "通灵秘境", "stage": 0}
+        state.adventure = {"name": "通灵秘境", "stage": 0}
+        self.assertEqual(AdventureEngine.chance(state, "谨慎探索"), AdventureEngine.chance(baseline, "谨慎探索") + 6)
+        base_heart = ProgressionEngine.major_chances(baseline.player, "人道")[0]
+        self.assertEqual(ProgressionEngine.major_chances_for_state(state, "人道")[0], min(99, base_heart + 4))
+
+    def test_dao_relationship_paths_have_opposing_positive_affinity_effects(self) -> None:
+        loving = GameState(phase="playing")
+        loving.player.dao_levels["有情道"] = 2
+        detached = GameState(phase="playing")
+        detached.player.dao_levels["无情道"] = 2
+        self.assertEqual(RelationshipEngine.add_affinity(loving, "顾清玄", 6), 8)
+        self.assertEqual(RelationshipEngine.add_affinity(detached, "顾清玄", 6), 5)
+        self.assertEqual(RelationshipEngine.add_affinity(detached, "顾清玄", -3), 2)
+
+    def test_dao_commands_generate_convert_and_spend_insight(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before_turn = engine.state.turn
+            result = engine.process("观想")
+            self.assertIn("感悟 +", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            engine.state.player.dao_insight = INSIGHT_PER_POINT
+            digested = engine.process("闭关悟道")
+            self.assertIn("悟道点 +1", digested)
+            self.assertEqual(engine.state.player.dao_points, 1)
+            lit = engine.process("点亮 体道")
+            self.assertIn("体道已达第 1 层", lit)
+            self.assertEqual(engine.state.player.health_max, 105)
+            saved = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["player"]["dao_levels"]["体道"], 1)
+
+    def test_retreat_automatically_digests_accumulated_insight(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.dao_insight = 45
+            result = engine.process("闭关3月")
+            self.assertIn("悟道点 +2", result)
+            self.assertEqual(engine.state.player.dao_points, 2)
+            self.assertEqual(engine.state.player.dao_insight, 5)
+
+    def test_old_save_gets_safe_dao_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.44.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.player.dao_insight, 0)
+        self.assertEqual(state.player.dao_points, 0)
+        self.assertEqual(state.player.dao_levels, {})
+        snapshot = DaoEngine.snapshot(state)
+        self.assertEqual(len(snapshot["branches"]), 9)
+        self.assertFalse(snapshot["can_digest"])
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
         items = run_diagnostics(ROOT)

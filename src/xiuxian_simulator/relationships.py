@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .dao import DaoEngine
 from .progression import ProgressionEngine
 from .state import GameState
 
@@ -87,6 +88,7 @@ class RelationshipEngine:
     @classmethod
     def add_affinity(cls, state: GameState, name: str, amount: int) -> int:
         relation = cls.relation(state, name)
+        amount = DaoEngine.affinity_gain(state, amount)
         affinity = max(-100, min(120, int(relation.get("affinity", 0)) + amount))
         relation["affinity"] = affinity
         relation["interactions"] = int(relation.get("interactions", 0)) + 1
@@ -192,7 +194,9 @@ class RelationshipEngine:
         if state.player.resources[item] <= 0:
             state.player.resources.pop(item, None)
         change = 10 if item in npc.likes else (-5 if item in npc.dislikes else 3)
-        return change, cls.add_affinity(state, name, change)
+        before = cls.affinity(state, name)
+        affinity = cls.add_affinity(state, name, change)
+        return affinity - before, affinity
 
     @classmethod
     def discuss_dao(cls, state: GameState, name: str) -> tuple[bool, int, int, int]:
@@ -206,6 +210,7 @@ class RelationshipEngine:
         if success:
             gain = min(15, state.player.cultivation_required - state.player.cultivation)
             state.player.cultivation += max(0, gain)
+        DaoEngine.gain_insight(state, 12 if success else 4, f"与{name}论道")
         return success, roll, chance, affinity
 
     @classmethod
@@ -226,7 +231,7 @@ class RelationshipEngine:
         if name not in state.dao_partners:
             raise ValueError(f"{name}尚不是你的道侣。")
         breakdown = ProgressionEngine.cultivation_gain(state, retreat=False)
-        multiplier = state.player.modifiers.get("dual_cultivation_multiplier", 1.5)
+        multiplier = state.player.modifiers.get("dual_cultivation_multiplier", 1.5) * DaoEngine.dual_cultivation_multiplier(state)
         remaining = state.player.cultivation_required - state.player.cultivation
         gain = min(remaining, max(1, round(breakdown.total * multiplier)))
         state.player.cultivation += max(0, gain)

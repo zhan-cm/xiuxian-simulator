@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .arts import ArtsEngine
+from .dao import DaoEngine
 from .progression import ProgressionEngine, REALMS, STAGES
 from .state import GameState
 
@@ -319,7 +320,7 @@ class CombatEngine:
             player.resources[talisman] -= 1
             if player.resources[talisman] <= 0:
                 player.resources.pop(talisman, None)
-            strike = cls._player_strike(state, 1.75, "talisman:fireball", "火")
+            strike = cls._player_strike(state, 1.75 * DaoEngine.talisman_multiplier(state), "talisman:fireball", "火")
             player_text = cls._strike_text("你催动火球符", strike) + "，火球符 -1"
         else:
             raise ValueError("战斗中请选择：攻击、施法、防御、冷静观察、蓄势、绝技、遁走、用丹或用符。")

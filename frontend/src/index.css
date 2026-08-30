@@ -238,3 +238,59 @@ button:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline
   .cave-operation button { grid-column: 2; justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+.dao-ribbon { width: 100%; min-height: 48px; display: grid; grid-template-columns: auto auto minmax(70px, 1fr) auto auto auto; gap: 9px; align-items: center; margin: 0 0 9px; padding: 7px 11px; border: 1px solid rgba(112, 92, 147, .2); border-radius: 12px; background: linear-gradient(105deg, #eee9f3, #f4efdf); color: #655879; text-align: left; cursor: pointer; transition: .18s ease; }
+.dao-ribbon:hover { transform: translateY(-1px); border-color: rgba(104, 82, 143, .38); }
+.dao-ribbon[data-ready="true"] { box-shadow: inset 3px 0 #8b6fa8, 0 7px 18px rgba(72, 55, 91, .06); }
+.dao-ribbon > span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; background: #e3dbea; color: #765d91; }
+.dao-ribbon small, .dao-ribbon strong { display: block; white-space: nowrap; }
+.dao-ribbon small { color: #9b7d52; font-size: 8px; }
+.dao-ribbon strong { margin-top: 1px; font-family: "KaiTi", serif; font-size: 13px; font-weight: 500; }
+.dao-ribbon > i { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(83, 72, 104, .12); }
+.dao-ribbon > i b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #876ca3, #c2a25e); }
+.dao-ribbon > p { margin: 0; color: #82798d; font-size: 8px; white-space: nowrap; }
+.dao-ribbon > em { padding: 4px 7px; border-radius: 999px; background: rgba(119, 91, 148, .09); color: #796689; font-size: 8px; font-style: normal; white-space: nowrap; }
+.dao-dialog { width: min(900px, calc(100% - 28px)); height: min(790px, calc(100vh - 28px)); display: flex; flex-direction: column; overflow: hidden; }
+.dao-overview { flex: 0 0 auto; display: grid; grid-template-columns: auto minmax(150px, 1fr) auto auto; gap: 11px; align-items: center; margin-top: 17px; padding: 11px 12px !important; border: 0 !important; border-radius: 12px; background: linear-gradient(105deg, #e6dfed, #f3eddc); }
+.dao-overview > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: rgba(255, 255, 250, .55); color: #785e94; }
+.dao-overview > div > small, .dao-overview > div > strong { display: block; }
+.dao-overview small { color: #8d8890; font-size: 7px; }
+.dao-overview strong { margin-top: 2px; color: #655375; font-size: 16px; }
+.dao-overview strong b { color: #9b8e9e; font-size: 8px; font-weight: 400; }
+.dao-overview div > i { display: block; height: 5px; margin-top: 4px; overflow: hidden; border-radius: 999px; background: rgba(89, 75, 105, .12); }
+.dao-overview div > i b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #84689f, #b99550); }
+.dao-actions { display: flex; gap: 6px; }
+.dao-actions button { min-height: 31px; border: 1px solid rgba(105, 80, 134, .18); border-radius: 8px; padding: 6px 9px; background: #725c89; color: #faf6eb; cursor: pointer; font-size: 8px; }
+.dao-actions button:last-child { background: #4e735f; }
+.dao-actions button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.dao-actions button:disabled { border-color: transparent; background: #dedfd9; color: #999f9b; cursor: not-allowed; }
+.dao-scroll { min-height: 0; flex: 1; margin-top: 10px !important; padding: 0 5px 0 0 !important; overflow-y: auto; border: 0 !important; scrollbar-gutter: stable; }
+.dao-branch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dao-branch-grid > article { min-width: 0; padding: 10px; border: 1px solid rgba(92, 75, 112, .12); border-radius: 12px; background: #f5f3ee; transition: .16s ease; }
+.dao-branch-grid > article:hover { border-color: rgba(107, 82, 136, .28); background: #f0edf2; transform: translateY(-1px); }
+.dao-branch-grid > article[data-active="true"] { box-shadow: inset 3px 0 #856b9d; background: linear-gradient(145deg, #f0eaf2, #f6f2e7); }
+.dao-branch-grid > article[data-complete="true"] { border-color: rgba(175, 137, 68, .3); box-shadow: inset 3px 0 #b08a4e; }
+.dao-branch-grid article > header { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+.dao-branch-grid header > span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; background: #e4ddeb; color: #765f8c; font-family: "KaiTi", serif; font-size: 14px; }
+.dao-branch-grid header small { color: #9c8056; font-size: 7px; }
+.dao-branch-grid header h3 { margin: 1px 0 0 !important; color: #574d61; font-family: "KaiTi", serif; font-size: 14px !important; font-weight: 500; }
+.dao-branch-grid header em { color: #826c8c; font-size: 8px; font-style: normal; }
+.dao-pips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 8px 0 6px; }
+.dao-pips i { height: 4px; border-radius: 999px; background: #deddd9; }
+.dao-pips i[data-lit="true"] { background: linear-gradient(90deg, #80649b, #b48c48); }
+.dao-branch-grid article > p { min-height: 25px; margin: 0 0 7px; color: #7f7c7f; font-size: 8px; line-height: 1.55; }
+.dao-branch-grid article dl { grid-template-columns: 1fr; gap: 4px; }
+.dao-branch-grid article dl > div { padding: 6px 7px; }
+.dao-branch-grid article dt, .dao-branch-grid article dd { font-size: 7px; }
+.dao-branch-grid article > button { width: 100%; min-height: 30px; display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 8px; border: 0; border-radius: 8px; background: #705888; color: #faf7ec; cursor: pointer; font-size: 8px; }
+.dao-branch-grid article > button:hover:not(:disabled) { background: #624977; }
+.dao-branch-grid article > button:disabled { background: #dfe0dc; color: #989e9a; cursor: not-allowed; }
+.dao-branch-grid article > small { display: block; margin-top: 4px; overflow: hidden; color: #9b9183; font-size: 7px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.dao-history { margin-top: 11px !important; padding-top: 11px !important; }
+.dao-history h3 { display: flex; align-items: center; gap: 5px; color: #665873; }
+.dao-history ol { max-height: 140px; display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.dao-history li { display: grid; grid-template-columns: auto 1fr; gap: 7px; padding: 7px 9px; border-radius: 8px; background: #f1efed; }
+.dao-history li span { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 7px; background: #e2dce7; color: #756284; font-size: 7px; }
+.dao-history li p, .dao-history > p { margin: 0; color: #77747a; font-size: 7px; line-height: 1.55; }
+@media (max-width: 700px) { .dao-ribbon { grid-template-columns: auto auto 1fr auto; }.dao-ribbon > i { grid-column: 2 / -1; grid-row: 2; }.dao-ribbon > p, .dao-ribbon > svg { display: none; }.dao-overview { grid-template-columns: auto 1fr auto; }.dao-actions { grid-column: 1 / -1; }.dao-actions button { flex: 1; }.dao-branch-grid { grid-template-columns: 1fr 1fr; }.dao-dialog { padding: 17px; } }
+@media (max-width: 430px) { .dao-ribbon { grid-template-columns: auto 1fr auto; }.dao-ribbon > i, .dao-ribbon > p, .dao-ribbon > svg { display: none; }.dao-overview { grid-template-columns: auto 1fr; }.dao-overview > div:nth-of-type(2) { text-align: right; }.dao-branch-grid { grid-template-columns: 1fr; }.dao-dialog { width: calc(100% - 14px); height: calc(100vh - 14px); } }

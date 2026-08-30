@@ -171,6 +171,23 @@ def _new_era_chronicle(engine: GameEngine, app: WebApplication) -> dict[str, Any
     return app.perform_action("新世")
 
 
+def _dao_tree(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 1
+    engine.state.player.realm = "筑基·初期"
+    engine.state.player.dao_insight = 14
+    engine.state.player.dao_points = 2
+    engine.state.player.dao_levels = {"剑道": 2, "丹道": 1, "有情道": 1}
+    engine.state.player.health_max = 105
+    engine.state.player.health = 105
+    engine.state.player.dao_history = [
+        "第 18 回合｜与顾清玄论道｜感悟 +12",
+        "第 24 回合｜点亮剑道第 2 层｜攻击威力累计 +10%",
+        "第 31 回合｜闭关消化感悟｜悟道点 +2",
+    ]
+    return app.perform_action("悟道")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -227,6 +244,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("story-ending", "本世结局", "检查终章落定后的时代、命格与结局回顾。", ["结局卡突出但不遮挡六章卷宗", "时代与永久命格来自真实结算", "旧因果历史仍可回看"], _story_ending),
     ("new-era-pending", "新世余波", "检查结局驱动的新世事件、三项世界指标与真实资源门槛。", ["事件必须来自当前结局路线", "三项应对的长期后果清楚", "巡览中的余波选择必须禁用"], _new_era_pending),
     ("new-era-chronicle", "新世卷宗", "检查多轮余波之后的指标变化、阶段演化与永久历史。", ["三项指标不挤成一行文字", "每轮选择保留清晰记录", "三轮后形成新世纪里程碑"], _new_era_chronicle),
+    ("dao-tree", "悟道九途", "检查感悟转化、九条永久道途、境界门槛与点亮状态。", ["九途必须使用独立小组件", "当前与下一层效果可快速比较", "巡览中的点亮与观想按钮必须禁用"], _dao_tree),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

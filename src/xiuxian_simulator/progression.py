@@ -5,6 +5,7 @@ import math
 import re
 from dataclasses import dataclass
 
+from .dao import DaoEngine
 from .state import GameState, PlayerState
 
 
@@ -231,6 +232,11 @@ class ProgressionEngine:
         return max(5, min(99, heart_chance)), max(5, min(99, thunder_chance))
 
     @classmethod
+    def major_chances_for_state(cls, state: GameState, route: str) -> tuple[int, int]:
+        heart, thunder = cls.major_chances(state.player, route)
+        return min(99, heart + DaoEngine.heart_trial_bonus(state)), thunder
+
+    @classmethod
     def major_breakthrough(cls, state: GameState, route: str) -> MajorBreakthroughResult:
         player = state.player
         cls.sync_realm(player)
@@ -251,7 +257,7 @@ class ProgressionEngine:
             if player.resources[name] <= 0:
                 player.resources.pop(name, None)
 
-        heart_chance, thunder_chance = cls.major_chances(player, route)
+        heart_chance, thunder_chance = cls.major_chances_for_state(state, route)
         old_realm = player.realm
         heart_roll = cls.deterministic_roll(state, f"heart-demon:{route}:{player.realm_index}")
         thunder_roll = cls.deterministic_roll(state, f"thunder:{route}:{player.realm_index}")

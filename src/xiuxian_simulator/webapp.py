@@ -20,6 +20,7 @@ from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
 from .new_era import NewEraEngine
+from .dao import DaoEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import TravelEngine
@@ -78,6 +79,7 @@ class WebApplication:
             "commissions": CommissionEngine.snapshot(self.engine.state),
             "story": StoryEngine.snapshot(self.engine.state),
             "new_era": NewEraEngine.snapshot(self.engine.state),
+            "dao": DaoEngine.snapshot(self.engine.state),
             "inventory": InventoryEngine.snapshot(self.engine.state),
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),
@@ -139,7 +141,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.44"
+        server_version = "XiuxianSimulator/0.45"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")
