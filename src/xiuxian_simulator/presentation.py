@@ -120,7 +120,7 @@ def _section_kind(title: str) -> str:
 
 PEOPLE_SECTION_TITLES = ("人物与情缘", "九州人物动态")
 PASSIVE_SECTION_TITLES = ("最近动态",)
-BUTTON_BACKED_SECTION_TITLES = ("情劫抉择", "大境界突破路线", "逆天改命 · 三选一")
+BUTTON_BACKED_SECTION_TITLES = ("情劫抉择", "大境界突破路线", "逆天改命 · 三选一", "新世抉择")
 COLLECTION_SECTION_TITLES = (
     "东洲宗门",
     "九州秘境",

@@ -15,6 +15,7 @@ from .narrator import Narrator
 from .journey import JourneyEngine
 from .commissions import CommissionEngine
 from .story import StoryEngine
+from .new_era import NewEraEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -26,7 +27,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -85,6 +86,8 @@ class GameEngine:
             return self._world_intervention_choice(action)
         if self.state.phase == "main_story_choice":
             return self._story_choice(action)
+        if self.state.phase == "new_era_choice":
+            return self._new_era_choice(action)
         if self.state.phase == "auction_choice":
             return self._auction_choice(action)
         if self.state.phase == "travel_choice":
@@ -106,6 +109,10 @@ class GameEngine:
             return StoryEngine.panel_text(self.state)
         if action == "推进主线":
             return self._begin_story()
+        if action in {"新世", "新世卷宗", "灵潮余波"}:
+            return NewEraEngine.panel_text(self.state)
+        if action == "处置余波":
+            return self._begin_new_era_event()
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
         if action in {"委托", "悬赏", "悬榜"}:
@@ -1672,6 +1679,34 @@ class GameEngine:
             return f"{result}\n【坐化结局】你在因果落定后走完此生。"
         return f"{self.state.time_label}\n【{node.title} · {choice.label}】\n{choice.description}\n结算：{result}\n\n{StoryEngine.panel_text(self.state)}"
 
+    def _begin_new_era_event(self) -> str:
+        try:
+            event = NewEraEngine.begin(self.state)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + NewEraEngine.panel_text(self.state)
+        self.state.remember(f"新世第{self.state.new_era_counter + 1}轮《{event.title}》等待处置")
+        self._autosave()
+        choices = "\n".join(f"{choice.label}｜{choice.description}" for choice in event.choices)
+        return f"【新世余波 · {event.title}】\n{event.summary}\n地点：{event.location}\n\n【新世抉择】\n{choices}"
+
+    def _new_era_choice(self, action: str) -> str:
+        if not action.startswith("新世选择"):
+            return "当前新世余波尚待决定，请从页面列出的三项应对中选择。"
+        choice_id = action.removeprefix("新世选择").strip()
+        try:
+            event, choice, result = NewEraEngine.resolve(self.state, choice_id)
+        except ValueError as exc:
+            return str(exc)
+        died = self._advance_time()
+        self.state.remember(f"新世《{event.title}》选择{choice.label}：{result}")
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "新世余波落定后寿元耗尽"
+        self._autosave()
+        if died:
+            return f"{result}\n【坐化结局】你在新世余波落定后走完此生。"
+        return f"{self.state.time_label}\n【{event.title} · {choice.label}】\n{choice.description}\n结算：{result}\n\n{NewEraEngine.panel_text(self.state)}"
+
     def _accept_commission(self, action: str) -> str:
         instance_id = action.removeprefix("接取委托").strip()
         if not instance_id:
@@ -1727,6 +1762,7 @@ class GameEngine:
         if loaded.rule_sha256 and loaded.rule_sha256 != self.rules.sha256:
             return "存档所用规则与当前 DOCX 不一致，已拒绝直接载入；请先备份并迁移存档。"
         self.state = loaded
+        NewEraEngine.activate(self.state)
         return "读档完成。\n\n" + self._status()
 
     def _autosave(self) -> None:
@@ -1752,6 +1788,9 @@ class GameEngine:
             if network_event:
                 self.state.remember(f"众生缘网：{network_event}")
             WorldTimelineEngine.tick(self.state)
+            new_era_event = NewEraEngine.tick(self.state)
+            if new_era_event:
+                self.state.remember(new_era_event)
             CommissionEngine.expire_overdue(self.state)
             AuctionEngine.expire(self.state)
             cave_tick = CaveEngine.tick(self.state)

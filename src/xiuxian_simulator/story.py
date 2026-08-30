@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from .new_era import NewEraEngine
 from .state import GameState
 
 
@@ -320,6 +321,7 @@ class StoryEngine:
             "year": state.calendar_year,
             "turn": state.turn,
         }
+        NewEraEngine.activate(state)
         return f"{preview['quality']}·{preview['title']}；{reward}；命格【{legacy}】"
 
     @classmethod

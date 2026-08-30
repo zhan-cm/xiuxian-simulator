@@ -12,6 +12,7 @@ from .auctions import AuctionEngine
 from .travel import TravelEngine
 from .regional import RegionalEngine
 from .npc_network import NpcNetworkEngine
+from .new_era import NewEraEngine
 
 
 class DecisionCatalog:
@@ -174,6 +175,8 @@ class DecisionCatalog:
     def for_state(self, state: GameState) -> dict[str, Any]:
         if state.phase == "main_story_choice":
             return StoryEngine.decision(state)
+        if state.phase == "new_era_choice":
+            return NewEraEngine.decision(state)
         if state.phase == "auction_choice":
             return AuctionEngine.decision(state)
         if state.phase == "travel_choice":

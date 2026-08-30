@@ -69,7 +69,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.43.0"
+    version: str = "0.44.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -144,6 +144,13 @@ class GameState:
     story_history: list[str] = field(default_factory=list)
     pending_story_node: str = ""
     story_ending: dict[str, Any] = field(default_factory=dict)
+    new_era_scores: dict[str, int] = field(default_factory=dict)
+    new_era_history: list[str] = field(default_factory=list)
+    new_era_choices: list[dict[str, Any]] = field(default_factory=list)
+    new_era_counter: int = 0
+    next_new_era_turn: int = 0
+    new_era_available_event: str = ""
+    pending_new_era_event: str = ""
     auction: dict[str, Any] = field(default_factory=dict)
     auction_history: list[str] = field(default_factory=list)
     pending_travel: dict[str, Any] = field(default_factory=dict)

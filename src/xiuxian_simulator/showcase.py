@@ -14,6 +14,7 @@ from .cave import CaveEngine
 from .npc_lifecycle import NpcLifecycleEngine
 from .npc_network import NpcNetworkEngine
 from .story import StoryEngine
+from .new_era import NewEraEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -145,6 +146,31 @@ def _story_ending(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("主线")
 
 
+def _prepare_new_era(engine: GameEngine, app: WebApplication) -> None:
+    _prepare_story_finale(engine, app)
+    StoryEngine.begin(engine.state)
+    StoryEngine.resolve(engine.state, "guard-world")
+    engine.state.player.spirit_stones = 1200
+
+
+def _new_era_pending(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _prepare_new_era(engine, app)
+    engine.state.next_new_era_turn = engine.state.turn
+    NewEraEngine.tick(engine.state)
+    return app.perform_action("处置余波")
+
+
+def _new_era_chronicle(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _prepare_new_era(engine, app)
+    for choice_id in ("stabilize", "investigate", "convene"):
+        event = NewEraEngine.next_event(engine.state)
+        assert event is not None
+        engine.state.new_era_available_event = event.id
+        NewEraEngine.begin(engine.state)
+        NewEraEngine.resolve(engine.state, choice_id)
+    return app.perform_action("新世")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -199,6 +225,8 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("story", "灵潮因果", "检查主线篇章、解锁条件与三项重大抉择。", ["篇章脉络应清楚", "抉择按钮接入真实状态机", "巡览中推进按钮必须禁用"], _story),
     ("story-finale", "潮汐终局", "检查前五章因果倾向与终章三条结局路线。", ["守世、问天、同道共鸣可比较", "结局完成度由前置选择推导", "巡览中的终局按钮必须禁用"], _story_finale),
     ("story-ending", "本世结局", "检查终章落定后的时代、命格与结局回顾。", ["结局卡突出但不遮挡六章卷宗", "时代与永久命格来自真实结算", "旧因果历史仍可回看"], _story_ending),
+    ("new-era-pending", "新世余波", "检查结局驱动的新世事件、三项世界指标与真实资源门槛。", ["事件必须来自当前结局路线", "三项应对的长期后果清楚", "巡览中的余波选择必须禁用"], _new_era_pending),
+    ("new-era-chronicle", "新世卷宗", "检查多轮余波之后的指标变化、阶段演化与永久历史。", ["三项指标不挤成一行文字", "每轮选择保留清晰记录", "三轮后形成新世纪里程碑"], _new_era_chronicle),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

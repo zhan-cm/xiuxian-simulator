@@ -36,6 +36,7 @@ from xiuxian_simulator.state import GameState
 from xiuxian_simulator.journey import JourneyEngine
 from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
+from xiuxian_simulator.new_era import NewEraEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -342,6 +343,9 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(state.story_choices, {})
         self.assertEqual(state.pending_story_node, "")
         self.assertEqual(state.story_ending, {})
+        self.assertEqual(state.new_era_scores, {})
+        self.assertEqual(state.new_era_choices, [])
+        self.assertEqual(state.pending_new_era_event, "")
 
     def test_story_second_act_unlocks_from_travel_and_rebuilds_alignment(self) -> None:
         state = GameState(phase="playing")
@@ -445,6 +449,137 @@ class SimulatorSmokeTests(unittest.TestCase):
             persisted = SaveManager(Path(temp_dir)).load("autosave")
             self.assertEqual(persisted.story_ending["title"], "九州同盟")
             self.assertEqual(persisted.story_ending["resonance"], 5)
+
+    @staticmethod
+    def prepare_new_era_state(route: str = "guard") -> GameState:
+        state = GameState(phase="playing")
+        ending = {
+            "guard": ("guard-world", "人间长明"),
+            "seek": ("open-gate", "天门初开"),
+            "unite": ("unite-realms", "九州同盟"),
+        }[route]
+        state.story_ending = {"id": ending[0], "title": ending[1], "route": route}
+        state.world_era = ending[1]
+        NewEraEngine.activate(state)
+        return state
+
+    def test_new_era_activation_differs_by_story_ending(self) -> None:
+        guard = self.prepare_new_era_state("guard")
+        seek = self.prepare_new_era_state("seek")
+        unite = self.prepare_new_era_state("unite")
+        self.assertGreater(guard.new_era_scores["stability"], guard.new_era_scores["discovery"])
+        self.assertGreater(seek.new_era_scores["discovery"], seek.new_era_scores["unity"])
+        self.assertGreater(unite.new_era_scores["unity"], unite.new_era_scores["stability"])
+        self.assertEqual(NewEraEngine.next_event(guard).id, "wandering-veins")
+        self.assertEqual(NewEraEngine.next_event(seek).id, "heavenly-echo")
+        self.assertEqual(NewEraEngine.next_event(unite).id, "oath-fracture")
+
+    def test_v43_ending_save_can_initialize_new_era_without_replaying_story(self) -> None:
+        state = GameState.from_dict(
+            {
+                "version": "0.43.0",
+                "phase": "playing",
+                "player": {},
+                "story_ending": {"id": "open-gate", "title": "天门初开", "route": "seek"},
+            }
+        )
+        self.assertEqual(state.new_era_scores, {})
+        NewEraEngine.activate(state)
+        self.assertEqual(state.new_era_scores["discovery"], 62)
+        self.assertGreater(state.next_new_era_turn, state.turn)
+
+    def test_new_era_tick_waits_then_exposes_one_event(self) -> None:
+        state = self.prepare_new_era_state()
+        self.assertEqual(NewEraEngine.tick(state), "")
+        state.turn = state.next_new_era_turn
+        message = NewEraEngine.tick(state)
+        self.assertIn("灵脉迁徙", message)
+        self.assertEqual(state.new_era_available_event, "wandering-veins")
+        self.assertEqual(NewEraEngine.tick(state), "")
+        snapshot = NewEraEngine.snapshot(state)
+        self.assertTrue(snapshot["available"])
+        self.assertEqual(snapshot["event"]["location"], "东洲·青岳")
+
+    def test_new_era_decision_locks_missing_resources(self) -> None:
+        state = self.prepare_new_era_state()
+        state.turn = state.next_new_era_turn
+        NewEraEngine.tick(state)
+        NewEraEngine.begin(state)
+        state.player.spirit_stones = 0
+        state.player.spirit = 10
+        decision = NewEraEngine.decision(state)
+        stabilize, investigate, convene = decision["choices"]
+        self.assertTrue(stabilize["disabled"])
+        self.assertIn("80 灵石", stabilize["disabled_reason"])
+        self.assertTrue(investigate["disabled"])
+        self.assertIn("20 灵力", investigate["disabled_reason"])
+        self.assertFalse(convene["disabled"])
+        with self.assertRaisesRegex(ValueError, "80 灵石"):
+            NewEraEngine.resolve(state, "stabilize")
+
+    def test_new_era_resolution_changes_world_and_persists_history(self) -> None:
+        state = self.prepare_new_era_state()
+        state.player.spirit_stones = 500
+        state.turn = state.next_new_era_turn
+        NewEraEngine.tick(state)
+        NewEraEngine.begin(state)
+        before_stability = state.new_era_scores["stability"]
+        before_prosperity = state.regional_prosperity["东洲"]
+        event, choice, result = NewEraEngine.resolve(state, "stabilize")
+        self.assertEqual(event.id, "wandering-veins")
+        self.assertEqual(choice.label, "安置迁脉")
+        self.assertIn("山河安定 +10", result)
+        self.assertEqual(state.new_era_scores["stability"], before_stability + 10)
+        self.assertEqual(state.regional_prosperity["东洲"], before_prosperity + 5)
+        self.assertEqual(state.new_era_counter, 1)
+        self.assertEqual(state.phase, "playing")
+        self.assertIn("灵脉迁徙", state.new_era_history[-1])
+        restored = GameState.from_dict(state.to_dict())
+        self.assertEqual(restored.new_era_choices, state.new_era_choices)
+
+    def test_three_new_era_cycles_create_a_world_milestone(self) -> None:
+        state = self.prepare_new_era_state()
+        state.player.spirit_stones = 1000
+        for choice_id in ("stabilize", "investigate", "convene"):
+            event = NewEraEngine.next_event(state)
+            self.assertIsNotNone(event)
+            state.new_era_available_event = event.id
+            NewEraEngine.begin(state)
+            NewEraEngine.resolve(state, choice_id)
+        self.assertEqual(state.new_era_counter, 3)
+        self.assertEqual(NewEraEngine.stage(state), "新世奠基")
+        self.assertTrue(any("新世第1纪落定" in item for item in state.world_milestones))
+        self.assertGreater(state.new_era_scores["stability"], 60)
+        self.assertGreater(state.new_era_scores["discovery"], 20)
+        self.assertGreater(state.new_era_scores["unity"], 30)
+
+    def test_new_era_command_advances_time_and_autosaves(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.story_ending = {"id": "guard-world", "title": "人间长明", "route": "guard"}
+            NewEraEngine.activate(engine.state)
+            engine.state.next_new_era_turn = engine.state.turn
+            NewEraEngine.tick(engine.state)
+            self.assertIn("灵脉迁徙", engine.process("处置余波"))
+            before_turn = engine.state.turn
+            result = engine.process("新世选择 convene")
+            self.assertIn("九州同盟 +10", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            persisted = SaveManager(Path(temp_dir)).load("autosave")
+            self.assertEqual(persisted.new_era_counter, 1)
+            self.assertEqual(persisted.new_era_choices[0]["choice"], "convene")
+
+    def test_new_era_choice_copy_is_not_duplicated_below_buttons(self) -> None:
+        state = GameState(phase="new_era_choice").to_dict()
+        output = (
+            "【新世余波 · 灵脉迁徙】\n新生灵脉穿过凡城。\n地点：东洲·青岳\n\n"
+            "【新世抉择】\n安置迁脉｜先保民生\n剖析新脉｜追索天机\n五域共议｜共立章程"
+        )
+        view = present_action("处置余波", output, state, state)
+        self.assertNotIn("新世抉择", [block["title"] for block in view["blocks"]])
+        self.assertIn("新生灵脉", view["paragraphs"][0])
 
     def test_save_summaries_are_safe_and_newest_first(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

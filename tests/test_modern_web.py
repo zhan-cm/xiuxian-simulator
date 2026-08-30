@@ -82,7 +82,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 22)
+            self.assertGreaterEqual(len(pages), 24)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -104,6 +104,15 @@ class ModernWebTests(unittest.TestCase):
             ending = by_id["story-ending"]["snapshot"]
             self.assertEqual(ending["story"]["ending"]["title"], "人间长明")
             self.assertEqual(ending["state"]["world_era"], "灵潮新世")
+            era_pending = by_id["new-era-pending"]["snapshot"]
+            self.assertEqual(era_pending["state"]["phase"], "new_era_choice")
+            self.assertEqual(era_pending["new_era"]["event"]["title"], "灵脉迁徙")
+            self.assertEqual(len(era_pending["decision"]["choices"]), 3)
+            self.assertFalse(era_pending["decision"]["choices"][0]["disabled"])
+            era_chronicle = by_id["new-era-chronicle"]["snapshot"]["new_era"]
+            self.assertEqual(era_chronicle["completed"], 3)
+            self.assertEqual(era_chronicle["stage"], "新世奠基")
+            self.assertEqual(len(era_chronicle["scores"]), 3)
             inventory = by_id["inventory"]["snapshot"]["inventory"]
             self.assertGreaterEqual(inventory["total_types"], 7)
             self.assertEqual(inventory["equipped"]["weapon"], "青锋剑")

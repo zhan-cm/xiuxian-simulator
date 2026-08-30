@@ -190,6 +190,20 @@ export interface StorySnapshot {
   chapters: StoryChapter[]; alignments: StoryAlignment[]; ending: StoryEnding; history: string[]
 }
 
+export interface NewEraScore {
+  id: string; label: string; mark: string; help: string; value: number; dominant: boolean
+}
+
+export interface NewEraEvent {
+  id?: string; title?: string; summary?: string; location?: string; region?: string
+}
+
+export interface NewEraSnapshot {
+  active: boolean; title: string; stage: string; completed: number
+  available: boolean; pending: string; next_in: number; begin_action: string
+  scores: NewEraScore[]; event: NewEraEvent; history: string[]; ending_route: string
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -304,6 +318,7 @@ export interface Snapshot {
   journey: JourneySnapshot
   commissions: CommissionSnapshot
   story: StorySnapshot
+  new_era: NewEraSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot
