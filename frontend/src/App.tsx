@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -26,6 +26,7 @@ import { SectLibrary } from './components/SectLibrary'
 import { ArtifactForge } from './components/ArtifactForge'
 import { ArtMasteryCodex } from './components/ArtMasteryCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
+import { LegacyChronicle } from './components/LegacyChronicle'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -82,9 +83,11 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = ['playing', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)
   const networkSurface = ['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')
+  const legacySurface = state.phase === 'ended'
+  const activeLegacy = snapshot.legacy.active_legacy
   return (
     <TooltipProvider>
-      <div className="game-shell" data-showcase={showcase || undefined}>
+      <div className="game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
         <header className="topbar">
           <div className="brand"><span>高自由修仙文字模拟</span><h1>问道长生</h1><p>凡尘一念，万法由心</p></div>
           <div className="topbar-actions">
@@ -96,7 +99,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
         </header>
 
         <main className="game-grid">
-          <aside className="left-rail">
+          {!legacySurface && <aside className="left-rail">
             <Panel title="修士名帖" icon={<UserRound size={18} />} meta={player.location}>
               <div className="name-card"><span>{player.name.slice(0, 1)}</span><div><h3>{player.name}</h3><p>道号 · {player.dao_name}</p></div></div>
               <div className="identity-tags"><span><small>境界</small>{player.realm}</span><span><small>宗门</small>{player.sect}</span><GameTooltip label="灵石是修仙界通行货币，可在坊市购买丹药、法器与材料。"><span tabIndex={0}><small>灵石</small>{player.spirit_stones}</span></GameTooltip></div>
@@ -108,44 +111,47 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 <ProgressStat label="灵力" value={player.spirit} max={player.spirit_max} tone="spirit" help="施展法术会消耗灵力，修炼和休息可以恢复。" />
                 <ProgressStat label="修为" value={player.cultivation} max={player.cultivation_required} tone="cultivation" help="修为达到当前上限后，可以尝试突破境界。" />
               </div>
-              <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span></div>
+              <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span>{activeLegacy.name && <GameTooltip label={activeLegacy.effect || '来自上一世的轮回传承。'}><span tabIndex={0}><RotateCcw size={14} />{activeLegacy.name}</span></GameTooltip>}</div>
               <RecoveryCodex recovery={snapshot.recovery} busy={busy} readOnly={showcase} onAction={onAction} />
             </Panel>
             <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
-          </aside>
+          </aside>}
 
           <section className="main-stage">
             <div className="stage-heading"><div><span>当前所在</span><h2>{player.location}</h2></div><span className="era-badge"><CloudSun size={15} />{state.world_era}</span></div>
-            <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
-            <NewEraChronicle era={snapshot.new_era} busy={busy} readOnly={showcase} onAction={onAction} />
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <DaoTree dao={snapshot.dao} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtMasteryCodex mastery={snapshot.art_mastery} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SpiritBeastSanctuary beasts={snapshot.spirit_beasts} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <FormationAtlas formations={snapshot.formations} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtifactForge artifacts={snapshot.artifacts} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SectLibrary library={snapshot.sect_library} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
-            {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
-            <AnimatePresence mode="wait">
-              <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase} onAction={onAction} />
-              </motion.div>
-            </AnimatePresence>
-            {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
+            {!legacySurface && <>
+              <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
+              <NewEraChronicle era={snapshot.new_era} busy={busy} readOnly={showcase} onAction={onAction} />
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <DaoTree dao={snapshot.dao} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtMasteryCodex mastery={snapshot.art_mastery} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SpiritBeastSanctuary beasts={snapshot.spirit_beasts} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <FormationAtlas formations={snapshot.formations} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtifactForge artifacts={snapshot.artifacts} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SectLibrary library={snapshot.sect_library} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
+              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
+              <AnimatePresence mode="wait">
+                <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
+                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase} onAction={onAction} />
+                </motion.div>
+              </AnimatePresence>
+              {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
+            </>}
+            {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
-            <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />
+            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />}
           </section>
 
-          <aside className="right-rail">
+          {!legacySurface && <aside className="right-rail">
             <Relations snapshot={snapshot} onAction={onAction} />
             <HistoryPanel snapshot={snapshot} />
             <Panel title="九州风声" icon={<CloudSun size={18} />} meta={state.world_era} className="balanced-panel world-panel">
               <div><span aria-hidden="true">闻</span><p>{state.last_world_event || '灵气潮汐尚在暗中酝酿，九州表面仍显平静。'}</p></div>
             </Panel>
-          </aside>
+          </aside>}
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.51 伤势疗愈版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.52 轮回评传版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

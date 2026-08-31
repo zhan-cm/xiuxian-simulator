@@ -299,6 +299,25 @@ export interface RecoverySnapshot {
   has_healing_pill: boolean; pill_action: string; history: string[]
 }
 
+export interface LegacyOption {
+  id: string; name: string; mark: string; summary: string; effect: string
+  selected: boolean; action: string
+}
+
+export interface LegacyLife {
+  life: number; name: string; dao_name: string; realm: string; sect: string
+  age: number; lifespan: number; year: number; month: number; turn: number
+  cause: string; score: number; rank: string; location: string; ending: string
+  highlights: string[]; metrics: Record<string, number>; selected_legacy: string; epilogue: string
+}
+
+export interface LegacySnapshot {
+  ended: boolean; life_number: number; completed_lives: number
+  latest: Partial<LegacyLife>; options: LegacyOption[]; selected: string
+  can_begin_next: boolean; begin_action: string
+  active_legacy: Partial<LegacyOption>; past_lives: LegacyLife[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -421,6 +440,7 @@ export interface Snapshot {
   artifacts: ArtifactGrowthSnapshot
   art_mastery: ArtMasterySnapshot
   recovery: RecoverySnapshot
+  legacy: LegacySnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

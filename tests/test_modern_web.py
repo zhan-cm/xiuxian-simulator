@@ -60,6 +60,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["art_mastery"]["primary"]["name"], "聚气诀")
             self.assertFalse(snapshot.json()["recovery"]["active"])
             self.assertEqual(snapshot.json()["recovery"]["count"], 0)
+            self.assertFalse(snapshot.json()["legacy"]["ended"])
+            self.assertEqual(snapshot.json()["legacy"]["life_number"], 1)
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -95,7 +97,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 31)
+            self.assertGreaterEqual(len(pages), 32)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -105,6 +107,13 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(recovery["injuries"][0]["severity_label"], "沉重")
             self.assertLess(recovery["penalties"]["cultivation"], 1)
             self.assertTrue(recovery["has_healing_pill"])
+            legacy = by_id["legacy-ending"]["snapshot"]["legacy"]
+            self.assertTrue(legacy["ended"])
+            self.assertEqual(legacy["latest"]["realm"], "结晶·后期")
+            self.assertEqual(legacy["latest"]["metrics"]["regions"], 3)
+            self.assertEqual(len(legacy["options"]), 3)
+            self.assertEqual(legacy["options"][2]["id"], "world-vow")
+            self.assertFalse(legacy["can_begin_next"])
             self.assertEqual(by_id["market"]["snapshot"]["presentation"]["blocks"][0]["type"], "market")
             self.assertEqual(by_id["battle"]["snapshot"]["state"]["phase"], "combat_ready")
             self.assertEqual(by_id["breakthrough"]["snapshot"]["state"]["phase"], "major_breakthrough_choice")

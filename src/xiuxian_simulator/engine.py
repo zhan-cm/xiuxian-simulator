@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
 from .adventures import AdventureEngine, SECRET_REALMS
 from .arts import ArtsEngine
@@ -23,6 +25,7 @@ from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
 from .art_mastery import ArtMasteryEngine, MASTERY_LABELS
 from .recovery import RecoveryEngine
+from .legacy import LEGACIES, LegacyEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -34,7 +37,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -52,10 +55,23 @@ class GameEngine:
         self.state = GameState(rule_sha256=rules.sha256)
 
     def process(self, raw_action: str) -> str:
+        output = self._process_action(raw_action)
+        if self.state.phase == "ended" and LegacyEngine.ensure_ending(self.state):
+            latest = self.state.past_lives[-1]
+            self.state.remember(f"第 {latest['life']} 世仙途评传落定：{latest['rank']}，{latest['score']} 分")
+            self._autosave()
+            output += "\n\n" + LegacyEngine.panel_text(self.state)
+        return output
+
+    def _process_action(self, raw_action: str) -> str:
         action = raw_action.strip()
         if not action:
             return "请输入行动；也可输入“帮助”查看指令。"
 
+        if action in {"评传", "仙途评传", "轮回", "轮回卷宗"}:
+            return LegacyEngine.panel_text(self.state)
+        if action.startswith("铭刻传承"):
+            return self._choose_legacy(action)
         if action == "开始游戏":
             return self._start_game()
         if action in {"帮助", "指令"}:
@@ -304,13 +320,34 @@ class GameEngine:
         return self._free_action(action)
 
     def _start_game(self) -> str:
-        self.state = GameState(phase="character_creation_basic", turn=1, rule_sha256=self.rules.sha256)
+        previous = self.state
+        if previous.phase not in {"new", "ended"}:
+            return "当前轮回尚未终结，不能以“开始游戏”跳过此生并重复领取传承。若要回退进度，请使用读档。"
+        if previous.phase == "ended":
+            LegacyEngine.ensure_ending(previous)
+            if not previous.legacy_choice:
+                return "本世评传已经落定，请先亲自铭刻一道轮回传承。\n\n" + LegacyEngine.panel_text(previous)
+            life_number = previous.life_number + 1
+            active_legacy = previous.legacy_choice
+        else:
+            life_number = previous.life_number
+            active_legacy = previous.active_legacy
+        self.state = GameState(
+            phase="character_creation_basic",
+            turn=1,
+            rule_sha256=self.rules.sha256,
+            life_number=life_number,
+            past_lives=deepcopy(previous.past_lives),
+            active_legacy=active_legacy,
+        )
         self.state.remember("九州仙途开启，等待创角")
         self._autosave()
+        lineage = f"\n轮回：第 {life_number} 世将继承“{LEGACIES[active_legacy].name}”。\n" if active_legacy in LEGACIES else ""
         return (
             "天玄历 387 年 · 春\n\n"
             "灵气潮汐将至，九州诸宗暗流涌动。你尚是芸芸众生之一，长生路从今日起。\n\n"
-            "【创角大面板 · 第一面｜作者：雾见川】\n"
+            + lineage
+            + "【创角大面板 · 第一面｜作者：雾见川】\n"
             "基础：姓名、性别、年龄、相貌\n"
             "出身：山野遗孤／修仙世家／凡人皇族／商贾之家／宗门弃徒等\n"
             "道途：问道飞升／逍遥长生／快意恩仇／守护所爱／问鼎天下／随心所欲\n\n"
@@ -353,13 +390,29 @@ class GameEngine:
     def _complete_character_creation(self, source: str) -> str:
         self.state.phase = "playing"
         self.state.character_draft = {}
+        inheritance = LegacyEngine.apply_inheritance(self.state)
+        if inheritance:
+            self.state.remember(inheritance)
         self.state.remember(f"创角完成：{source}；{self.state.player.character_notes}")
         self._autosave()
         return (
             "创角完成。出身、体质与天赋加成已写入结构化状态。\n\n"
+            + (f"【轮回道痕】{inheritance}\n\n" if inheritance else "")
             + self._status()
             + "\n\n【洞府主界面】\n石屋一间，灵气普通，设施尚无。你可修炼、外出或自由行动。"
         )
+
+    def _choose_legacy(self, action: str) -> str:
+        legacy_id = action.removeprefix("铭刻传承").strip()
+        if not legacy_id:
+            return LegacyEngine.panel_text(self.state)
+        try:
+            selected = LegacyEngine.choose(self.state, legacy_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + LegacyEngine.panel_text(self.state)
+        self.state.remember(f"轮回传承已选：{selected.name}（{selected.effect}）")
+        self._autosave()
+        return f"【轮回道痕 · 已铭刻】{selected.name}\n{selected.summary}\n下一世：{selected.effect}\n\n输入“开始游戏”启封新的轮回。"
 
     def _cultivate(self, retreat: bool, months: int = 1) -> str:
         player = self.state.player
@@ -2229,6 +2282,7 @@ class GameEngine:
         return (
             "【指令大全 · 问道长生】\n"
             "开始游戏｜面板｜修炼｜突破｜存档 [名称]｜读档 [名称]\n"
+            "评传/轮回｜本世落幕后查看仙途评传、亲选一道传承并启封下一世\n"
             "主线｜查看灵潮因果；推进主线后从三项行动中亲自选择\n"
             "道途｜查看四章成长目标；领取道途奖励 [编号]\n"
             "委托｜查看东洲悬榜；接取/交付/放弃委托 [编号]；悬榜每三个月轮换\n"

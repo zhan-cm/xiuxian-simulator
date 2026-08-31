@@ -47,6 +47,30 @@ def _recovery(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("伤势")
 
 
+def _legacy_ending(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    player = engine.state.player
+    engine.state.turn = 148
+    engine.state.calendar_year = 399
+    engine.state.month = 5
+    player.age = 28
+    player.realm_index = 2
+    player.stage_index = 2
+    player.realm = "结晶·后期"
+    player.sect = "青云宗"
+    player.sect_rank = "真传弟子"
+    player.reputation = 86
+    player.condition = "陨落于古战场魔潮"
+    engine.state.visited_regions = ["东洲", "南疆", "中州"]
+    engine.state.completed_commissions = ["委-01", "委-02", "委-03", "委-04"]
+    engine.state.story_completed = ["tide-whisper", "vein-rift", "demon-seal", "abyss-tide"]
+    player.dao_levels = {"剑道": 2, "有情道": 1}
+    engine.state.spirit_beasts = {"qingfeng-fox": {"name": "青风狐", "level": 3}}
+    engine.state.bonded_artifact = "玄铁剑"
+    engine.state.phase = "ended"
+    return app.perform_action("评传")
+
+
 def _relations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.npc_relations = {
@@ -357,6 +381,7 @@ def _regional(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
 SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("home", "洞府主界面", "查看新版三栏结构、根基状态和自由行动入口。", ["核心事件应最醒目", "属性数值应一眼可读", "未开放行动需要灰化"], _ready),
     ("recovery", "伤势疗愈", "检查结构化伤势、真实惩罚、调养月份与两种恢复入口。", ["伤势入口应醒目但不挤占主面板", "四项实际惩罚与伤势缘起清楚", "巡览中的静养和服丹按钮必须禁用"], _recovery),
+    ("legacy-ending", "仙途评传", "检查本世总结、道途评分、关键履历与下一世三道传承。", ["死亡结果必须收束成完整评传", "传承效果和选择状态清楚", "巡览中所有铭刻按钮必须禁用"], _legacy_ending),
     ("journey", "道途章程", "检查长期目标、完成状态和分章奖励。", ["主界面只显示紧凑进度", "展开后四章结构清楚", "巡览中的领取按钮必须禁用"], _journey),
     ("commissions", "东洲悬榜", "检查委托接取、真实进度、期限与交付报酬。", ["在途与可接委托清楚分层", "完成进度来自规则引擎", "巡览中所有操作必须禁用"], _commissions),
     ("story", "灵潮因果", "检查主线篇章、解锁条件与三项重大抉择。", ["篇章脉络应清楚", "抉择按钮接入真实状态机", "巡览中推进按钮必须禁用"], _story),

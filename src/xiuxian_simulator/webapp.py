@@ -32,6 +32,7 @@ from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
 from .art_mastery import ArtMasteryEngine
 from .recovery import RecoveryEngine
+from .legacy import LegacyEngine
 
 
 CONTENT_TYPES = {
@@ -92,6 +93,7 @@ class WebApplication:
             "artifacts": ArtifactGrowthEngine.snapshot(self.engine.state),
             "art_mastery": ArtMasteryEngine.snapshot(self.engine.state),
             "recovery": RecoveryEngine.snapshot(self.engine.state),
+            "legacy": LegacyEngine.snapshot(self.engine.state),
             "inventory": InventoryEngine.snapshot(self.engine.state),
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),
@@ -153,7 +155,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.51"
+        server_version = "XiuxianSimulator/0.52"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

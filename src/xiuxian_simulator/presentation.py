@@ -28,6 +28,8 @@ METRICS = (
 
 def _classify(action: str, output: str) -> tuple[str, str, str]:
     action_text = action.strip()
+    if any(action_text.startswith(word) for word in ("评传", "仙途评传", "轮回", "轮回卷宗", "铭刻传承")):
+        return "轮", "story", "仙途评传"
     if any(word in output for word in ("陨落", "坐化", "战败", "死亡")):
         return "劫", "danger", "道途生变"
     if any(action_text.startswith(word) for word in ("开战", "攻击", "战斗", "切磋", "约战", "施法", "防御", "召唤战宠", "催动阵法", "蓄势", "绝技", "遁走", "拾取")):

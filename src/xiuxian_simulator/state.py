@@ -73,7 +73,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.51.0"
+    version: str = "0.52.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -189,6 +189,12 @@ class GameState:
     art_mastery_history: list[str] = field(default_factory=list)
     injuries: dict[str, dict[str, Any]] = field(default_factory=dict)
     injury_history: list[str] = field(default_factory=list)
+    life_number: int = 1
+    past_lives: list[dict[str, Any]] = field(default_factory=list)
+    legacy_options: list[str] = field(default_factory=list)
+    legacy_choice: str = ""
+    active_legacy: str = ""
+    legacy_applied: bool = False
 
     @property
     def time_label(self) -> str:
