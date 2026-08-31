@@ -244,6 +244,18 @@ export interface FormationSnapshot {
   arrays: FormationArray[]; history: string[]
 }
 
+export interface SectLibraryOffering {
+  id: string; sect: string; name: string; mark: string; category: string; minimum_rank: string
+  cost: number; rewards: string; summary: string; claimed: boolean; available: boolean
+  disabled_reason: string; action: string
+}
+
+export interface SectLibrarySnapshot {
+  member: boolean; sect: string; rank: string; contribution: number; offerings: SectLibraryOffering[]
+  claimed_count: number; guidance_action: string; guidance_cost: number
+  can_receive_guidance: boolean; guidance_reason: string; history: string[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -362,6 +374,7 @@ export interface Snapshot {
   dao: DaoSnapshot
   spirit_beasts: SpiritBeastSnapshot
   formations: FormationSnapshot
+  sect_library: SectLibrarySnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

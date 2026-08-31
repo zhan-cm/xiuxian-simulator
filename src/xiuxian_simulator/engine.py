@@ -19,6 +19,7 @@ from .new_era import NewEraEngine
 from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
+from .sect_library import SectLibraryEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -30,7 +31,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -190,6 +191,12 @@ class GameEngine:
             return self._begin_auction_bid(action)
         if action == "宗门":
             return self._sect()
+        if action in {"藏经阁", "宗门藏经阁", "传功阁"}:
+            return SectLibraryEngine.panel_text(self.state)
+        if action.startswith("兑换传承"):
+            return self._claim_sect_offering(action)
+        if action == "宗门传功":
+            return self._receive_sect_guidance()
         if action == "申请晋升":
             return self._sect_promotion()
         if action == "宗门大比":
@@ -1020,7 +1027,43 @@ class GameEngine:
             f"【{player.sect} · {player.sect_rank}】\n贡献：{player.sect_contribution}｜权限：{privileges}\n"
             f"晋升：{promotion}\n宗门大比：{tournament}\n"
             f"任务：{'、'.join(SECT_TASKS)}\n"
-            "指令：宗门任务 采药／申请晋升／宗门大比／叛宗"
+            "指令：宗门任务 采药／藏经阁／申请晋升／宗门大比／叛宗"
+        )
+
+    def _claim_sect_offering(self, action: str) -> str:
+        offering_id = action.removeprefix("兑换传承").strip()
+        if not offering_id:
+            return SectLibraryEngine.panel_text(self.state)
+        try:
+            offering, reward_text = SectLibraryEngine.claim(self.state, offering_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectLibraryEngine.panel_text(self.state)
+        self.state.remember(f"在藏经阁领取{offering.name}，贡献 -{offering.cost}")
+        self._autosave()
+        return (
+            f"【藏经阁供奉】贡献 -{offering.cost}｜所得 {reward_text}\n"
+            f"{offering.summary}\n\n{SectLibraryEngine.panel_text(self.state)}"
+        )
+
+    def _receive_sect_guidance(self) -> str:
+        try:
+            result = SectLibraryEngine.receive_guidance(self.state)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectLibraryEngine.panel_text(self.state)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "听讲传功时寿元耗尽"
+        self.state.remember(
+            f"接受{result['sect']}传功，感悟 +{result['insight']}，修为 +{result['cultivation']}"
+        )
+        self._autosave()
+        if died_of_age:
+            return "长老讲法结束，你也在钟声中走完此生。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【宗门传功】贡献 -{SectLibraryEngine.GUIDANCE_COST}｜"
+            f"感悟 +{result['insight']}｜修为 +{result['cultivation']}\n\n"
+            f"{SectLibraryEngine.panel_text(self.state)}"
         )
 
     def _sect_promotion(self) -> str:
@@ -2060,6 +2103,7 @@ class GameEngine:
             "拍卖会｜竞拍 [拍品编号]；竞价时可稳健举牌、强势压场或退出\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
+            "藏经阁｜兑换传承 [编号]｜宗门传功；贡献可换取宗门秘法与年度讲法\n"
             "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"
             "背包｜使用 [丹药/灵食]｜装备法宝/卸下法宝 [名称]\n"

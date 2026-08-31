@@ -40,6 +40,7 @@ from xiuxian_simulator.new_era import NewEraEngine
 from xiuxian_simulator.dao import DaoEngine, INSIGHT_PER_POINT
 from xiuxian_simulator.beasts import SpiritBeastEngine
 from xiuxian_simulator.formations import FormationEngine
+from xiuxian_simulator.sect_library import SectLibraryEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -2895,6 +2896,69 @@ class SimulatorSmokeTests(unittest.TestCase):
             payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
             self.assertEqual(payload["active_formation"], "stone-ward")
             self.assertEqual(payload["formation_arrays"]["stone-ward"]["integrity"], 100)
+
+    def test_sect_library_old_save_defaults_and_rank_permissions(self) -> None:
+        state = GameState.from_dict({"version": "0.47.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.sect_library_claims, [])
+        self.assertEqual(state.sect_guidance_records, [])
+        self.assertFalse(SectLibraryEngine.snapshot(state)["member"])
+        self.assertEqual(SectLibraryEngine.snapshot(state)["offerings"], [])
+
+        state.player.sect = "青云宗"
+        state.player.sect_rank = "外门弟子"
+        state.player.sect_contribution = 600
+        snapshot = SectLibraryEngine.snapshot(state)
+        outer = next(item for item in snapshot["offerings"] if item["id"] == "qingyun-evergreen")
+        inner = next(item for item in snapshot["offerings"] if item["id"] == "qingyun-binding")
+        self.assertTrue(outer["available"])
+        self.assertFalse(inner["available"])
+        self.assertIn("内门弟子", inner["disabled_reason"])
+
+    def test_sect_library_claim_consumes_contribution_once(self) -> None:
+        state = GameState(phase="playing")
+        state.player.sect = "玄剑门"
+        state.player.sect_rank = "真传弟子"
+        state.player.sect_contribution = 500
+        offering, reward = SectLibraryEngine.claim(state, "xuanjian-void")
+        self.assertEqual(offering.name, "太虚剑典")
+        self.assertEqual(reward, "太虚剑典残卷×1")
+        self.assertEqual(state.player.sect_contribution, 140)
+        self.assertEqual(state.player.resources["太虚剑典残卷"], 1)
+        with self.assertRaisesRegex(ValueError, "已经领取"):
+            SectLibraryEngine.claim(state, "xuanjian-void")
+
+    def test_sect_guidance_is_annual_and_scales_with_rank(self) -> None:
+        state = GameState(phase="playing")
+        state.player.sect = "丹霞谷"
+        state.player.sect_rank = "长老"
+        state.player.sect_contribution = 200
+        before_insight = state.player.dao_insight
+        result = SectLibraryEngine.receive_guidance(state)
+        self.assertGreater(result["insight"], 10)
+        self.assertEqual(state.player.dao_insight, before_insight + result["insight"])
+        self.assertEqual(state.player.sect_contribution, 140)
+        with self.assertRaisesRegex(ValueError, "本年已经"):
+            SectLibraryEngine.receive_guidance(state)
+        state.calendar_year += 1
+        self.assertTrue(SectLibraryEngine.guidance_availability(state)[0])
+
+    def test_sect_library_engine_commands_autosave_real_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.sect = "青云宗"
+            engine.state.player.sect_rank = "内门弟子"
+            engine.state.player.sect_contribution = 300
+            claimed = engine.process("兑换传承 qingyun-binding")
+            self.assertIn("青木缚灵术残卷×1", claimed)
+            turn_before = engine.state.turn
+            guided = engine.process("宗门传功")
+            self.assertIn("感悟 +", guided)
+            self.assertEqual(engine.state.turn, turn_before + 1)
+            payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertIn("qingyun-binding", payload["sect_library_claims"])
+            self.assertIn(str(engine.state.calendar_year), payload["sect_guidance_records"])
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
         items = run_diagnostics(ROOT)

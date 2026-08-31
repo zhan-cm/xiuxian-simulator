@@ -16,6 +16,7 @@ from .npc_network import NpcNetworkEngine
 from .story import StoryEngine
 from .new_era import NewEraEngine
 from .formations import FormationEngine
+from .sect_library import SectLibraryEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -235,6 +236,24 @@ def _formations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("阵法")
 
 
+def _sect_library(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.sect = "青云宗"
+    engine.state.player.sect_rank = "真传弟子"
+    engine.state.player.sect_contribution = 640
+    engine.state.player.realm_index = 1
+    engine.state.player.realm = "筑基·后期"
+    engine.state.sect_library_claims = ["qingyun-evergreen"]
+    engine.state.player.resources["青木长生诀残卷"] = 1
+    engine.state.sect_library_history = [
+        "第 8 回合｜以贡献 100 领取长生青简，所得 青木长生诀残卷×1",
+        "第 19 回合｜接受青云宗年度传功，感悟 +18，修为 +14",
+        "第 31 回合｜晋升真传后获准进入藏经阁上层",
+    ]
+    assert SectLibraryEngine.snapshot(engine.state)["member"]
+    return app.perform_action("藏经阁")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -301,6 +320,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("regional", "地方机缘", "检查五域声望、资源门槛和会被世界记住的地方抉择。", ["三项应对的后果清楚", "资源不足选项自动锁定", "巡览中的选择不会改动正式存档"], _regional),
     ("market", "青岳坊市", "验证分类货架、购买能力和持有数量。", ["货物不再堆成长文字", "买卖价格可直接比较", "灵石不足时按钮禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
+    ("sect-library", "宗门藏经阁", "检查贡献兑换、职位权限、年度传功与宗门专属传承。", ["职位阶序和解锁范围一眼可读", "贡献不足或已领取会明确锁定", "巡览中的兑换与传功必须禁用"], _sect_library),
     ("relations", "浮生故人", "验证人物寿元、生平、护道抉择和关系路径。", ["年龄、境界与在世状态来自真实存档", "护道资源门槛与三种选择清楚", "故人生平不挤成一行"], _relations),
     ("network", "众生缘网", "验证人物彼此结交、嫌隙、往来履历与玩家介入。", ["关系方向和强度可快速辨认", "纷争介入有真实门槛与后果", "巡览中的所有介入按钮必须禁用"], _network),
     ("battle", "临阵抉择", "查看战前敌情和所有可点击战斗抉择。", ["敌我风险明确", "危险操作视觉统一", "选择按钮状态清楚"], _battle),

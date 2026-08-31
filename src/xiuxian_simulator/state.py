@@ -73,7 +73,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.47.0"
+    version: str = "0.48.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -178,6 +178,9 @@ class GameState:
     formation_arrays: dict[str, dict[str, Any]] = field(default_factory=dict)
     active_formation: str = ""
     formation_history: list[str] = field(default_factory=list)
+    sect_library_claims: list[str] = field(default_factory=list)
+    sect_guidance_records: list[str] = field(default_factory=list)
+    sect_library_history: list[str] = field(default_factory=list)
 
     @property
     def time_label(self) -> str:
