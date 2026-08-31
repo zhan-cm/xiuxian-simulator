@@ -318,6 +318,45 @@ export interface LegacySnapshot {
   active_legacy: Partial<LegacyOption>; past_lives: LegacyLife[]
 }
 
+export interface SectRequirement {
+  label: string; value: string; current: string | number; met: boolean
+}
+
+export interface SectDoctrineOption {
+  id: string; name: string; mark: string; summary: string; effect: string; action: string
+}
+
+export interface SectDomainInfo {
+  name?: string; doctrine?: string; doctrine_name?: string; doctrine_mark?: string; doctrine_effect?: string
+  level?: number; level_name?: string; experience?: number; experience_required?: number; experience_percent?: number
+  renown?: number; stability?: number; treasury?: number; focus?: string; strength?: number; monthly_net?: number
+  founded_year?: number; founded_month?: number; ruined?: boolean
+}
+
+export interface SectDisciple {
+  name: string; role: string; aptitude: number; loyalty: number; realm: string
+  progress: number; progress_required: number; progress_percent: number; joined_turn: number
+}
+
+export interface SectBuildingView {
+  id: string; name: string; mark: string; summary: string; level: number; max_level: number
+  cost: number; available: boolean; disabled_reason: string; action: string
+}
+
+export interface SectFocusView {
+  id: string; name: string; effect: string; current: boolean; available: boolean
+  disabled_reason: string; action: string
+}
+
+export interface SectDomainSnapshot {
+  visible: boolean; founded: boolean; pending: boolean; suggested_name: string
+  requirements: SectRequirement[]; can_found: boolean; found_reason: string; begin_action: string
+  doctrines: SectDoctrineOption[]; sect: SectDomainInfo; disciples: SectDisciple[]
+  buildings: SectBuildingView[]; focuses: SectFocusView[]; history: string[]
+  recruit_action?: string; can_recruit?: boolean; recruit_reason?: string; recruit_cost?: number
+  teach_action?: string; can_teach?: boolean; teach_reason?: string; teach_cost?: number
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -441,6 +480,7 @@ export interface Snapshot {
   art_mastery: ArtMasterySnapshot
   recovery: RecoverySnapshot
   legacy: LegacySnapshot
+  sect_domain: SectDomainSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

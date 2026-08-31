@@ -26,6 +26,7 @@ from .artifact_growth import ArtifactGrowthEngine
 from .art_mastery import ArtMasteryEngine, MASTERY_LABELS
 from .recovery import RecoveryEngine
 from .legacy import LEGACIES, LegacyEngine
+from .sect_foundation import SectFoundationEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -37,7 +38,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 宗门经营 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -101,6 +102,8 @@ class GameEngine:
             return self._adventure_action(action)
         if self.state.phase == "sect_defection_ready":
             return self._sect_defection_ready(action)
+        if self.state.phase == "sect_foundation_choice":
+            return self._sect_foundation_choice(action)
         if self.state.phase == "heart_trial_choice":
             return self._heart_trial_choice(action)
         if self.state.phase == "sect_war_choice":
@@ -214,6 +217,18 @@ class GameEngine:
             return self._begin_auction_bid(action)
         if action == "宗门":
             return self._sect()
+        if action in {"宗门经营", "山门", "开宗卷宗"}:
+            return SectFoundationEngine.panel_text(self.state)
+        if action.startswith("开宗立派") or action.startswith("自立宗门"):
+            return self._prepare_sect_foundation(action)
+        if action.startswith("宗门方针"):
+            return self._set_sect_focus(action)
+        if action == "宗门招徒":
+            return self._recruit_sect_disciple()
+        if action == "宗门传法":
+            return self._teach_founded_sect()
+        if action.startswith("营造山门"):
+            return self._upgrade_sect_building(action)
         if action in {"藏经阁", "宗门藏经阁", "传功阁"}:
             return SectLibraryEngine.panel_text(self.state)
         if action.startswith("兑换传承"):
@@ -1114,6 +1129,8 @@ class GameEngine:
         return f"【天机拍卖 · 落槌】\n{result}\n\n{AuctionEngine.panel_text(self.state)}"
 
     def _sect(self) -> str:
+        if SectFoundationEngine.active(self.state):
+            return SectFoundationEngine.panel_text(self.state)
         player = self.state.player
         if player.sect == "散修":
             return (
@@ -1134,6 +1151,110 @@ class GameEngine:
             f"晋升：{promotion}\n宗门大比：{tournament}\n"
             f"任务：{'、'.join(SECT_TASKS)}\n"
             "指令：宗门任务 采药／藏经阁／申请晋升／宗门大比／叛宗"
+        )
+
+    def _prepare_sect_foundation(self, action: str) -> str:
+        name = action.removeprefix("开宗立派").removeprefix("自立宗门").strip()
+        try:
+            chosen_name = SectFoundationEngine.begin(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectFoundationEngine.panel_text(self.state)
+        self.state.remember(f"筹备开创{chosen_name}，等待择定根本道统")
+        self._autosave()
+        return f"【开宗立派 · {chosen_name}】山门名号已定，等待择定根本道统（须由你亲自决定）。"
+
+    def _sect_foundation_choice(self, action: str) -> str:
+        if action == "取消立宗":
+            name = self.state.pending_sect_name
+            SectFoundationEngine.cancel(self.state)
+            self.state.remember(f"暂缓开创{name}")
+            self._autosave()
+            return "你收起山门信物，立宗资粮没有消耗。\n\n" + self._sect()
+        if not action.startswith("立宗道统"):
+            return "请从三种根本道统中亲自选择，或输入“取消立宗”。"
+        doctrine_id = action.removeprefix("立宗道统").strip()
+        name = self.state.pending_sect_name
+        try:
+            doctrine = SectFoundationEngine.found(self.state, doctrine_id)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"开创{name}，立{doctrine.name}为根本道统")
+        self._autosave()
+        return (
+            f"【开宗立派 · {name}】灵石 -{SectFoundationEngine.FOUNDATION_COST}\n"
+            f"根本道统：{doctrine.name}｜{doctrine.effect}\n两名开山弟子已入门，你从此以掌门身份经营山门。\n\n"
+            + SectFoundationEngine.panel_text(self.state)
+        )
+
+    def _set_sect_focus(self, action: str) -> str:
+        focus_id = action.removeprefix("宗门方针").strip()
+        try:
+            name = SectFoundationEngine.set_focus(self.state, focus_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectFoundationEngine.panel_text(self.state)
+        self.state.remember(f"宗门年度方针改为{name}")
+        self._autosave()
+        return f"【宗门方针】{name}已经生效，本年不可再次改定。\n\n{SectFoundationEngine.panel_text(self.state)}"
+
+    def _recruit_sect_disciple(self) -> str:
+        try:
+            result = SectFoundationEngine.recruit(self.state)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectFoundationEngine.panel_text(self.state)
+        died = self._advance_time()
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "开山收徒后寿元耗尽"
+        if result["success"]:
+            disciple = result["disciple"]
+            verdict = f"{disciple['name']}拜入门下，资质 {disciple['aptitude']}"
+        else:
+            verdict = "本次未遇到心性资质相合的门人"
+        self.state.remember(f"宗门招徒：{verdict}；判定 {result['roll']}/{result['chance']}")
+        self._autosave()
+        if died:
+            return f"{verdict}。山门钟声未歇，你却已走完此生。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【开山收徒】库藏 -{SectFoundationEngine.RECRUIT_COST}｜{verdict}\n"
+            f"判定：1d100={result['roll']}，成功率 {result['chance']}%\n\n{SectFoundationEngine.panel_text(self.state)}"
+        )
+
+    def _teach_founded_sect(self) -> str:
+        try:
+            result = SectFoundationEngine.teach(self.state)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectFoundationEngine.panel_text(self.state)
+        died = self._advance_time()
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "宗门传法后寿元耗尽"
+        self.state.remember(f"宗门传法：门人修行 +{result['progress']}，感悟 +{result['insight']}")
+        self._autosave()
+        if died:
+            return "传法钟声传遍山门，你也在座上安然坐化。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【掌门传法】库藏 -{SectFoundationEngine.TEACH_COST}｜"
+            f"全体门人修行 +{result['progress']}｜感悟 +{result['insight']}\n\n{SectFoundationEngine.panel_text(self.state)}"
+        )
+
+    def _upgrade_sect_building(self, action: str) -> str:
+        building_id = action.removeprefix("营造山门").strip()
+        try:
+            result = SectFoundationEngine.upgrade_building(self.state, building_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectFoundationEngine.panel_text(self.state)
+        died = self._advance_time(3)
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "营造山门期间寿元耗尽"
+        building = result["building"]
+        self.state.remember(f"{building.name}营造至 {result['level']} 级，库藏 -{result['cost']}")
+        self._autosave()
+        if died:
+            return f"{building.name}落成之时，你也在山门中走完此生。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【山门营造】{building.name}升至 {result['level']} 级｜"
+            f"库藏 -{result['cost']}｜工期 3 个月\n\n{SectFoundationEngine.panel_text(self.state)}"
         )
 
     def _claim_sect_offering(self, action: str) -> str:
@@ -1215,6 +1336,8 @@ class GameEngine:
         )
 
     def _prepare_defection(self) -> str:
+        if SectFoundationEngine.active(self.state) and self.state.player.sect == self.state.founded_sect.get("name"):
+            return "你是亲手立下道统的开山掌门，不能以叛宗指令抛下自己的山门。"
         if self.state.player.sect == "散修":
             return "你本就是散修，无宗可叛。"
         self.state.phase = "sect_defection_ready"
@@ -2275,6 +2398,8 @@ class GameEngine:
             SpiritBeastEngine.tick_month(self.state)
             for event in RecoveryEngine.tick_month(self.state):
                 self.state.remember(f"伤势月报：{event}")
+            for event in SectFoundationEngine.tick_month(self.state):
+                self.state.remember(f"山门月报：{event}")
         return died_of_age
 
     @staticmethod
@@ -2298,6 +2423,7 @@ class GameEngine:
             "拍卖会｜竞拍 [拍品编号]；竞价时可稳健举牌、强势压场或退出\n"
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
+            "开宗立派 [宗门名]｜金丹散修可择道统立宗；宗门经营｜招徒/传法/方针/营造山门\n"
             "藏经阁｜兑换传承 [编号]｜宗门传功；贡献可换取宗门秘法与年度讲法\n"
             "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"

@@ -55,6 +55,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["formations"]["active_name"], "")
             self.assertFalse(snapshot.json()["sect_library"]["member"])
             self.assertEqual(snapshot.json()["sect_library"]["claimed_count"], 0)
+            self.assertFalse(snapshot.json()["sect_domain"]["founded"])
+            self.assertFalse(snapshot.json()["sect_domain"]["visible"])
             self.assertEqual(snapshot.json()["artifacts"]["count"], 0)
             self.assertEqual(snapshot.json()["art_mastery"]["known_count"], 2)
             self.assertEqual(snapshot.json()["art_mastery"]["primary"]["name"], "聚气诀")
@@ -97,7 +99,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 32)
+            self.assertGreaterEqual(len(pages), 33)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -162,6 +164,13 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(library["rank"], "真传弟子")
             self.assertEqual(len(library["offerings"]), 4)
             self.assertTrue(next(item for item in library["offerings"] if item["id"] == "qingyun-evergreen")["claimed"])
+            domain = by_id["sect-domain"]["snapshot"]["sect_domain"]
+            self.assertTrue(domain["founded"])
+            self.assertEqual(domain["sect"]["name"], "青玄宗")
+            self.assertEqual(domain["sect"]["doctrine"], "harmony")
+            self.assertEqual(domain["sect"]["strength"], 136)
+            self.assertEqual(len(domain["disciples"]), 6)
+            self.assertEqual(len(domain["buildings"]), 3)
             artifacts = by_id["artifacts"]["snapshot"]["artifacts"]
             self.assertEqual(artifacts["count"], 2)
             self.assertEqual(artifacts["bonded_name"], "玄铁剑")

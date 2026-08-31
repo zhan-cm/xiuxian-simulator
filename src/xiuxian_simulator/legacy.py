@@ -73,6 +73,9 @@ class LegacyEngine:
             + len(state.spirit_beasts) * 35
             + len(state.formation_arrays) * 24
             + len(state.sect_library_claims) * 26
+            + int(state.founded_sect.get("level", 0)) * 80
+            + len(state.sect_disciples) * 20
+            + int(state.founded_sect.get("renown", 0))
             + max(0, player.reputation)
             + max(0, state.trade_profit // 20),
         )
@@ -115,6 +118,8 @@ class LegacyEngine:
             highlights.append(f"灵潮因果推进 {len(state.story_completed)}/6")
         if state.bonded_artifact:
             highlights.append(f"本命法宝：{state.bonded_artifact}")
+        if state.founded_sect.get("name"):
+            highlights.append(f"开宗立派：{state.founded_sect['name']}")
         if state.dao_partners:
             highlights.append(f"道侣：{'、'.join(state.dao_partners[:2])}")
         if state.spirit_beasts:

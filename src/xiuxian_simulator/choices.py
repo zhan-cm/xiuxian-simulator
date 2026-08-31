@@ -16,6 +16,7 @@ from .new_era import NewEraEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .legacy import LegacyEngine
+from .sect_foundation import SectFoundationEngine
 
 
 class DecisionCatalog:
@@ -178,6 +179,8 @@ class DecisionCatalog:
     def for_state(self, state: GameState) -> dict[str, Any]:
         if state.phase == "ended":
             return LegacyEngine.decision(state)
+        if state.phase == "sect_foundation_choice":
+            return SectFoundationEngine.decision(state)
         if state.phase == "beast_taming":
             return SpiritBeastEngine.decision(state)
         if state.phase == "main_story_choice":

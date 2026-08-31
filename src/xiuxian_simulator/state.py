@@ -73,7 +73,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.52.0"
+    version: str = "0.53.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -195,6 +195,10 @@ class GameState:
     legacy_choice: str = ""
     active_legacy: str = ""
     legacy_applied: bool = False
+    founded_sect: dict[str, Any] = field(default_factory=dict)
+    sect_disciples: list[dict[str, Any]] = field(default_factory=list)
+    sect_foundation_history: list[str] = field(default_factory=list)
+    pending_sect_name: str = ""
 
     @property
     def time_label(self) -> str:

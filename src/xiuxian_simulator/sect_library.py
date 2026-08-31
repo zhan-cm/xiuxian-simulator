@@ -96,6 +96,8 @@ class SectLibraryEngine:
             return False, "请先完成当前抉择"
         if state.player.sect == "散修":
             return False, "散修没有宗门传功"
+        if state.founded_sect.get("name") == state.player.sect:
+            return False, "自立宗门请由掌门在山门中主持传法"
         key = str(state.calendar_year)
         if key in state.sect_guidance_records:
             return False, "本年已经接受过传功"
@@ -129,7 +131,7 @@ class SectLibraryEngine:
 
     @classmethod
     def snapshot(cls, state: GameState) -> dict[str, Any]:
-        member = state.player.sect != "散修"
+        member = any(offering.sect == state.player.sect for offering in OFFERINGS)
         offerings: list[dict[str, Any]] = []
         for offering in OFFERINGS:
             if not member or offering.sect != state.player.sect:
@@ -171,6 +173,8 @@ class SectLibraryEngine:
     def panel_text(cls, state: GameState) -> str:
         if state.player.sect == "散修":
             return "【宗门藏经阁】散修无宗门传承可查；可先在东洲选择宗门参加入门试炼。"
+        if state.founded_sect.get("name") == state.player.sect:
+            return "【自立山门】本宗典籍与传法由掌门亲自经营；请输入“宗门经营”查看。"
         snapshot = cls.snapshot(state)
         lines = "\n".join(
             f"{item['name']}｜{item['minimum_rank']}｜贡献 {item['cost']}｜{item['rewards']}"
