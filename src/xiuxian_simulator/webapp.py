@@ -29,6 +29,7 @@ from .cave import CaveEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
+from .artifact_growth import ArtifactGrowthEngine
 
 
 CONTENT_TYPES = {
@@ -86,6 +87,7 @@ class WebApplication:
             "spirit_beasts": SpiritBeastEngine.snapshot(self.engine.state),
             "formations": FormationEngine.snapshot(self.engine.state),
             "sect_library": SectLibraryEngine.snapshot(self.engine.state),
+            "artifacts": ArtifactGrowthEngine.snapshot(self.engine.state),
             "inventory": InventoryEngine.snapshot(self.engine.state),
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),

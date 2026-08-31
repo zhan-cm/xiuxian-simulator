@@ -17,6 +17,7 @@ from .story import StoryEngine
 from .new_era import NewEraEngine
 from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
+from .artifact_growth import ArtifactGrowthEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -254,6 +255,28 @@ def _sect_library(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("藏经阁")
 
 
+def _artifacts(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 2
+    engine.state.player.realm = "结晶·后期"
+    engine.state.player.spirit_stones = 920
+    engine.state.player.resources.update({"玄铁剑": 1, "护身法袍": 1, "灵铁": 15, "妖兽材料": 8})
+    engine.state.player.equipped_weapon = "玄铁剑"
+    engine.state.player.equipped_armor = "护身法袍"
+    engine.state.bonded_artifact = "玄铁剑"
+    engine.state.artifact_refinements = {
+        "玄铁剑": {"level": 2, "resonance": 68, "victories": 7, "refinements": 2, "last_nourished_turn": -3},
+        "护身法袍": {"level": 1, "resonance": 0, "victories": 0, "refinements": 1, "last_nourished_turn": -3},
+    }
+    engine.state.artifact_history = [
+        "第 12 回合｜立下本命法宝：玄铁剑，器心契合 10/100",
+        "第 27 回合｜淬炼玄铁剑成功，升至二炼（38/76）",
+        "第 36 回合｜温养玄铁剑，器心契合 +10",
+    ]
+    assert ArtifactGrowthEngine.snapshot(engine.state)["bonded_name"] == "玄铁剑"
+    return app.perform_action("法宝谱")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -313,6 +336,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("dao-tree", "悟道九途", "检查感悟转化、九条永久道途、境界门槛与点亮状态。", ["九途必须使用独立小组件", "当前与下一层效果可快速比较", "巡览中的点亮与观想按钮必须禁用"], _dao_tree),
     ("spirit-beasts", "万灵兽苑", "检查战宠羁绊、精力、成长、出战位与喂养状态。", ["每只灵兽使用独立养成卡", "三条成长仪表一眼可读", "巡览中的探寻、出战与喂养必须禁用"], _spirit_beasts),
     ("formations", "五行阵图", "检查阵图研习、阵盘装配、阵基损耗与五类战术定位。", ["五卷阵图使用独立阵盘卡", "阵材、成功率与阵基可快速比较", "巡览中的炼制、装配与修复必须禁用"], _formations),
+    ("artifacts", "本命法宝", "检查法宝认主、境界淬炼上限、器心契合与真实战斗加成。", ["本命与普通法宝层级清楚", "淬炼成本、成功率和锁定原因可比较", "巡览中的认主、淬炼与温养必须禁用"], _artifacts),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

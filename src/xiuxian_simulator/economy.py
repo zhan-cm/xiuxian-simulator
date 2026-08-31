@@ -257,6 +257,8 @@ class EconomyEngine:
                     state.player.equipped_weapon = ""
                 if state.player.equipped_armor == item:
                     state.player.equipped_armor = ""
+                if state.bonded_artifact == item:
+                    state.bonded_artifact = ""
             state.player.spirit_stones += total
             RegionalEngine.record_trade(state, TravelEngine.current_region(state), total)
             return total, -count

@@ -168,7 +168,7 @@ class ArtsEngine:
         return SPELLS[name]
 
     @staticmethod
-    def attack_multiplier(player: PlayerState) -> float:
+    def attack_multiplier(player: PlayerState, state: GameState | None = None) -> float:
         main = TECHNIQUES.get(player.primary_technique, TECHNIQUES["聚气诀"])
         multiplier = main.attack_multiplier * (1 + DaoEngine.player_level(player, "剑道") * 0.05)
         for name in player.equipped_auxiliary_techniques:
@@ -178,11 +178,16 @@ class ArtsEngine:
         weapon = ARTIFACTS.get(player.equipped_weapon)
         if weapon:
             artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
-            multiplier *= 1 + (weapon.attack_multiplier - 1) * artifact_scale
+            growth = 0.0
+            if state is not None:
+                from .artifact_growth import ArtifactGrowthEngine
+
+                growth = ArtifactGrowthEngine.attack_bonus(state, weapon.name)
+            multiplier *= 1 + (weapon.attack_multiplier - 1) * artifact_scale + growth
         return multiplier
 
     @staticmethod
-    def defense_bonus(player: PlayerState) -> int:
+    def defense_bonus(player: PlayerState, state: GameState | None = None) -> int:
         main = TECHNIQUES.get(player.primary_technique, TECHNIQUES["聚气诀"])
         bonus = main.defense_bonus
         for name in player.equipped_auxiliary_techniques:
@@ -191,13 +196,25 @@ class ArtsEngine:
                 bonus += auxiliary.defense_bonus // 2
         armor = ARTIFACTS.get(player.equipped_armor)
         artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
-        return bonus + (round(armor.defense_bonus * artifact_scale) if armor else 0)
+        growth = 0
+        if armor and state is not None:
+            from .artifact_growth import ArtifactGrowthEngine
+
+            growth = ArtifactGrowthEngine.defense_bonus(state, armor.name)
+        return bonus + (round(armor.defense_bonus * artifact_scale) if armor else 0) + growth
 
     @staticmethod
-    def effective_speed(player: PlayerState) -> int:
+    def effective_speed(player: PlayerState, state: GameState | None = None) -> int:
         weapon = ARTIFACTS.get(player.equipped_weapon)
         armor = ARTIFACTS.get(player.equipped_armor)
-        return player.speed + (weapon.speed_bonus if weapon else 0) + (armor.speed_bonus if armor else 0)
+        growth = 0
+        if state is not None:
+            from .artifact_growth import ArtifactGrowthEngine
+
+            for artifact in (weapon, armor):
+                if artifact:
+                    growth += ArtifactGrowthEngine.speed_bonus(state, artifact.name)
+        return player.speed + (weapon.speed_bonus if weapon else 0) + (armor.speed_bonus if armor else 0) + growth
 
     @staticmethod
     def attack_element(player: PlayerState, fallback: str) -> str:

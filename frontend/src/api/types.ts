@@ -256,6 +256,22 @@ export interface SectLibrarySnapshot {
   can_receive_guidance: boolean; guidance_reason: string; history: string[]
 }
 
+export interface ArtifactGrowthItem {
+  name: string; mark: string; grade: string; slot: string; element: string
+  level: number; level_label: string; level_cap: number; resonance: number; victories: number
+  equipped: boolean; bonded: boolean; effect: string; refine_cost: string; refine_chance: number
+  can_refine: boolean; refine_reason: string; refine_action: string
+  can_bind: boolean; bind_reason: string; bind_action: string
+  can_nourish: boolean; nourish_reason: string; nourish_action: string
+}
+
+export interface ArtifactGrowthSnapshot {
+  count: number; bonded_name: string; bonded: Partial<ArtifactGrowthItem>
+  level_cap: number; level_cap_label: string; artifacts: ArtifactGrowthItem[]
+  materials: { spirit_stones: number; spirit: number; spirit_max: number; spirit_iron: number; beast_materials: number }
+  history: string[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -375,6 +391,7 @@ export interface Snapshot {
   spirit_beasts: SpiritBeastSnapshot
   formations: FormationSnapshot
   sect_library: SectLibrarySnapshot
+  artifacts: ArtifactGrowthSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

@@ -20,6 +20,7 @@ from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
+from .artifact_growth import ArtifactGrowthEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -31,7 +32,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -213,8 +214,16 @@ class GameEngine:
             return self._world_timeline()
         if action == "干预天下":
             return self._prepare_world_intervention()
-        if action in {"道法", "功法", "法术", "法宝"}:
+        if action in {"道法", "功法", "法术"}:
             return self._arts()
+        if action in {"法宝", "法宝谱", "本命法宝", "器阁"}:
+            return ArtifactGrowthEngine.panel_text(self.state)
+        if action.startswith("认主法宝"):
+            return self._bind_artifact(action)
+        if action.startswith("淬炼法宝"):
+            return self._refine_artifact(action)
+        if action.startswith("温养法宝"):
+            return self._nourish_artifact(action)
         if action.startswith("参悟"):
             return self._learn_art(action)
         if action.startswith("装备功法"):
@@ -1484,6 +1493,68 @@ class GameEngine:
         self._autosave()
         return f"已卸下{name}，{slot}槽位现已空出。\n\n{self._arts()}"
 
+    def _bind_artifact(self, action: str) -> str:
+        name = action.removeprefix("认主法宝").strip()
+        if not name:
+            return ArtifactGrowthEngine.panel_text(self.state)
+        try:
+            result = ArtifactGrowthEngine.bind(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        previous = f"，原本命{result['previous']}已解除契合" if result["previous"] else ""
+        self.state.remember(f"将{name}祭为本命法宝，器心契合 {result['resonance']}/100")
+        self._autosave()
+        return (
+            f"【法宝认主】灵力 -{ArtifactGrowthEngine.BIND_SPIRIT_COST}{previous}\n"
+            f"{name}与你神魂相系，器心契合 {result['resonance']}/100。\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _refine_artifact(self, action: str) -> str:
+        name = action.removeprefix("淬炼法宝").strip()
+        if not name:
+            return ArtifactGrowthEngine.panel_text(self.state)
+        try:
+            result = ArtifactGrowthEngine.refine(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "淬炼法宝时寿元耗尽"
+        verdict = f"淬炼成功，升至{result['level']}炼" if result["success"] else "淬炼失败，所投阵材尽毁"
+        self.state.remember(f"淬炼{name}：{verdict}；判定 {result['roll']}/{result['chance']}")
+        self._autosave()
+        if died_of_age:
+            return f"你在淬炼{name}时寿元耗尽。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【法宝淬炼 · {name}】{verdict}\n"
+            f"判定：1d100={result['roll']}，成功率 {result['chance']}%｜灵石 -{result['stones']}\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _nourish_artifact(self, action: str) -> str:
+        name = action.removeprefix("温养法宝").strip()
+        if not name:
+            return ArtifactGrowthEngine.panel_text(self.state)
+        try:
+            result = ArtifactGrowthEngine.nourish(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "温养本命法宝时寿元耗尽"
+        self.state.remember(f"温养{name}，器心契合 +{result['gained']}")
+        self._autosave()
+        if died_of_age:
+            return f"你以神魂温养{name}，却在器鸣中走完此生。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【本命温养 · {name}】灵力 -{ArtifactGrowthEngine.NOURISH_SPIRIT_COST}｜"
+            f"器心契合 +{result['gained']}，当前 {result['resonance']}/100\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
     def _crafts(self) -> str:
         skill_lines = [
             f"{skill}：{CraftingEngine.skill_rank(self.state, skill)}（成功 {self.state.player.craft_successes.get(skill, 0)} 次）"
@@ -2097,6 +2168,7 @@ class GameEngine:
             "悟道｜观想积累感悟｜闭关悟道凝成悟道点｜点亮 [剑道/丹道等九途]\n"
             "御兽｜探寻灵兽｜出战灵兽/喂养灵兽 [名称]；战斗中可召唤战宠\n"
             "阵法｜炼阵/装配阵法/修复阵法 [阵名]；战斗中可催动阵法\n"
+            "法宝谱｜认主/淬炼/温养法宝 [名称]；本命法宝会随斗法提升契合\n"
             "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
             "地方｜查看五域声名与礼遇｜地方机缘后从三项应对中亲自选择\n"
             "坊市｜区域价格会随特产、求购、民生与地方声望变化｜买/卖 [物品] [数量]\n"

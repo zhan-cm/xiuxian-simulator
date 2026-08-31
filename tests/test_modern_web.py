@@ -55,6 +55,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["formations"]["active_name"], "")
             self.assertFalse(snapshot.json()["sect_library"]["member"])
             self.assertEqual(snapshot.json()["sect_library"]["claimed_count"], 0)
+            self.assertEqual(snapshot.json()["artifacts"]["count"], 0)
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -90,7 +91,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 28)
+            self.assertGreaterEqual(len(pages), 29)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -142,6 +143,11 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(library["rank"], "真传弟子")
             self.assertEqual(len(library["offerings"]), 4)
             self.assertTrue(next(item for item in library["offerings"] if item["id"] == "qingyun-evergreen")["claimed"])
+            artifacts = by_id["artifacts"]["snapshot"]["artifacts"]
+            self.assertEqual(artifacts["count"], 2)
+            self.assertEqual(artifacts["bonded_name"], "玄铁剑")
+            self.assertEqual(artifacts["bonded"]["level"], 2)
+            self.assertEqual(artifacts["bonded"]["resonance"], 68)
             inventory = by_id["inventory"]["snapshot"]["inventory"]
             self.assertGreaterEqual(inventory["total_types"], 7)
             self.assertEqual(inventory["equipped"]["weapon"], "青锋剑")

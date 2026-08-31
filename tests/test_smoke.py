@@ -41,6 +41,7 @@ from xiuxian_simulator.dao import DaoEngine, INSIGHT_PER_POINT
 from xiuxian_simulator.beasts import SpiritBeastEngine
 from xiuxian_simulator.formations import FormationEngine
 from xiuxian_simulator.sect_library import SectLibraryEngine
+from xiuxian_simulator.artifact_growth import ArtifactGrowthEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -2959,6 +2960,105 @@ class SimulatorSmokeTests(unittest.TestCase):
             payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
             self.assertIn("qingyun-binding", payload["sect_library_claims"])
             self.assertIn(str(engine.state.calendar_year), payload["sect_guidance_records"])
+
+    def test_artifact_growth_old_save_defaults_and_snapshot_is_read_only(self) -> None:
+        state = GameState.from_dict({"version": "0.48.0", "phase": "playing", "player": {"name": "旧档器修"}})
+        self.assertEqual(state.artifact_refinements, {})
+        self.assertEqual(state.bonded_artifact, "")
+        self.assertEqual(state.artifact_history, [])
+        before = state.to_dict()
+        snapshot = ArtifactGrowthEngine.snapshot(state)
+        self.assertEqual(snapshot["count"], 0)
+        self.assertEqual(snapshot["level_cap"], 1)
+        self.assertEqual(state.to_dict(), before)
+
+    def test_artifact_binding_refinement_and_failure_consume_real_resources(self) -> None:
+        state = GameState(phase="playing")
+        state.player.realm_index = 2
+        state.player.realm = "结晶·初期"
+        state.player.spirit_stones = 1000
+        state.player.resources.update({"玄铁剑": 1, "灵铁": 10, "妖兽材料": 6})
+        state.player.equipped_weapon = "玄铁剑"
+        spirit_before = state.player.spirit
+        bound = ArtifactGrowthEngine.bind(state, "玄铁剑")
+        self.assertEqual(bound["resonance"], 10)
+        self.assertEqual(state.player.spirit, spirit_before - ArtifactGrowthEngine.BIND_SPIRIT_COST)
+
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+            result = ArtifactGrowthEngine.refine(state, "玄铁剑")
+        self.assertTrue(result["success"])
+        self.assertEqual(state.artifact_refinements["玄铁剑"]["level"], 1)
+        self.assertEqual(state.artifact_refinements["玄铁剑"]["resonance"], 15)
+        stones_after_success = state.player.spirit_stones
+        iron_after_success = state.player.resources["灵铁"]
+
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=100):
+            failed = ArtifactGrowthEngine.refine(state, "玄铁剑")
+        self.assertFalse(failed["success"])
+        self.assertEqual(state.artifact_refinements["玄铁剑"]["level"], 1)
+        self.assertLess(state.player.spirit_stones, stones_after_success)
+        self.assertLess(state.player.resources["灵铁"], iron_after_success)
+
+    def test_artifact_refinement_respects_realm_cap_and_improves_combat_stats(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources["玄铁剑"] = 1
+        state.player.equipped_weapon = "玄铁剑"
+        state.bonded_artifact = "玄铁剑"
+        state.artifact_refinements["玄铁剑"] = {"level": 1, "resonance": 80, "victories": 0, "refinements": 1, "last_nourished_turn": -3}
+        available, reason = ArtifactGrowthEngine.refine_availability(state, "玄铁剑")
+        self.assertFalse(available)
+        self.assertIn("筑基", reason)
+
+        baseline = GameState(phase="playing")
+        baseline.player.resources["玄铁剑"] = 1
+        baseline.player.equipped_weapon = "玄铁剑"
+        self.assertGreater(ArtsEngine.attack_multiplier(state.player, state), ArtsEngine.attack_multiplier(baseline.player, baseline))
+        self.assertGreater(ArtsEngine.effective_speed(state.player, state), ArtsEngine.effective_speed(baseline.player, baseline))
+
+    def test_bonded_artifact_gains_resonance_from_real_combat_victory(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources["青锋剑"] = 1
+        state.player.equipped_weapon = "青锋剑"
+        state.bonded_artifact = "青锋剑"
+        state.artifact_refinements["青锋剑"] = {"level": 1, "resonance": 20, "victories": 0, "refinements": 1, "last_nourished_turn": -3}
+        CombatEngine.prepare(state, "青云宗外门弟子", mode="切磋")
+        CombatEngine.finish_victory(state)
+        self.assertEqual(state.artifact_refinements["青锋剑"]["resonance"], 23)
+        self.assertEqual(state.artifact_refinements["青锋剑"]["victories"], 1)
+
+    def test_selling_last_bonded_artifact_clears_active_bond_but_keeps_growth_record(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources["青锋剑"] = 1
+        state.player.equipped_weapon = "青锋剑"
+        state.bonded_artifact = "青锋剑"
+        state.artifact_refinements["青锋剑"] = {"level": 1, "resonance": 42}
+        EconomyEngine.trade(state, "卖", "青锋剑", 1)
+        self.assertEqual(state.bonded_artifact, "")
+        self.assertEqual(state.player.equipped_weapon, "")
+        self.assertEqual(state.artifact_refinements["青锋剑"]["level"], 1)
+
+    def test_artifact_engine_commands_autosave_real_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.realm_index = 1
+            engine.state.player.realm = "筑基·初期"
+            engine.state.player.spirit_stones = 800
+            engine.state.player.resources.update({"青锋剑": 1, "灵铁": 8, "妖兽材料": 4})
+            engine.state.player.equipped_weapon = "青锋剑"
+            self.assertIn("器心契合", engine.process("认主法宝 青锋剑"))
+            before_turn = engine.state.turn
+            with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+                refined = engine.process("淬炼法宝 青锋剑")
+            self.assertIn("淬炼成功", refined)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            nourished = engine.process("温养法宝 青锋剑")
+            self.assertIn("器心契合 +", nourished)
+            payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["bonded_artifact"], "青锋剑")
+            self.assertEqual(payload["artifact_refinements"]["青锋剑"]["level"], 1)
+            self.assertGreater(payload["artifact_refinements"]["青锋剑"]["resonance"], 15)
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
         items = run_diagnostics(ROOT)

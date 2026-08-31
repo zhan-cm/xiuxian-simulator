@@ -42,6 +42,8 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "灵", "adventure", "万灵相契"
     if any(action_text.startswith(word) for word in ("阵法", "阵图", "阵盘", "炼阵", "装配阵法", "修复阵法")):
         return "阵", "craft", "阵纹流转"
+    if any(action_text.startswith(word) for word in ("法宝", "本命法宝", "器阁", "认主法宝", "淬炼法宝", "温养法宝")):
+        return "器", "craft", "器心共鸣"
     if any(action_text.startswith(word) for word in ("买 ", "卖 ", "坊市")):
         return "市", "trade", "坊市往来"
     if any(action_text.startswith(word) for word in ("拍卖", "竞拍", "天机拍卖")):
