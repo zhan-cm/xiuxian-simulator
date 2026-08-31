@@ -20,6 +20,7 @@ from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
 from .recovery import RecoveryEngine
 from .sect_foundation import SectFoundationEngine
+from .world import SectWarEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -291,7 +292,7 @@ def _sect_library(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("藏经阁")
 
 
-def _sect_domain(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+def _established_sect(engine: GameEngine, app: WebApplication) -> None:
     _ready(engine, app)
     player = engine.state.player
     player.realm_index = 3
@@ -317,7 +318,27 @@ def _sect_domain(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
         "天玄历390年1月｜宗门晋为名动一域，九州声望渐起",
     ])
     engine.state.faction_strengths["青玄宗"] = 136
+
+
+def _sect_domain(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _established_sect(engine, app)
     return app.perform_action("宗门经营")
+
+
+def _sect_diplomacy_war(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _established_sect(engine, app)
+    diplomacy = engine.state.founded_sect["diplomacy"]
+    diplomacy["relations"].update({"青云宗": 72, "丹霞谷": 46, "玄剑门": 8, "血煞盟": -80})
+    diplomacy["treaties"].update({"青云宗": "alliance", "丹霞谷": "trade"})
+    diplomacy["history"].extend([
+        "天玄历389年2月｜与丹霞谷缔结通商盟约，商路每月反哺山门",
+        "天玄历390年6月｜与青云宗立下攻守同盟，双方互守东洲灵脉",
+        "天玄历391年3月｜血煞盟觊觎青玄宗道统，正式举兵来犯",
+    ])
+    engine.state.founded_sect["monthly_net"] = 79
+    SectWarEngine.start(engine.state, "血煞盟", "青玄宗")
+    engine.state.active_sect_war.update({"months": 3, "momentum": 2, "player_acted": False})
+    return app.perform_action("护宗战")
 
 
 def _artifacts(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
@@ -433,6 +454,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
     ("sect-library", "宗门藏经阁", "检查贡献兑换、职位权限、年度传功与宗门专属传承。", ["职位阶序和解锁范围一眼可读", "贡献不足或已领取会明确锁定", "巡览中的兑换与传功必须禁用"], _sect_library),
     ("sect-domain", "开宗立派", "检查自立山门后的门人、库藏、道统方针与设施营造。", ["宗门经营使用独立组件而非文字长串", "收徒、传法、方针和营造状态清楚", "巡览中的所有经营操作必须禁用"], _sect_domain),
+    ("sect-diplomacy", "九州争锋", "检查自立宗门的关系、盟约、商路收益与遭遇宗门战争时的掌门抉择。", ["四方关系与盟约状态可快速比较", "战争方向、月份和声势必须明确", "巡览中的外交与护宗按钮必须禁用"], _sect_diplomacy_war),
     ("relations", "浮生故人", "验证人物寿元、生平、护道抉择和关系路径。", ["年龄、境界与在世状态来自真实存档", "护道资源门槛与三种选择清楚", "故人生平不挤成一行"], _relations),
     ("network", "众生缘网", "验证人物彼此结交、嫌隙、往来履历与玩家介入。", ["关系方向和强度可快速辨认", "纷争介入有真实门槛与后果", "巡览中的所有介入按钮必须禁用"], _network),
     ("battle", "临阵抉择", "查看战前敌情和所有可点击战斗抉择。", ["敌我风险明确", "危险操作视觉统一", "选择按钮状态清楚"], _battle),

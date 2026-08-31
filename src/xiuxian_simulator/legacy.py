@@ -76,6 +76,7 @@ class LegacyEngine:
             + int(state.founded_sect.get("level", 0)) * 80
             + len(state.sect_disciples) * 20
             + int(state.founded_sect.get("renown", 0))
+            + int(state.founded_sect.get("diplomacy", {}).get("victories", 0)) * 45
             + max(0, player.reputation)
             + max(0, state.trade_profit // 20),
         )
@@ -119,7 +120,9 @@ class LegacyEngine:
         if state.bonded_artifact:
             highlights.append(f"本命法宝：{state.bonded_artifact}")
         if state.founded_sect.get("name"):
-            highlights.append(f"开宗立派：{state.founded_sect['name']}")
+            victories = int(state.founded_sect.get("diplomacy", {}).get("victories", 0))
+            ending = "·山门覆灭" if state.founded_sect.get("ruined") else f"·争锋{victories}胜" if victories else ""
+            highlights.append(f"开宗立派：{state.founded_sect['name']}{ending}")
         if state.dao_partners:
             highlights.append(f"道侣：{'、'.join(state.dao_partners[:2])}")
         if state.spirit_beasts:

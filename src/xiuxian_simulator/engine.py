@@ -27,6 +27,7 @@ from .art_mastery import ArtMasteryEngine, MASTERY_LABELS
 from .recovery import RecoveryEngine
 from .legacy import LEGACIES, LegacyEngine
 from .sect_foundation import SectFoundationEngine
+from .sect_diplomacy import SectDiplomacyEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -38,7 +39,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 宗门经营 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -219,6 +220,10 @@ class GameEngine:
             return self._sect()
         if action in {"宗门经营", "山门", "开宗卷宗"}:
             return SectFoundationEngine.panel_text(self.state)
+        if action in {"宗门外交", "九州外务", "外交"}:
+            return SectDiplomacyEngine.panel_text(self.state)
+        if action.startswith(("宗门遣使", "宗门施压", "缔结商盟", "缔结盟约", "解除盟约", "宗门宣战", "宗门议和")):
+            return self._sect_diplomacy_action(action)
         if action.startswith("开宗立派") or action.startswith("自立宗门"):
             return self._prepare_sect_foundation(action)
         if action.startswith("宗门方针"):
@@ -1195,6 +1200,34 @@ class GameEngine:
         self.state.remember(f"宗门年度方针改为{name}")
         self._autosave()
         return f"【宗门方针】{name}已经生效，本年不可再次改定。\n\n{SectFoundationEngine.panel_text(self.state)}"
+
+    def _sect_diplomacy_action(self, action: str) -> str:
+        routes = (
+            ("宗门遣使", SectDiplomacyEngine.envoy),
+            ("宗门施压", SectDiplomacyEngine.pressure),
+            ("缔结商盟", SectDiplomacyEngine.trade_pact),
+            ("缔结盟约", SectDiplomacyEngine.alliance),
+            ("解除盟约", SectDiplomacyEngine.break_treaty),
+            ("宗门宣战", SectDiplomacyEngine.declare_war),
+            ("宗门议和", SectDiplomacyEngine.seek_peace),
+        )
+        prefix, handler = next((item for item in routes if action.startswith(item[0])))
+        target = action.removeprefix(prefix).strip()
+        if not target:
+            return "请指定往来势力：青云宗、丹霞谷、玄剑门或血煞盟。\n\n" + SectDiplomacyEngine.panel_text(self.state)
+        try:
+            result = handler(self.state, target)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + SectDiplomacyEngine.panel_text(self.state)
+        died = self._advance_time()
+        if died:
+            self.state.phase = "ended"
+            self.state.player.condition = "主持宗门外务后寿元耗尽"
+        self.state.remember(f"宗门外务：{result}")
+        self._autosave()
+        if died:
+            return f"{result}\n外务使团归山之时，你已走完此生。\n【坐化结局】"
+        return f"{self.state.time_label}\n【宗门外务】{result}\n\n{SectDiplomacyEngine.panel_text(self.state)}"
 
     def _recruit_sect_disciple(self) -> str:
         try:
@@ -2424,6 +2457,7 @@ class GameEngine:
             "秘境｜进入秘境 [名称]｜确认进入；秘境内可谨慎探索、强行探索或退出秘境\n"
             "宗门｜拜入 [宗门]｜宗门任务 [类型]｜申请晋升｜宗门大比｜护宗战｜叛宗\n"
             "开宗立派 [宗门名]｜金丹散修可择道统立宗；宗门经营｜招徒/传法/方针/营造山门\n"
+            "宗门外交｜遣使/施压/商盟/盟约/宣战/议和，每年主持一次九州外务\n"
             "藏经阁｜兑换传承 [编号]｜宗门传功；贡献可换取宗门秘法与年度讲法\n"
             "天下｜查看时代、势力、民生与时间线｜干预天下可主动改变局势\n"
             "战斗｜挑战 [对手]｜切磋 [对手]；战斗内可攻击、防御、施法、蓄势、绝技或遁走\n"

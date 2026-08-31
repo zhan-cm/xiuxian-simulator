@@ -167,10 +167,40 @@ class SectWarEngine:
             state.faction_strengths.setdefault(name, strength)
 
     @classmethod
+    def factions(cls, state: GameState) -> tuple[str, ...]:
+        factions = list(cls.FACTIONS)
+        founded_name = str(state.founded_sect.get("name", ""))
+        if founded_name and not state.founded_sect.get("ruined") and founded_name not in state.fallen_factions:
+            factions.append(founded_name)
+        return tuple(factions)
+
+    @staticmethod
+    def _allied_pair(state: GameState, first: str, second: str) -> bool:
+        founded_name = str(state.founded_sect.get("name", ""))
+        if founded_name not in {first, second}:
+            return False
+        other = second if first == founded_name else first
+        diplomacy = state.founded_sect.get("diplomacy", {})
+        return diplomacy.get("treaties", {}).get(other) == "alliance"
+
+    @staticmethod
+    def _record_founded_war(state: GameState, text: str) -> None:
+        state.sect_foundation_history.append(f"第 {state.turn} 回合｜{text}")
+        state.sect_foundation_history = state.sect_foundation_history[-40:]
+        diplomacy = state.founded_sect.get("diplomacy")
+        if isinstance(diplomacy, dict):
+            history = diplomacy.setdefault("history", [])
+            history.append(f"天玄历{state.calendar_year}年{state.month}月｜{text}")
+            diplomacy["history"] = history[-30:]
+
+    @classmethod
     def start(cls, state: GameState, attacker: str, defender: str) -> str:
         cls.ensure_strengths(state)
-        if attacker == defender or attacker not in cls.FACTIONS or defender not in cls.FACTIONS:
+        available = cls.factions(state)
+        if attacker == defender or attacker not in available or defender not in available:
             raise ValueError("宗门战争双方无效。")
+        if cls._allied_pair(state, attacker, defender):
+            raise ValueError("攻守同盟之间不能互相宣战。")
         if attacker in state.fallen_factions or defender in state.fallen_factions:
             raise ValueError("已经覆灭的势力不能发动宗门战争。")
         state.active_sect_war = {
@@ -182,6 +212,16 @@ class SectWarEngine:
             "started_month": state.month,
             "player_acted": False,
         }
+        founded_name = str(state.founded_sect.get("name", ""))
+        if founded_name in {attacker, defender}:
+            other = defender if attacker == founded_name else attacker
+            diplomacy = state.founded_sect.setdefault(
+                "diplomacy",
+                {"relations": {}, "treaties": {}, "last_action_year": 0, "victories": 0, "defeats": 0, "history": []},
+            )
+            diplomacy.setdefault("treaties", {})[other] = "none"
+            current_relation = int(diplomacy.setdefault("relations", {}).get(other, 0))
+            diplomacy["relations"][other] = min(-60, current_relation)
         state.world_tension = min(100, state.world_tension + 8)
         return f"{attacker}向{defender}宣战，灵舟与护山大阵同时升起。"
 
@@ -189,14 +229,13 @@ class SectWarEngine:
     def maybe_start(cls, state: GameState) -> str:
         if state.active_sect_war or state.month != 3 or (state.calendar_year - 387) % 4 != 0:
             return ""
-        alive = [name for name in cls.FACTIONS if name not in state.fallen_factions]
+        alive = [name for name in cls.factions(state) if name not in state.fallen_factions]
         if len(alive) < 2:
             return ""
-        attacker_index = cls._number(state, "attacker", len(alive))
-        defender_index = cls._number(state, "defender", len(alive) - 1)
-        attacker = alive[attacker_index]
-        defenders = [name for name in alive if name != attacker]
-        defender = defenders[defender_index]
+        pairs = [(attacker, defender) for attacker in alive for defender in alive if attacker != defender and not cls._allied_pair(state, attacker, defender)]
+        if not pairs:
+            return ""
+        attacker, defender = pairs[cls._number(state, "war-pair", len(pairs))]
         return cls.start(state, attacker, defender)
 
     @classmethod
@@ -213,6 +252,7 @@ class SectWarEngine:
         chance = 100
         success = True
         effect = 0
+        founded = state.founded_sect if state.founded_sect.get("name") == state.player.sect else {}
         if choice == "驰援前线":
             chance = max(20, min(95, 48 + state.player.realm_index * 10 + state.player.reputation // 5))
             success = roll <= chance
@@ -222,19 +262,31 @@ class SectWarEngine:
             if not success:
                 state.player.health = max(1, state.player.health - 25)
                 state.player.condition = "护宗战负伤"
+            if founded:
+                founded["treasury"] = max(0, int(founded.get("treasury", 0)) - 80)
+                founded["stability"] = max(0, min(100, int(founded.get("stability", 0)) + (2 if success else -5)))
+                founded["renown"] = max(0, min(100, int(founded.get("renown", 0)) + (3 if success else -1)))
             description = "你率同门破开敌阵，宗门声势大振。" if success else "你在前线受挫，负伤退回山门。"
         elif choice == "固守山门":
-            chance = max(30, min(95, 62 + state.player.dao_heart + state.cave_facilities.get("禁制", 0) * 5))
+            ward = int(founded.get("buildings", {}).get("ward", 0)) if founded else state.cave_facilities.get("禁制", 0)
+            chance = max(30, min(95, 62 + state.player.dao_heart + ward * 5))
             success = roll <= chance
             effect = 1 if success else 0
             state.player.sect_contribution += 60 if success else 15
+            if founded:
+                founded["stability"] = max(0, min(100, int(founded.get("stability", 0)) + (4 if success else -2)))
             description = "你稳住护山阵眼，为宗门守住最后退路。" if success else "阵眼几度动摇，你勉强保全自身。"
         else:
             state.player.reputation -= 8
             effect = -1
+            if founded:
+                founded["stability"] = max(0, int(founded.get("stability", 0)) - 7)
+                founded["renown"] = max(0, int(founded.get("renown", 0)) - 3)
             description = "你闭门不出，避开杀劫，也让同门记住了你的缺席。"
         war["momentum"] = int(war.get("momentum", 0)) + direction * effect
         war["player_acted"] = True
+        if founded:
+            cls._record_founded_war(state, f"护宗战选择{choice}：{description}")
         return SectWarActionResult(choice, success, roll, chance, int(war["momentum"]), description)
 
     @classmethod
@@ -254,12 +306,44 @@ class SectWarEngine:
         state.faction_strengths[winner] = min(100, int(state.faction_strengths.get(winner, 50)) + 5)
         state.faction_strengths[loser] = max(0, int(state.faction_strengths.get(loser, 50)) - 14)
         conclusion = f"{winner}赢得宗门战争，{loser}山门受创、势力大损。"
+        founded_name = str(state.founded_sect.get("name", ""))
+        if founded_name in {winner, loser}:
+            diplomacy = state.founded_sect.setdefault(
+                "diplomacy",
+                {"relations": {}, "treaties": {}, "last_action_year": 0, "victories": 0, "defeats": 0, "history": []},
+            )
+            target = loser if winner == founded_name else winner
+            diplomacy.setdefault("treaties", {})[target] = "none"
+            diplomacy.setdefault("relations", {})[target] = -80
+            if winner == founded_name:
+                state.founded_sect["treasury"] = int(state.founded_sect.get("treasury", 0)) + 350
+                state.founded_sect["stability"] = min(100, int(state.founded_sect.get("stability", 0)) + 5)
+                state.founded_sect["renown"] = min(100, int(state.founded_sect.get("renown", 0)) + 8)
+                state.founded_sect["experience"] = int(state.founded_sect.get("experience", 0)) + 80
+                state.founded_sect["war_scars"] = max(0, int(state.founded_sect.get("war_scars", 0)) - 1)
+                diplomacy["victories"] = int(diplomacy.get("victories", 0)) + 1
+                cls._record_founded_war(state, f"战胜{target}，库藏 +350，宗门声望 +8")
+            else:
+                state.founded_sect["treasury"] = max(0, int(state.founded_sect.get("treasury", 0)) - 500)
+                state.founded_sect["stability"] = max(0, int(state.founded_sect.get("stability", 0)) - 18)
+                state.founded_sect["renown"] = max(0, int(state.founded_sect.get("renown", 0)) - 10)
+                state.founded_sect["experience"] = max(0, int(state.founded_sect.get("experience", 0)) - 60)
+                state.founded_sect["war_scars"] = min(6, int(state.founded_sect.get("war_scars", 0)) + 2)
+                diplomacy["defeats"] = int(diplomacy.get("defeats", 0)) + 1
+                cls._record_founded_war(state, f"败于{target}，库藏 -500，山门稳定 -18，留下两重战损")
         if state.faction_strengths[loser] <= 15:
             state.faction_strengths[loser] = 0
             if loser not in state.fallen_factions:
                 state.fallen_factions.append(loser)
             conclusion = f"{winner}攻破{loser}山门，{loser}自九州势力谱中覆灭。"
-            if state.player.sect == loser:
+            if loser == founded_name:
+                state.founded_sect["ruined"] = True
+                state.founded_sect["stability"] = 0
+                state.founded_sect["treasury"] = 0
+                state.player.sect_rank = "流亡掌门"
+                state.player.condition = "山门覆灭·流亡"
+                cls._record_founded_war(state, f"{loser}山门覆灭，掌门携残存道统流亡九州")
+            elif state.player.sect == loser:
                 state.player.tags.append(f"故宗覆灭·{loser}")
                 state.player.sect = "散修"
                 state.player.sect_rank = "无"

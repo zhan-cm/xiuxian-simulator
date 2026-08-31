@@ -330,7 +330,7 @@ export interface SectDomainInfo {
   name?: string; doctrine?: string; doctrine_name?: string; doctrine_mark?: string; doctrine_effect?: string
   level?: number; level_name?: string; experience?: number; experience_required?: number; experience_percent?: number
   renown?: number; stability?: number; treasury?: number; focus?: string; strength?: number; monthly_net?: number
-  founded_year?: number; founded_month?: number; ruined?: boolean
+  founded_year?: number; founded_month?: number; ruined?: boolean; war_scars?: number
 }
 
 export interface SectDisciple {
@@ -348,6 +348,26 @@ export interface SectFocusView {
   disabled_reason: string; action: string
 }
 
+export interface SectDiplomacyAction {
+  label: string; action: string; available: boolean; reason: string
+}
+
+export interface SectFactionView {
+  name: string; mark: string; path: string; description: string; strength: number; fallen: boolean
+  relation: number; relation_percent: number; stance: string; treaty: string; treaty_label: string; at_war: boolean
+  primary: SectDiplomacyAction; secondary: SectDiplomacyAction
+}
+
+export interface SectWarView {
+  active?: boolean; target?: string; side?: string; months?: number; momentum?: number
+  momentum_label?: string; player_acted?: boolean
+}
+
+export interface SectDiplomacySnapshot {
+  visible: boolean; factions: SectFactionView[]; history: string[]; war: SectWarView
+  income_bonus: number; acted_this_year: boolean; victories?: number; defeats?: number
+}
+
 export interface SectDomainSnapshot {
   visible: boolean; founded: boolean; pending: boolean; suggested_name: string
   requirements: SectRequirement[]; can_found: boolean; found_reason: string; begin_action: string
@@ -355,6 +375,7 @@ export interface SectDomainSnapshot {
   buildings: SectBuildingView[]; focuses: SectFocusView[]; history: string[]
   recruit_action?: string; can_recruit?: boolean; recruit_reason?: string; recruit_cost?: number
   teach_action?: string; can_teach?: boolean; teach_reason?: string; teach_cost?: number
+  diplomacy: SectDiplomacySnapshot
 }
 
 export interface InventoryItem {

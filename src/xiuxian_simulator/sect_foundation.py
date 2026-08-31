@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .progression import REALMS, STAGES, ProgressionEngine
+from .sect_diplomacy import SectDiplomacyEngine
 from .state import GameState
 
 
@@ -182,7 +183,9 @@ class SectFoundationEngine:
             "income_lifetime": 0,
             "expense_lifetime": cls.FOUNDATION_COST,
             "monthly_net": 0,
+            "war_scars": 0,
             "ruined": False,
+            "diplomacy": SectDiplomacyEngine.default_data(),
         }
         state.sect_disciples = []
         state.sect_disciples.append(cls._make_disciple(state, 1, "开山弟子"))
@@ -310,6 +313,7 @@ class SectFoundationEngine:
         income = 15 + disciples * 9 + int(buildings.get("workshop", 0)) * 16
         if sect.get("doctrine") == "alchemy":
             income += 18
+        income += SectDiplomacyEngine.monthly_income_bonus(state)
         if sect.get("focus") == "elite":
             income -= 8
         elif sect.get("focus") == "world":
@@ -376,13 +380,17 @@ class SectFoundationEngine:
             quarterly = f"{sect['name']}季报：库藏 {sect['treasury']}（月净 {net:+d}），门人 {len(state.sect_disciples)}，声望 {sect['renown']}"
             cls.record(state, quarterly)
             events.append(quarterly)
+        if state.month == 1 and int(sect.get("war_scars", 0)) > 0:
+            sect["war_scars"] = int(sect.get("war_scars", 0)) - 1
+            events.append(f"{sect['name']}休养生息，消解一重战损")
 
-        strength = min(
+        strength = max(0, min(
             100,
             22 + int(sect.get("level", 1)) * 8 + int(sect.get("renown", 0)) // 3
             + int(sect.get("buildings", {}).get("ward", 0)) * 5
-            + (4 if sect.get("doctrine") == "sword" else 0),
-        )
+            + (4 if sect.get("doctrine") == "sword" else 0)
+            - int(sect.get("war_scars", 0)) * 5,
+        ))
         state.faction_strengths[str(sect["name"])] = strength
         return events
 

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xiuxian-simulator"
-version = "0.53.0"
-description = "《问道长生》规则驱动的本地修仙文字模拟器 V0.53 开宗立派版"
+version = "0.54.0"
+description = "《问道长生》规则驱动的本地修仙文字模拟器 V0.54 九州争锋版"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
