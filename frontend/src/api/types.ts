@@ -230,6 +230,20 @@ export interface SpiritBeastSnapshot {
   search_reason: string; materials: number; history: string[]; summon_cost: number
 }
 
+export interface FormationArray {
+  id: string; name: string; mark: string; element: string; role: string
+  minimum_realm: string; summary: string; effect: string; ingredients: string; chance: number
+  owned: boolean; active: boolean; integrity: number; integrity_max: number
+  build_action: string; can_build: boolean; build_reason: string
+  deploy_action: string; can_deploy: boolean; deploy_reason: string
+  repair_action: string; can_repair: boolean; repair_reason: string
+}
+
+export interface FormationSnapshot {
+  count: number; active_id: string; active_name: string; skill_level: number; dao_level: number
+  arrays: FormationArray[]; history: string[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -347,6 +361,7 @@ export interface Snapshot {
   new_era: NewEraSnapshot
   dao: DaoSnapshot
   spirit_beasts: SpiritBeastSnapshot
+  formations: FormationSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

@@ -15,6 +15,7 @@ from .npc_lifecycle import NpcLifecycleEngine
 from .npc_network import NpcNetworkEngine
 from .story import StoryEngine
 from .new_era import NewEraEngine
+from .formations import FormationEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -211,6 +212,29 @@ def _spirit_beasts(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("御兽")
 
 
+def _formations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.realm_index = 2
+    engine.state.player.realm = "结晶·初期"
+    engine.state.player.resources.update({"灵铁": 5, "符纸": 4, "灵药": 4, "妖兽材料": 2, "五行灵珠": 1, "道韵": 1})
+    engine.state.player.craft_skills["阵法"] = 2
+    engine.state.player.dao_levels["阵道"] = 1
+    engine.state.formation_arrays = {
+        "ember-slaying": {"integrity": 55, "built_turn": 11, "activations": 3},
+        "stone-ward": {"integrity": 100, "built_turn": 18, "activations": 1},
+        "spirit-gathering": {"integrity": 88, "built_turn": 29, "activations": 2},
+    }
+    engine.state.active_formation = "spirit-gathering"
+    engine.state.formation_history = [
+        "第 11 回合｜炼成赤阳焚敌阵（32/84）",
+        "第 18 回合｜炼成玄土结界阵（41/88）",
+        "第 29 回合｜炼成青木聚灵阵（46/93）",
+        "第 34 回合｜装配青木聚灵阵",
+    ]
+    assert FormationEngine.active(engine.state) is not None
+    return app.perform_action("阵法")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -269,6 +293,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("new-era-chronicle", "新世卷宗", "检查多轮余波之后的指标变化、阶段演化与永久历史。", ["三项指标不挤成一行文字", "每轮选择保留清晰记录", "三轮后形成新世纪里程碑"], _new_era_chronicle),
     ("dao-tree", "悟道九途", "检查感悟转化、九条永久道途、境界门槛与点亮状态。", ["九途必须使用独立小组件", "当前与下一层效果可快速比较", "巡览中的点亮与观想按钮必须禁用"], _dao_tree),
     ("spirit-beasts", "万灵兽苑", "检查战宠羁绊、精力、成长、出战位与喂养状态。", ["每只灵兽使用独立养成卡", "三条成长仪表一眼可读", "巡览中的探寻、出战与喂养必须禁用"], _spirit_beasts),
+    ("formations", "五行阵图", "检查阵图研习、阵盘装配、阵基损耗与五类战术定位。", ["五卷阵图使用独立阵盘卡", "阵材、成功率与阵基可快速比较", "巡览中的炼制、装配与修复必须禁用"], _formations),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

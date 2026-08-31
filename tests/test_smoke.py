@@ -39,6 +39,7 @@ from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.new_era import NewEraEngine
 from xiuxian_simulator.dao import DaoEngine, INSIGHT_PER_POINT
 from xiuxian_simulator.beasts import SpiritBeastEngine
+from xiuxian_simulator.formations import FormationEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -2812,6 +2813,88 @@ class SimulatorSmokeTests(unittest.TestCase):
             payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
             self.assertEqual(payload["spirit_beast_searches"], 1)
             self.assertEqual(payload["phase"], "playing")
+
+    def test_formation_build_repair_deploy_and_old_save_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.46.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.formation_arrays, {})
+        self.assertEqual(state.active_formation, "")
+        self.assertEqual(FormationEngine.snapshot(state)["count"], 0)
+
+        state.player.resources.update({"灵铁": 6, "符纸": 2})
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+            result = FormationEngine.build(state, "赤阳焚敌阵")
+        self.assertTrue(result["success"])
+        self.assertEqual(state.active_formation, "ember-slaying")
+        self.assertEqual(state.formation_arrays["ember-slaying"]["integrity"], 100)
+        self.assertEqual(state.player.resources["灵铁"], 4)
+        self.assertNotIn("符纸", state.player.resources)
+
+        state.player.resources["灵铁"] = 3
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=100):
+            failed = FormationEngine.build(state, "玄土结界阵")
+        self.assertFalse(failed["success"])
+        self.assertNotIn("stone-ward", state.formation_arrays)
+        self.assertNotIn("灵铁", state.player.resources)
+
+        state.formation_arrays["stone-ward"] = {"integrity": 43, "built_turn": 2, "activations": 1}
+        state.player.resources["灵铁"] = 1
+        self.assertEqual(FormationEngine.deploy(state, "玄土结界阵"), "玄土结界阵")
+        repaired = FormationEngine.repair(state, "玄土结界阵")
+        self.assertEqual(repaired["integrity_gain"], 35)
+        self.assertEqual(state.formation_arrays["stone-ward"]["integrity"], 78)
+
+    def test_formation_eligibility_and_spirit_gathering_improves_cultivation(self) -> None:
+        state = GameState(phase="playing")
+        locked = FormationEngine.snapshot(state)["arrays"]
+        wind = next(item for item in locked if item["id"] == "wind-binding")
+        self.assertFalse(wind["can_build"])
+        self.assertIn("筑基", wind["build_reason"])
+
+        baseline = ProgressionEngine.cultivation_gain(state).total
+        state.formation_arrays["spirit-gathering"] = {"integrity": 100, "built_turn": 1, "activations": 0}
+        state.active_formation = "spirit-gathering"
+        state.player.craft_skills["阵法"] = 2
+        state.player.dao_levels["阵道"] = 1
+        boosted = ProgressionEngine.cultivation_gain(state)
+        self.assertGreater(boosted.total, baseline)
+        self.assertGreater(boosted.formation, 1.0)
+        state.formation_arrays["spirit-gathering"]["integrity"] = 0
+        self.assertEqual(ProgressionEngine.cultivation_gain(state).formation, 1.0)
+
+    def test_formation_combat_activation_is_tactical_and_once_per_battle(self) -> None:
+        state = GameState(phase="playing", rng_seed=881)
+        state.formation_arrays["stone-ward"] = {"integrity": 100, "built_turn": 1, "activations": 0}
+        state.active_formation = "stone-ward"
+        CombatEngine.prepare(state, "噬灵獾")
+        CombatEngine.start(state)
+        decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(state)
+        formation_choice = next(choice for choice in decision["choices"] if choice["action"] == "催动阵法")
+        self.assertFalse(formation_choice["disabled"])
+        spirit_before = state.player.spirit
+        integrity_before = state.formation_arrays["stone-ward"]["integrity"]
+        round_result = CombatEngine.act(state, "催动阵法")
+        self.assertIn("玄土结界阵", round_result.player_text)
+        self.assertLess(state.player.spirit, spirit_before)
+        self.assertLess(state.formation_arrays["stone-ward"]["integrity"], integrity_before)
+        available, reason = FormationEngine.combat_availability(state)
+        self.assertFalse(available)
+        self.assertIn("已经催动", reason)
+
+    def test_formation_engine_commands_autosave_real_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.resources.update({"灵铁": 3})
+            before_turn = engine.state.turn
+            with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+                result = engine.process("炼阵 玄土结界阵")
+            self.assertIn("炼制成功", result)
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            self.assertIn("玄土结界阵", engine.process("阵法"))
+            payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["active_formation"], "stone-ward")
+            self.assertEqual(payload["formation_arrays"]["stone-ward"]["integrity"], 100)
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
         items = run_diagnostics(ROOT)

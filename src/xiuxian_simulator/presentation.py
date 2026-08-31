@@ -30,7 +30,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
     action_text = action.strip()
     if any(word in output for word in ("陨落", "坐化", "战败", "死亡")):
         return "劫", "danger", "道途生变"
-    if any(action_text.startswith(word) for word in ("开战", "攻击", "战斗", "切磋", "约战", "施法", "防御", "召唤战宠", "蓄势", "绝技", "遁走", "拾取")):
+    if any(action_text.startswith(word) for word in ("开战", "攻击", "战斗", "切磋", "约战", "施法", "防御", "召唤战宠", "催动阵法", "蓄势", "绝技", "遁走", "拾取")):
         return "战", "combat", "斗法交锋"
     if action_text.startswith("突破") or action_text.startswith("选择 "):
         return "破", "breakthrough", "破境问道"
@@ -40,6 +40,8 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
         return "游", "adventure", "山河游历"
     if any(action_text.startswith(word) for word in ("御兽", "兽苑", "灵兽", "战宠", "探寻灵兽", "收服灵兽", "放归灵兽", "出战灵兽", "喂养灵兽")):
         return "灵", "adventure", "万灵相契"
+    if any(action_text.startswith(word) for word in ("阵法", "阵图", "阵盘", "炼阵", "装配阵法", "修复阵法")):
+        return "阵", "craft", "阵纹流转"
     if any(action_text.startswith(word) for word in ("买 ", "卖 ", "坊市")):
         return "市", "trade", "坊市往来"
     if any(action_text.startswith(word) for word in ("拍卖", "竞拍", "天机拍卖")):

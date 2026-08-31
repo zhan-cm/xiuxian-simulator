@@ -18,6 +18,7 @@ from .story import StoryEngine
 from .new_era import NewEraEngine
 from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
+from .formations import FormationEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -29,7 +30,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -133,6 +134,14 @@ class GameEngine:
             return self._deploy_beast(action)
         if action.startswith("喂养灵兽"):
             return self._feed_beast(action)
+        if action in {"阵法", "阵图", "阵盘", "五行阵图"}:
+            return FormationEngine.panel_text(self.state)
+        if action.startswith("炼阵"):
+            return self._build_formation(action)
+        if action.startswith("装配阵法"):
+            return self._deploy_formation(action)
+        if action.startswith("修复阵法"):
+            return self._repair_formation(action)
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
         if action in {"委托", "悬赏", "悬榜"}:
@@ -489,6 +498,62 @@ class GameEngine:
         return (
             f"{self.state.time_label}\n【灵兽喂养】妖兽材料 -1｜羁绊 +{result['bond_gain']}｜"
             f"精力 +{vigor_gain}{level_text}\n\n{SpiritBeastEngine.panel_text(self.state)}"
+        )
+
+    def _build_formation(self, action: str) -> str:
+        name = action.removeprefix("炼阵").strip()
+        if not name:
+            return FormationEngine.panel_text(self.state)
+        try:
+            result = FormationEngine.build(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + FormationEngine.panel_text(self.state)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "推演阵图时寿元耗尽"
+        level_text = "｜阵法技艺有所精进" if result["leveled_up"] else ""
+        if result["success"]:
+            text = f"阵纹判定 {result['roll']}/{result['chance']}：{result['name']}炼制成功{level_text}。"
+        else:
+            text = f"阵纹判定 {result['roll']}/{result['chance']}：阵基崩散，本次阵材尽数损毁。"
+        self.state.remember(f"炼阵{result['name']}：{'成功' if result['success'] else '失败'}")
+        self._autosave()
+        if died_of_age:
+            return f"{text}\n【坐化结局】你在阵纹之间走完此生。"
+        return f"{self.state.time_label}\n【阵图炼制】{text}\n\n{FormationEngine.panel_text(self.state)}"
+
+    def _deploy_formation(self, action: str) -> str:
+        name = action.removeprefix("装配阵法").strip()
+        if not name:
+            return "请选择要装配的阵盘。\n\n" + FormationEngine.panel_text(self.state)
+        try:
+            deployed = FormationEngine.deploy(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + FormationEngine.panel_text(self.state)
+        self.state.remember(f"装配阵盘{deployed}")
+        self._autosave()
+        return f"【阵盘装配】{deployed}已与灵机相合。\n\n{FormationEngine.panel_text(self.state)}"
+
+    def _repair_formation(self, action: str) -> str:
+        name = action.removeprefix("修复阵法").strip()
+        if not name:
+            return "请选择要修复的阵盘。\n\n" + FormationEngine.panel_text(self.state)
+        try:
+            result = FormationEngine.repair(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + FormationEngine.panel_text(self.state)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "修复阵盘时寿元耗尽"
+        self.state.remember(f"修复{result['name']}，阵基 +{result['integrity_gain']}")
+        self._autosave()
+        if died_of_age:
+            return "阵盘重归完整，你却在阵纹之间走完此生。\n【坐化结局】"
+        return (
+            f"{self.state.time_label}\n【阵盘修复】灵铁 -1｜阵基 +{result['integrity_gain']}\n\n"
+            f"{FormationEngine.panel_text(self.state)}"
         )
 
     def _free_action(self, action: str) -> str:
@@ -1788,6 +1853,11 @@ class GameEngine:
             f"{active_beast[1]['name']}·{active_beast[1].get('level', 1)}级·羁绊{active_beast[1].get('bond', 0)}"
             if active_beast else "无"
         )
+        active_formation = FormationEngine.active(self.state)
+        formation_text = (
+            f"{active_formation[0].name}·阵基{active_formation[1].get('integrity', 0)}/{FormationEngine.MAX_INTEGRITY}"
+            if active_formation else "无"
+        )
         return (
             f"【状态卡 · 第 {self.state.turn} 回合 · {self.state.time_label}】\n"
             f"道号 {p.dao_name}｜姓名 {p.name}｜性别 {p.gender}｜年龄 {p.age}/{p.lifespan}\n"
@@ -1802,6 +1872,7 @@ class GameEngine:
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"悟道：感悟 {p.dao_insight}/20｜悟道点 {p.dao_points}｜已点亮 {sum(p.dao_levels.values())} 层\n"
             f"战宠：{beast_text}｜兽苑 {len(self.state.spirit_beasts)} 只\n"
+            f"阵盘：{formation_text}｜阵图 {len(self.state.formation_arrays)} 卷\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"尘缘波澜：{self.state.relationship_tension}/100｜情劫记录 {len(self.state.relationship_events)}\n"
@@ -1982,6 +2053,7 @@ class GameEngine:
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "悟道｜观想积累感悟｜闭关悟道凝成悟道点｜点亮 [剑道/丹道等九途]\n"
             "御兽｜探寻灵兽｜出战灵兽/喂养灵兽 [名称]；战斗中可召唤战宠\n"
+            "阵法｜炼阵/装配阵法/修复阵法 [阵名]；战斗中可催动阵法\n"
             "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
             "地方｜查看五域声名与礼遇｜地方机缘后从三项应对中亲自选择\n"
             "坊市｜区域价格会随特产、求购、民生与地方声望变化｜买/卖 [物品] [数量]\n"

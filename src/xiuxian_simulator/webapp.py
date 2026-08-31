@@ -27,6 +27,7 @@ from .travel import TravelEngine
 from .regional import RegionalEngine
 from .cave import CaveEngine
 from .beasts import SpiritBeastEngine
+from .formations import FormationEngine
 
 
 CONTENT_TYPES = {
@@ -82,6 +83,7 @@ class WebApplication:
             "new_era": NewEraEngine.snapshot(self.engine.state),
             "dao": DaoEngine.snapshot(self.engine.state),
             "spirit_beasts": SpiritBeastEngine.snapshot(self.engine.state),
+            "formations": FormationEngine.snapshot(self.engine.state),
             "inventory": InventoryEngine.snapshot(self.engine.state),
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),

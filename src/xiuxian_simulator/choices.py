@@ -14,6 +14,7 @@ from .regional import RegionalEngine
 from .npc_network import NpcNetworkEngine
 from .new_era import NewEraEngine
 from .beasts import SpiritBeastEngine
+from .formations import FormationEngine
 
 
 class DecisionCatalog:
@@ -214,5 +215,9 @@ class DecisionCatalog:
                 elif state.player.spirit < SpiritBeastEngine.SUMMON_SPIRIT_COST:
                     reason = f"需要 {SpiritBeastEngine.SUMMON_SPIRIT_COST} 点灵力"
                 choice["disabled"] = bool(reason)
+                choice["disabled_reason"] = reason
+            if state.phase == "combat" and choice.get("action") == "催动阵法":
+                available, reason = FormationEngine.combat_availability(state)
+                choice["disabled"] = not available
                 choice["disabled_reason"] = reason
         return decision

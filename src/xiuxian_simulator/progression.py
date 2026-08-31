@@ -64,6 +64,7 @@ class CultivationBreakdown:
     aura: float
     mindset: float
     constitution: float
+    formation: float
     retreat: float
     total: int
 
@@ -71,7 +72,7 @@ class CultivationBreakdown:
         return (
             f"基数 {self.base:g} × 资质 {self.aptitude:.2f} × 灵根 {self.spiritual_root:.2f} × "
             f"功法 {self.technique:.2f} × 灵气 {self.aura:.2f} × 心境 {self.mindset:.2f} × "
-            f"体质 {self.constitution:.2f} × 闭关 {self.retreat:.2f} = {self.total}"
+            f"体质 {self.constitution:.2f} × 阵法 {self.formation:.2f} × 闭关 {self.retreat:.2f} = {self.total}"
         )
 
 
@@ -142,8 +143,11 @@ class ProgressionEngine:
         aura = AURA_MULTIPLIERS.get(state.aura_level, 1.0)
         mindset = cls.mindset_multiplier(player)
         constitution = player.modifiers.get("cultivation_multiplier", 1.0)
+        formation = 1.0
+        if state.active_formation == "spirit-gathering" and int(state.formation_arrays.get("spirit-gathering", {}).get("integrity", 0)) > 0:
+            formation = 1.05 + player.craft_skills.get("阵法", 0) * 0.02 + player.dao_levels.get("阵道", 0) * 0.02
         retreat_multiplier = 2.0 * (1 + state.cave_facilities.get("静室", 0) * 0.1) if retreat else 1.0
-        total = max(1, round(base * aptitude * spiritual_root * technique * aura * mindset * constitution * retreat_multiplier))
+        total = max(1, round(base * aptitude * spiritual_root * technique * aura * mindset * constitution * formation * retreat_multiplier))
         return CultivationBreakdown(
             base=base,
             aptitude=aptitude,
@@ -152,6 +156,7 @@ class ProgressionEngine:
             aura=aura,
             mindset=mindset,
             constitution=constitution,
+            formation=formation,
             retreat=retreat_multiplier,
             total=total,
         )

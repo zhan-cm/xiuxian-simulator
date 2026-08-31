@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from .arts import ArtsEngine
 from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
+from .formations import FormationEngine
 from .progression import ProgressionEngine, REALMS, STAGES
 from .state import GameState
 
@@ -136,6 +137,9 @@ class CombatEngine:
             "player_charge": 0,
             "beast_summoned": False,
             "beast_guard": False,
+            "formation_used": False,
+            "formation_guard": False,
+            "enemy_bound": False,
             "loot": dict(enemy.loot),
             "loot_spirit_stones": enemy.spirit_stones,
         }
@@ -173,13 +177,15 @@ class CombatEngine:
             f"｜战宠 {active_beast[1]['name']}（精力 {active_beast[1].get('vigor', 0)}）"
             if active_beast else "｜战宠 无"
         )
+        active_formation = FormationEngine.active(state)
+        formation_text = f"｜阵盘 {active_formation[0].name}" if active_formation else "｜阵盘 无"
         return (
             f"【战斗 · 第 {combat['round']} 轮】\n"
             f"你：气血 {state.player.health}/{state.player.health_max}｜灵力 {state.player.spirit}/{state.player.spirit_max}｜"
-            f"蓄势 {combat['player_charge']}/2｜法术 {state.player.equipped_spell or '无'}{beast_text}\n"
+            f"蓄势 {combat['player_charge']}/2｜法术 {state.player.equipped_spell or '无'}{beast_text}{formation_text}\n"
             f"{combat['enemy_name']}：气血 {combat['enemy_health']}/{combat['enemy_health_max']}｜"
             f"境界 {cls.enemy_realm_label(state)}\n"
-            "指令：攻击／施法／防御／召唤战宠／冷静观察／蓄势／绝技／遁走／用丹／用符 火球符"
+            "指令：攻击／施法／防御／召唤战宠／催动阵法／冷静观察／蓄势／绝技／遁走／用丹／用符 火球符"
         )
 
     @classmethod
@@ -240,8 +246,12 @@ class CombatEngine:
         critical = critical_roll <= 10
         raw_damage = round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0))
         damage = max(1, raw_damage - ArtsEngine.defense_bonus(player) - SpiritBeastEngine.defense_bonus(state))
+        enemy_bound = bool(combat.pop("enemy_bound", False))
+        if enemy_bound:
+            damage = max(1, round(damage * 0.75))
         beast_guard = bool(combat.pop("beast_guard", False))
-        if defending or beast_guard:
+        formation_guard = bool(combat.pop("formation_guard", False))
+        if defending or beast_guard or formation_guard:
             damage = max(1, round(damage * 0.5))
         player.health = max(0, player.health - damage)
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
@@ -302,6 +312,10 @@ class CombatEngine:
             player_text = "你收束灵力护住周身，本轮所受伤害减半"
         elif action == "召唤战宠":
             player_text = SpiritBeastEngine.summon(state) + f"，灵力 -{SpiritBeastEngine.SUMMON_SPIRIT_COST}"
+        elif action == "催动阵法":
+            active_formation = FormationEngine.active(state)
+            spirit_cost = FormationEngine.activation_cost(state, active_formation[0])[0] if active_formation else 0
+            player_text = FormationEngine.activate_combat(state) + f"，灵力 -{spirit_cost}"
         elif action == "冷静观察":
             combat["player_observed"] = True
             player_text = "你看清对手灵力运转，下次攻击必定命中"
@@ -334,7 +348,7 @@ class CombatEngine:
             strike = cls._player_strike(state, 1.75 * DaoEngine.talisman_multiplier(state), "talisman:fireball", "火")
             player_text = cls._strike_text("你催动火球符", strike) + "，火球符 -1"
         else:
-            raise ValueError("战斗中请选择：攻击、施法、防御、召唤战宠、冷静观察、蓄势、绝技、遁走、用丹或用符。")
+            raise ValueError("战斗中请选择：攻击、施法、防御、召唤战宠、催动阵法、冷静观察、蓄势、绝技、遁走、用丹或用符。")
 
         if int(combat["enemy_health"]) <= 0:
             return CombatRoundResult(action, player_text, f"{combat['enemy_name']}失去战力。", victory=True)
