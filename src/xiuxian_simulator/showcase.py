@@ -277,6 +277,25 @@ def _artifacts(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("法宝谱")
 
 
+def _art_mastery(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    player = engine.state.player
+    player.known_techniques = ["聚气诀", "青木长生诀", "赤炎真经"]
+    player.primary_technique = "青木长生诀"
+    player.primary_technique_grade = "玄阶"
+    player.equipped_auxiliary_techniques = ["赤炎真经"]
+    player.known_spells = ["流火术", "青木缚灵术"]
+    player.equipped_spell = "青木缚灵术"
+    engine.state.technique_mastery = {"聚气诀": 480, "青木长生诀": 285, "赤炎真经": 145}
+    engine.state.spell_mastery = {"流火术": 130, "青木缚灵术": 68}
+    engine.state.art_mastery_history = [
+        "第 14 回合｜聚气诀由大成晋至圆满（闭关）",
+        "第 27 回合｜赤炎真经由小成晋至精通（随修）",
+        "第 36 回合｜参研青木缚灵术，熟练度 +19",
+    ]
+    return app.perform_action("道法")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -336,6 +355,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("dao-tree", "悟道九途", "检查感悟转化、九条永久道途、境界门槛与点亮状态。", ["九途必须使用独立小组件", "当前与下一层效果可快速比较", "巡览中的点亮与观想按钮必须禁用"], _dao_tree),
     ("spirit-beasts", "万灵兽苑", "检查战宠羁绊、精力、成长、出战位与喂养状态。", ["每只灵兽使用独立养成卡", "三条成长仪表一眼可读", "巡览中的探寻、出战与喂养必须禁用"], _spirit_beasts),
     ("formations", "五行阵图", "检查阵图研习、阵盘装配、阵基损耗与五类战术定位。", ["五卷阵图使用独立阵盘卡", "阵材、成功率与阵基可快速比较", "巡览中的炼制、装配与修复必须禁用"], _formations),
+    ("art-mastery", "万法参研", "检查功法与法术的五重熟练境界、真实增益和参研门槛。", ["主修、辅修与配术状态清楚", "当前与下一境界效果可比较", "巡览中的参研按钮必须禁用"], _art_mastery),
     ("artifacts", "本命法宝", "检查法宝认主、境界淬炼上限、器心契合与真实战斗加成。", ["本命与普通法宝层级清楚", "淬炼成本、成功率和锁定原因可比较", "巡览中的认主、淬炼与温养必须禁用"], _artifacts),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
@@ -353,7 +373,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("crafts", "修仙百艺", "验证配方材料、成功率和制作入口。", ["配方可快速比较", "缺少材料自动锁定", "制作会推进时间"], _crafts),
     ("cave", "洞天经营", "查看洞府灵蕴、运转方针、后台生产与设施营造。", ["灵蕴与月度产量清楚", "后台工坊展示真实工期", "设施、方针与配方分层收纳"], _cave),
     ("world", "九州天下", "检查势力、民生、世界阶段和大事记。", ["世界状态不挤占主剧情", "势力数值易比较", "旧事件按需展开"], _action("天下")),
-    ("arts", "道法构筑", "查看主修、辅修、法术与装备信息。", ["构筑关系应结构化", "未装备内容不占大段文字", "后续可扩展装备详情"], _action("道法")),
+    ("arts", "初悟道法", "查看新修士初始功法、法术和熟练度起点。", ["初始道法不再堆成长文字", "五重境界进度应清楚", "后续可直接参研成长"], _action("道法")),
 )
 
 

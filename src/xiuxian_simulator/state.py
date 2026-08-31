@@ -73,7 +73,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.49.0"
+    version: str = "0.50.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -184,6 +184,9 @@ class GameState:
     artifact_refinements: dict[str, dict[str, Any]] = field(default_factory=dict)
     bonded_artifact: str = ""
     artifact_history: list[str] = field(default_factory=list)
+    technique_mastery: dict[str, int] = field(default_factory=dict)
+    spell_mastery: dict[str, int] = field(default_factory=dict)
+    art_mastery_history: list[str] = field(default_factory=list)
 
     @property
     def time_label(self) -> str:

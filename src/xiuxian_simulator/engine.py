@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .character_creation import BasicCharacter, CharacterCreationError, CharacterCreator
 from .adventures import AdventureEngine, SECRET_REALMS
-from .arts import ARTIFACTS, ArtsEngine
+from .arts import ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
@@ -21,6 +21,7 @@ from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
+from .art_mastery import ArtMasteryEngine, MASTERY_LABELS
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -32,7 +33,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -215,7 +216,7 @@ class GameEngine:
         if action == "干预天下":
             return self._prepare_world_intervention()
         if action in {"道法", "功法", "法术"}:
-            return self._arts()
+            return ArtMasteryEngine.panel_text(self.state)
         if action in {"法宝", "法宝谱", "本命法宝", "器阁"}:
             return ArtifactGrowthEngine.panel_text(self.state)
         if action.startswith("认主法宝"):
@@ -226,6 +227,8 @@ class GameEngine:
             return self._nourish_artifact(action)
         if action.startswith("参悟"):
             return self._learn_art(action)
+        if action.startswith(("参研道法", "研习功法", "研习法术")):
+            return self._study_art(action)
         if action.startswith("装备功法"):
             return self._equip_main_technique(action)
         if action.startswith("辅修功法"):
@@ -359,11 +362,13 @@ class GameEngine:
         if months_used == 0:
             return f"修为已圆满：{player.cultivation}/{player.cultivation_required}。请先尝试突破。"
         dao_points = DaoEngine.digest(self.state, limit=months_used, required=False) if retreat else 0
+        art_advances = ArtMasteryEngine.gain_cultivation(self.state, months_used, retreat)
         CommissionEngine.mark(self.state, "cultivation_month", months_used)
         died_of_age = self._advance_time(months_used)
         mode = "闭关" if retreat else "吐纳"
         dao_note = f"，悟道点 +{dao_points}" if dao_points else ""
-        self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}{dao_note}")
+        art_note = f"，道法晋境：{'、'.join(art_advances)}" if art_advances else ""
+        self.state.remember(f"{mode}修炼 {months_used} 月，修为 +{gain}{dao_note}{art_note}")
         if died_of_age:
             self.state.phase = "ended"
             self.state.remember("寿元耗尽，坐化")
@@ -378,6 +383,7 @@ class GameEngine:
             f"{self.state.time_label}\n你在石屋中{mode}{months_used}月{early_stop}，灵气沿经脉缓缓流转。\n"
             f"修为 +{gain}（{player.cultivation}/{player.cultivation_required}）\n"
             + (f"感悟化真：悟道点 +{dao_points}\n" if dao_points else "")
+            + (f"道法精进：{'、'.join(art_advances)}\n" if art_advances else "")
             + f"结算：{breakdown.summary()}／月\n\n"
             + self._status()
         )
@@ -1401,19 +1407,32 @@ class GameEngine:
         return f"【待取战利品】{loot}\n请选择：拾取全部／离开"
 
     def _arts(self) -> str:
-        player = self.state.player
-        artifacts = [name for name in ARTIFACTS if player.resources.get(name, 0) > 0]
-        auxiliary = "、".join(player.equipped_auxiliary_techniques) if player.equipped_auxiliary_techniques else "无"
+        return ArtMasteryEngine.panel_text(self.state)
+
+    def _study_art(self, action: str) -> str:
+        name = action
+        for prefix in ("参研道法", "研习功法", "研习法术"):
+            if action.startswith(prefix):
+                name = action.removeprefix(prefix).strip()
+                break
+        if not name:
+            name = self.state.player.primary_technique
+        try:
+            result = ArtMasteryEngine.study(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "参研道法时寿元耗尽"
+        level_note = f"，晋至{MASTERY_LABELS[result.new_level]}" if result.advanced else ""
+        self.state.remember(f"参研{result.name}，熟练度 +{result.gained}{level_note}")
+        self._autosave()
+        if died_of_age:
+            return f"你在参研{result.name}时寿元耗尽。\n【坐化结局】"
         return (
-            "【道法构筑】\n"
-            f"主修：{player.primary_technique}（{player.primary_technique_grade}）\n"
-            f"辅修：{auxiliary}\n"
-            f"已悟功法：{'、'.join(player.known_techniques)}\n"
-            f"当前法术：{player.equipped_spell or '无'}｜已悟法术：{'、'.join(player.known_spells)}\n"
-            f"武器：{player.equipped_weapon or '无'}｜护甲：{player.equipped_armor or '无'}\n"
-            f"持有法宝：{'、'.join(artifacts) if artifacts else '无'}\n"
-            "指令：参悟 [名称]／装备功法 [名称]／辅修功法 [名称] [1或2]／"
-            "装备法术 [名称]／装备法宝 [名称]"
+            f"{self.state.time_label}\n【参研 · {result.name}】灵力 -{result.spirit_cost}，熟练度 +{result.gained}{level_note}。\n\n"
+            f"{ArtMasteryEngine.panel_text(self.state)}"
         )
 
     def _learn_art(self, action: str) -> str:

@@ -171,10 +171,17 @@ class ArtsEngine:
     def attack_multiplier(player: PlayerState, state: GameState | None = None) -> float:
         main = TECHNIQUES.get(player.primary_technique, TECHNIQUES["聚气诀"])
         multiplier = main.attack_multiplier * (1 + DaoEngine.player_level(player, "剑道") * 0.05)
+        if state is not None:
+            from .art_mastery import ArtMasteryEngine
+
+            multiplier *= ArtMasteryEngine.technique_combat_multiplier(state, main.name)
         for name in player.equipped_auxiliary_techniques:
             auxiliary = TECHNIQUES.get(name)
             if auxiliary:
                 multiplier *= 1 + (auxiliary.attack_multiplier - 1) * 0.5
+                if state is not None:
+                    mastery = ArtMasteryEngine.technique_combat_multiplier(state, auxiliary.name)
+                    multiplier *= 1 + (mastery - 1) * 0.5
         weapon = ARTIFACTS.get(player.equipped_weapon)
         if weapon:
             artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
@@ -190,10 +197,16 @@ class ArtsEngine:
     def defense_bonus(player: PlayerState, state: GameState | None = None) -> int:
         main = TECHNIQUES.get(player.primary_technique, TECHNIQUES["聚气诀"])
         bonus = main.defense_bonus
+        if state is not None:
+            from .art_mastery import ArtMasteryEngine
+
+            bonus += round(main.defense_bonus * (ArtMasteryEngine.technique_combat_multiplier(state, main.name) - 1))
         for name in player.equipped_auxiliary_techniques:
             auxiliary = TECHNIQUES.get(name)
             if auxiliary:
                 bonus += auxiliary.defense_bonus // 2
+                if state is not None:
+                    bonus += round(auxiliary.defense_bonus * (ArtMasteryEngine.technique_combat_multiplier(state, name) - 1) * 0.5)
         armor = ARTIFACTS.get(player.equipped_armor)
         artifact_scale = 1 + DaoEngine.player_level(player, "器道") * 0.05
         growth = 0

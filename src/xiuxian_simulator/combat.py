@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .arts import ArtsEngine
+from .art_mastery import ArtMasteryEngine
 from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
@@ -303,11 +304,16 @@ class CombatEngine:
         elif action.startswith("施法"):
             requested = action.removeprefix("施法").strip()
             spell = ArtsEngine.spell(player, requested)
-            if player.spirit < spell.spirit_cost:
-                raise ValueError(f"灵力不足：{spell.name}需要 {spell.spirit_cost} 点灵力。")
-            player.spirit -= spell.spirit_cost
-            strike = cls._player_strike(state, spell.power_multiplier, f"spell:{spell.name}", spell.element)
-            player_text = cls._strike_text(f"你施展{spell.name}", strike) + f"，灵力 -{spell.spirit_cost}"
+            spirit_cost = ArtMasteryEngine.spell_cost(state, spell.name, spell.spirit_cost)
+            if player.spirit < spirit_cost:
+                raise ValueError(f"灵力不足：{spell.name}需要 {spirit_cost} 点灵力。")
+            player.spirit -= spirit_cost
+            power = ArtMasteryEngine.spell_power(state, spell.name, spell.power_multiplier)
+            strike = cls._player_strike(state, power, f"spell:{spell.name}", spell.element)
+            advancement = ArtMasteryEngine.gain_spell_cast(state, spell.name)
+            player_text = cls._strike_text(f"你施展{spell.name}", strike) + f"，灵力 -{spirit_cost}"
+            if advancement:
+                player_text += f"；{advancement}"
         elif action == "防御":
             defending = True
             player_text = "你收束灵力护住周身，本轮所受伤害减半"

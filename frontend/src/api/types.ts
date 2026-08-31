@@ -272,6 +272,19 @@ export interface ArtifactGrowthSnapshot {
   history: string[]
 }
 
+export interface ArtMasteryItem {
+  name: string; kind: '功法' | '法术'; grade: string; element: string; description: string; role: string
+  xp: number; level: number; level_label: string; progress: number; next_xp: number
+  effect: string; next_effect: string; spirit_cost: number; can_study: boolean
+  disabled_reason: string; study_action: string
+}
+
+export interface ArtMasterySnapshot {
+  primary: Partial<ArtMasteryItem>; equipped_spell: Partial<ArtMasteryItem>
+  techniques: ArtMasteryItem[]; spells: ArtMasteryItem[]; known_count: number; mastered_count: number
+  spirit: number; spirit_max: number; comprehension: number; study_cost: number; history: string[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -392,6 +405,7 @@ export interface Snapshot {
   formations: FormationSnapshot
   sect_library: SectLibrarySnapshot
   artifacts: ArtifactGrowthSnapshot
+  art_mastery: ArtMasterySnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

@@ -140,6 +140,9 @@ class ProgressionEngine:
         aptitude = 1 + player.aptitude * 0.05
         spiritual_root = cls.spiritual_root_multiplier(player.spiritual_root)
         technique = TECHNIQUE_MULTIPLIERS.get(player.primary_technique_grade, 1.0)
+        from .art_mastery import ArtMasteryEngine
+
+        technique *= ArtMasteryEngine.cultivation_multiplier(state, player.primary_technique)
         aura = AURA_MULTIPLIERS.get(state.aura_level, 1.0)
         mindset = cls.mindset_multiplier(player)
         constitution = player.modifiers.get("cultivation_multiplier", 1.0)
