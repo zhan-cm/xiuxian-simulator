@@ -25,6 +25,7 @@ import { FormationAtlas } from './components/FormationAtlas'
 import { SectLibrary } from './components/SectLibrary'
 import { ArtifactForge } from './components/ArtifactForge'
 import { ArtMasteryCodex } from './components/ArtMasteryCodex'
+import { RecoveryCodex } from './components/RecoveryCodex'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -108,6 +109,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 <ProgressStat label="修为" value={player.cultivation} max={player.cultivation_required} tone="cultivation" help="修为达到当前上限后，可以尝试突破境界。" />
               </div>
               <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span></div>
+              <RecoveryCodex recovery={snapshot.recovery} busy={busy} readOnly={showcase} onAction={onAction} />
             </Panel>
             <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
           </aside>
@@ -143,7 +145,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.50 道法熟练度版</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.51 伤势疗愈版</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>

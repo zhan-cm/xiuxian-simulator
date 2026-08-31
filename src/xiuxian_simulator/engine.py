@@ -22,6 +22,7 @@ from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
 from .art_mastery import ArtMasteryEngine, MASTERY_LABELS
+from .recovery import RecoveryEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -33,7 +34,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -113,6 +114,10 @@ class GameEngine:
             return "此世已终。输入“开始游戏”可创建新的轮回。"
         if action in {"道途", "章程", "历练"}:
             return JourneyEngine.panel_text(self.state)
+        if action in {"伤势", "疗愈", "伤情"}:
+            return RecoveryEngine.panel_text(self.state)
+        if action == "静养":
+            return self._rest_and_recover()
         if action in {"主线", "因果", "主线卷宗"}:
             return StoryEngine.panel_text(self.state)
         if action == "推进主线":
@@ -388,6 +393,27 @@ class GameEngine:
             + self._status()
         )
 
+    def _rest_and_recover(self) -> str:
+        try:
+            result = RecoveryEngine.rest(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "静养中寿元耗尽"
+        self.state.remember(
+            f"静养一月，气血 +{result['health']}、灵力 +{result['spirit']}；{result['treatment']}"
+        )
+        self._autosave()
+        if died_of_age:
+            return "你在静养中耗尽寿元。\n【坐化结局】"
+        room = f"｜静室加护 {result['room_bonus']} 级" if result["room_bonus"] else ""
+        return (
+            f"{self.state.time_label}\n【闭门静养】气血 +{result['health']}｜灵力 +{result['spirit']}{room}\n"
+            f"{result['treatment']}\n\n{RecoveryEngine.panel_text(self.state)}"
+        )
+
     def _contemplate(self) -> str:
         try:
             gain = DaoEngine.contemplate(self.state)
@@ -587,6 +613,8 @@ class GameEngine:
             return f"{self.state.time_label}\n你在行动途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
         narrative = self.narrator.narrate(action, self.state)
         encounter = AdventureEngine.random_encounter(self.state, action)
+        if encounter.triggered:
+            RecoveryEngine.capture_legacy(self.state, f"奇遇·{encounter.title}")
         event_text = ""
         if encounter.triggered:
             event_text = f"\n\n【随机奇遇 · {encounter.title}】\n{encounter.description}\n判定：1d100={encounter.roll}（20%触发）"
@@ -599,6 +627,8 @@ class GameEngine:
         ProgressionEngine.sync_realm(player)
         if player.breakthrough_cooldown_months > 0:
             return f"突破反噬尚未平复，还需休养 {player.breakthrough_cooldown_months} 个月。"
+        if RecoveryEngine.has_active(self.state):
+            return "伤势未愈时强行破境极易道基崩毁。请先静养、服用疗伤丹或洞府调息。\n\n" + RecoveryEngine.panel_text(self.state)
         if player.stage_index == 3:
             parts = action.split(maxsplit=1)
             if len(parts) == 1:
@@ -638,6 +668,8 @@ class GameEngine:
                     f"{self.state.time_label}\n{route}突破失败，{result.failure_type}将你吞没。\n"
                     f"【陨落结局】{result.old_realm}，道途止于此地。"
                 )
+            injury_kind = "heart" if result.failure_type == "心魔劫" else ("foundation" if player.realm_index >= 2 else "meridian")
+            RecoveryEngine.register(self.state, injury_kind, 3 if player.realm_index >= 2 else 2, f"{route}突破·{result.failure_type}")
             return (
                 f"{self.state.time_label}\n{route}突破失败：败于{result.failure_type}。\n"
                 f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}\n\n"
@@ -776,6 +808,9 @@ class GameEngine:
                 f"【跨域行旅 · 陨落】\n{result.event}\n"
                 f"判定 {result.roll}/{result.chance}｜气血 -{result.health_loss}\n道途止于商路荒野。"
             )
+        if result.health_loss:
+            severity = 3 if result.health_loss >= self.state.player.health_max // 3 else 2
+            RecoveryEngine.register(self.state, "flesh", severity, f"{REGIONS[result.origin].name}至{destination}行旅遇袭")
         CommissionEngine.mark(self.state, "cross_region_travel")
         arrival_reputation = RegionalEngine.record_arrival(self.state, result.destination, result.first_visit)
         regional_event = RegionalEngine.prepare(self.state, result.destination)
@@ -936,6 +971,9 @@ class GameEngine:
         if died_of_age and not result.fatal:
             return f"{self.state.time_label}\n你在秘境中耗尽寿元。\n【坐化结局】"
         if not result.success:
+            if not result.fatal and not died_of_age:
+                severity = 3 if result.health_loss >= self.state.player.health_max // 3 else 2
+                RecoveryEngine.register(self.state, "flesh", severity, f"{name}·{stage_name}探索失败")
             ending = "\n【陨落结局】秘境吞没了你的道途。" if result.fatal else "\n你被秘境排斥而出，尚可养伤再来。"
             return (
                 f"{self.state.time_label}\n【{stage_name} · 失败】判定 {result.roll}/{result.chance}\n"
@@ -1232,6 +1270,8 @@ class GameEngine:
         if died:
             self.state.phase = "ended"
             self.state.player.condition = "护宗战后寿元耗尽"
+        elif result.choice == "驰援前线" and not result.success:
+            RecoveryEngine.register(self.state, "flesh", 2, "护宗战前线受挫")
         self._autosave()
         if died:
             return result.description + "\n【坐化结局】战火落幕后，你也走完了此生。"
@@ -1272,6 +1312,8 @@ class GameEngine:
         rewards.extend(f"{name} +{count}" for name, count in result.rewards.items())
         if result.health_loss:
             rewards.append(f"气血 -{result.health_loss}")
+            if not result.fatal and not died_of_age:
+                RecoveryEngine.register(self.state, "flesh", 1 if result.health_loss < 20 else 2, f"宗门{result.task}任务失败")
         reward_text = "、".join(rewards) if rewards else "无"
         verdict = "任务完成" if result.success else "任务失败"
         self.state.remember(f"宗门{result.task}{verdict}；{reward_text}")
@@ -1380,6 +1422,7 @@ class GameEngine:
             fatal = result.fatal or died_of_age
             self.state.phase = "ended" if fatal else "playing"
             if not fatal:
+                RecoveryEngine.register(self.state, "flesh", 3, f"败于{enemy}")
                 self.state.combat = {}
             self._autosave()
             ending = "【陨落结局】" if fatal else "你侥幸留得性命，但已身受重伤。"
@@ -1665,15 +1708,20 @@ class GameEngine:
             health, spirit, cost = CaveEngine.recuperate(self.state)
         except ValueError as exc:
             return str(exc)
+        treatment = RecoveryEngine.treat(
+            self.state,
+            2 + self.state.cave_facilities.get("静室", 0),
+            "洞府调息",
+        ) if RecoveryEngine.has_active(self.state) else "调匀气血灵力"
         died_of_age = self._advance_time()
         if died_of_age:
             self.state.phase = "ended"
             self.state.player.condition = "洞府调息时寿元耗尽"
-        self.state.remember(f"洞府调息消耗灵蕴{cost}，气血+{health}、灵力+{spirit}")
+        self.state.remember(f"洞府调息消耗灵蕴{cost}，气血+{health}、灵力+{spirit}；{treatment}")
         self._autosave()
         if died_of_age:
             return "你在静室调息时寿元耗尽。\n【坐化结局】"
-        return f"{self.state.time_label}\n【洞府调息】气血 +{health}｜灵力 +{spirit}｜灵蕴 -{cost}\n\n{self._cave()}"
+        return f"{self.state.time_label}\n【洞府调息】气血 +{health}｜灵力 +{spirit}｜灵蕴 -{cost}\n{treatment}\n\n{self._cave()}"
 
     def _upgrade_cave(self, action: str) -> str:
         facility = action.removeprefix("升级洞府").strip()
@@ -2172,6 +2220,8 @@ class GameEngine:
             for event in cave_tick.events:
                 self.state.remember(f"洞府月报：{event}")
             SpiritBeastEngine.tick_month(self.state)
+            for event in RecoveryEngine.tick_month(self.state):
+                self.state.remember(f"伤势月报：{event}")
         return died_of_age
 
     @staticmethod

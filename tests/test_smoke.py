@@ -49,6 +49,7 @@ from xiuxian_simulator.regional import RegionalEngine
 from xiuxian_simulator.cave import CaveEngine
 from xiuxian_simulator.npc_lifecycle import NpcLifecycleEngine
 from xiuxian_simulator.npc_network import NpcNetworkEngine
+from xiuxian_simulator.recovery import RecoveryEngine
 
 
 class SimulatorSmokeTests(unittest.TestCase):
@@ -798,6 +799,12 @@ class SimulatorSmokeTests(unittest.TestCase):
             for _ in range(remaining):
                 engine.state.advance_month()
             self.assertEqual(player.breakthrough_cooldown_months, 0)
+            self.assertIn("伤势未愈", engine.process("突破"))
+            for _ in range(12):
+                if not RecoveryEngine.has_active(engine.state):
+                    break
+                engine.process("静养")
+            self.assertFalse(RecoveryEngine.has_active(engine.state))
             self.assertIn("大境界突破路线", engine.process("突破"))
 
     def test_exploration_is_reproducible_and_advances_time(self) -> None:

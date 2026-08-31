@@ -285,6 +285,20 @@ export interface ArtMasterySnapshot {
   spirit: number; spirit_max: number; comprehension: number; study_cost: number; history: string[]
 }
 
+export interface RecoveryInjury {
+  id: string; name: string; mark: string; severity: number; severity_label: string
+  months_left: number; source: string; description: string; effects: string[]
+}
+
+export interface RecoverySnapshot {
+  active: boolean; count: number; condition: string
+  health: number; health_max: number; spirit: number; spirit_max: number
+  injuries: RecoveryInjury[]
+  penalties: { cultivation: number; combat: number; damage_taken: number; speed: number }
+  can_rest: boolean; rest_reason: string; rest_action: string
+  has_healing_pill: boolean; pill_action: string; history: string[]
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -406,6 +420,7 @@ export interface Snapshot {
   sect_library: SectLibrarySnapshot
   artifacts: ArtifactGrowthSnapshot
   art_mastery: ArtMasterySnapshot
+  recovery: RecoverySnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

@@ -51,9 +51,22 @@ def _gain_cultivation(state: GameState) -> str:
     return f"修为增长 {player.cultivation - before} 点"
 
 
+def _healing_pill(state: GameState) -> str:
+    from .recovery import RecoveryEngine
+
+    player = state.player
+    if player.health >= player.health_max and not RecoveryEngine.has_active(state):
+        raise ValueError("当前气血充盈且没有持续伤势，无需服用。")
+    before = player.health
+    player.health = min(player.health_max, player.health + 35)
+    treatment = RecoveryEngine.treat(state, 3, "服用疗伤丹") if RecoveryEngine.has_active(state) else ""
+    result = f"气血恢复 {player.health - before} 点"
+    return result + (f"；{treatment}" if treatment else "")
+
+
 ITEMS: dict[str, ItemDefinition] = {
     "聚气丹": ItemDefinition("聚气丹", "丹药", "凡品", "温养经脉、凝聚灵气的入门丹药。", "服用后增加当前大境界修为。", _gain_cultivation),
-    "疗伤丹": ItemDefinition("疗伤丹", "丹药", "良品", "以灵药炼成的疗伤丹，可缓解寻常伤势。", "非战斗时服用恢复 35 点气血；战斗中可通过斗法抉择服用。", _restore_health(35)),
+    "疗伤丹": ItemDefinition("疗伤丹", "丹药", "良品", "以灵药炼成的疗伤丹，可缓解寻常伤势。", "恢复 35 点气血，并缩短最严重伤势 3 个月；战斗中也可服用。", _healing_pill),
     "灵果": ItemDefinition("灵果", "灵食", "凡品", "山野灵木所结，蕴含少量温和灵气。", "食用后恢复 15 点灵力。", _restore_spirit(15)),
     "烤肉": ItemDefinition("烤肉", "灵食", "凡品", "以灵火烤制的妖兽肉，足以补充体力。", "食用后恢复 12 点气血。", _restore_health(12)),
     "甜糕": ItemDefinition("甜糕", "灵食", "凡品", "坊市常见的精致糕点，也可作为访友薄礼。", "食用后恢复 8 点灵力。", _restore_spirit(8)),
@@ -171,7 +184,10 @@ class InventoryEngine:
                 action = f"使用 {name}"
                 action_label = "使用"
                 if name == "疗伤丹" and player.health >= player.health_max:
-                    disabled_reason = "当前气血已满"
+                    from .recovery import RecoveryEngine
+
+                    if not RecoveryEngine.has_active(state):
+                        disabled_reason = "当前气血已满且没有伤势"
                 elif name in {"灵果", "甜糕", "清茶"} and player.spirit >= player.spirit_max:
                     disabled_reason = "当前灵力已满"
                 elif name == "烤肉" and player.health >= player.health_max:

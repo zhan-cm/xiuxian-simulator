@@ -58,6 +58,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["artifacts"]["count"], 0)
             self.assertEqual(snapshot.json()["art_mastery"]["known_count"], 2)
             self.assertEqual(snapshot.json()["art_mastery"]["primary"]["name"], "聚气诀")
+            self.assertFalse(snapshot.json()["recovery"]["active"])
+            self.assertEqual(snapshot.json()["recovery"]["count"], 0)
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -93,10 +95,16 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 30)
+            self.assertGreaterEqual(len(pages), 31)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
+            recovery = by_id["recovery"]["snapshot"]["recovery"]
+            self.assertTrue(recovery["active"])
+            self.assertEqual(recovery["count"], 2)
+            self.assertEqual(recovery["injuries"][0]["severity_label"], "沉重")
+            self.assertLess(recovery["penalties"]["cultivation"], 1)
+            self.assertTrue(recovery["has_healing_pill"])
             self.assertEqual(by_id["market"]["snapshot"]["presentation"]["blocks"][0]["type"], "market")
             self.assertEqual(by_id["battle"]["snapshot"]["state"]["phase"], "combat_ready")
             self.assertEqual(by_id["breakthrough"]["snapshot"]["state"]["phase"], "major_breakthrough_choice")

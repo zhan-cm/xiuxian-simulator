@@ -146,6 +146,9 @@ class ProgressionEngine:
         aura = AURA_MULTIPLIERS.get(state.aura_level, 1.0)
         mindset = cls.mindset_multiplier(player)
         constitution = player.modifiers.get("cultivation_multiplier", 1.0)
+        from .recovery import RecoveryEngine
+
+        constitution *= RecoveryEngine.cultivation_multiplier(state)
         formation = 1.0
         if state.active_formation == "spirit-gathering" and int(state.formation_arrays.get("spirit-gathering", {}).get("integrity", 0)) > 0:
             formation = 1.05 + player.craft_skills.get("阵法", 0) * 0.02 + player.dao_levels.get("阵道", 0) * 0.02
@@ -330,10 +333,6 @@ class ProgressionEngine:
             player.stage_index = max(0, player.stage_index - 1)
             player.cultivation = 0
             player.condition = f"暗伤（{failure_type}）"
-            player.modifiers["cultivation_multiplier"] = round(
-                player.modifiers.get("cultivation_multiplier", 1.0) * 0.9,
-                4,
-            )
             player.breakthrough_cooldown_months = 24
             cls.sync_realm(player)
             return False

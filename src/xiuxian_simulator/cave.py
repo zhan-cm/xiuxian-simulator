@@ -135,15 +135,15 @@ class CaveEngine:
 
     @classmethod
     def recuperate(cls, state: GameState) -> tuple[int, int, int]:
+        from .recovery import RecoveryEngine
+
         level = state.cave_facilities.get("静室", 0)
         if level < 1:
             raise ValueError("需要至少 1 级静室才能洞府调息。")
         cost = 10
         if state.cave_spirit_energy < cost:
             raise ValueError(f"洞府灵蕴不足：需要 {cost}，当前 {state.cave_spirit_energy}。")
-        if state.player.health >= state.player.health_max and state.player.spirit >= state.player.spirit_max:
-            raise ValueError("气血与灵力均已充盈，无需消耗灵蕴调息。")
-        if state.player.health >= state.player.health_max and state.player.spirit >= state.player.spirit_max:
+        if state.player.health >= state.player.health_max and state.player.spirit >= state.player.spirit_max and not RecoveryEngine.has_active(state):
             raise ValueError("气血与灵力均已充盈，无需消耗灵蕴调息。")
         state.cave_spirit_energy -= cost
         health_before = state.player.health

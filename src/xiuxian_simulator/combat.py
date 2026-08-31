@@ -8,6 +8,7 @@ from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .artifact_growth import ArtifactGrowthEngine
+from .recovery import RecoveryEngine
 from .progression import ProgressionEngine, REALMS, STAGES
 from .state import GameState
 
@@ -219,7 +220,11 @@ class CombatEngine:
         critical = critical_roll <= max(5, min(35, 5 + player.fortune))
         critical_multiplier = 1.5 if critical else 1.0
         base = 14 + player.aptitude + player.realm_index * 14 + player.stage_index * 3
-        arts_multiplier = ArtsEngine.attack_multiplier(player, state) * SpiritBeastEngine.attack_multiplier(state)
+        arts_multiplier = (
+            ArtsEngine.attack_multiplier(player, state)
+            * SpiritBeastEngine.attack_multiplier(state)
+            * RecoveryEngine.combat_multiplier(state)
+        )
         damage = max(
             1,
             round(base * power_multiplier * arts_multiplier * realm * element * critical_multiplier - int(combat["enemy_defense"])),
@@ -232,7 +237,7 @@ class CombatEngine:
     def _enemy_strike(cls, state: GameState, defending: bool) -> StrikeResult:
         player = state.player
         combat = state.combat
-        player_speed = ArtsEngine.effective_speed(player, state) + SpiritBeastEngine.speed_bonus(state)
+        player_speed = ArtsEngine.effective_speed(player, state) + SpiritBeastEngine.speed_bonus(state) - RecoveryEngine.speed_penalty(state)
         hit_chance = max(15, min(95, 75 + (int(combat["enemy_speed"]) - player_speed) * 3))
         hit_roll = ProgressionEngine.deterministic_roll(state, f"combat-enemy-hit:{combat['round']}")
         if hit_roll > hit_chance:
@@ -247,7 +252,8 @@ class CombatEngine:
         critical_roll = ProgressionEngine.deterministic_roll(state, f"combat-enemy-critical:{combat['round']}")
         critical = critical_roll <= 10
         raw_damage = round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0))
-        damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state))
+        guarded_damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state))
+        damage = max(1, round(guarded_damage * RecoveryEngine.damage_taken_multiplier(state)))
         enemy_bound = bool(combat.pop("enemy_bound", False))
         if enemy_bound:
             damage = max(1, round(damage * 0.75))
@@ -280,7 +286,7 @@ class CombatEngine:
 
         if action.startswith("遁走"):
             difference = int(combat["enemy_realm_index"]) - player.realm_index
-            player_speed = ArtsEngine.effective_speed(player, state) + SpiritBeastEngine.speed_bonus(state)
+            player_speed = ArtsEngine.effective_speed(player, state) + SpiritBeastEngine.speed_bonus(state) - RecoveryEngine.speed_penalty(state)
             talisman_bonus = 0
             if "神行符" in action:
                 if player.resources.get("神行符", 0) < 1:
@@ -342,7 +348,8 @@ class CombatEngine:
             if player.resources["疗伤丹"] <= 0:
                 player.resources.pop("疗伤丹", None)
             player.health = min(player.health_max, player.health + 40)
-            player_text = f"你服下疗伤丹，气血 +{player.health - before}"
+            treatment = RecoveryEngine.treat(state, 1, "战中服丹") if RecoveryEngine.has_active(state) else ""
+            player_text = f"你服下疗伤丹，气血 +{player.health - before}" + (f"，{treatment}" if treatment else "")
         elif action.startswith("用符"):
             talisman = action.removeprefix("用符").strip()
             if talisman != "火球符":

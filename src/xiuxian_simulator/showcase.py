@@ -18,6 +18,7 @@ from .new_era import NewEraEngine
 from .formations import FormationEngine
 from .sect_library import SectLibraryEngine
 from .artifact_growth import ArtifactGrowthEngine
+from .recovery import RecoveryEngine
 
 
 PageSetup = Callable[[GameEngine, WebApplication], dict[str, Any]]
@@ -34,6 +35,16 @@ def _action(action: str) -> PageSetup:
         return app.perform_action(action)
 
     return setup
+
+
+def _recovery(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.health = 38
+    engine.state.player.spirit = 52
+    engine.state.player.resources["疗伤丹"] = 2
+    RecoveryEngine.register(engine.state, "flesh", 2, "青岳古道遭劫")
+    RecoveryEngine.register(engine.state, "meridian", 1, "强行催动流火术")
+    return app.perform_action("伤势")
 
 
 def _relations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
@@ -345,6 +356,7 @@ def _regional(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
 
 SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("home", "洞府主界面", "查看新版三栏结构、根基状态和自由行动入口。", ["核心事件应最醒目", "属性数值应一眼可读", "未开放行动需要灰化"], _ready),
+    ("recovery", "伤势疗愈", "检查结构化伤势、真实惩罚、调养月份与两种恢复入口。", ["伤势入口应醒目但不挤占主面板", "四项实际惩罚与伤势缘起清楚", "巡览中的静养和服丹按钮必须禁用"], _recovery),
     ("journey", "道途章程", "检查长期目标、完成状态和分章奖励。", ["主界面只显示紧凑进度", "展开后四章结构清楚", "巡览中的领取按钮必须禁用"], _journey),
     ("commissions", "东洲悬榜", "检查委托接取、真实进度、期限与交付报酬。", ["在途与可接委托清楚分层", "完成进度来自规则引擎", "巡览中所有操作必须禁用"], _commissions),
     ("story", "灵潮因果", "检查主线篇章、解锁条件与三项重大抉择。", ["篇章脉络应清楚", "抉择按钮接入真实状态机", "巡览中推进按钮必须禁用"], _story),
