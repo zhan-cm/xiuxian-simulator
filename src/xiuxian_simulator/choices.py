@@ -13,6 +13,7 @@ from .travel import TravelEngine
 from .regional import RegionalEngine
 from .npc_network import NpcNetworkEngine
 from .new_era import NewEraEngine
+from .beasts import SpiritBeastEngine
 
 
 class DecisionCatalog:
@@ -173,6 +174,8 @@ class DecisionCatalog:
         }
 
     def for_state(self, state: GameState) -> dict[str, Any]:
+        if state.phase == "beast_taming":
+            return SpiritBeastEngine.decision(state)
         if state.phase == "main_story_choice":
             return StoryEngine.decision(state)
         if state.phase == "new_era_choice":
@@ -199,4 +202,17 @@ class DecisionCatalog:
             ]
         for choice in decision.get("choices", []):
             choice.pop("requires", None)
+            if state.phase == "combat" and choice.get("action") == "召唤战宠":
+                active = SpiritBeastEngine.active(state)
+                reason = ""
+                if not active:
+                    reason = "当前没有随行战宠"
+                elif state.combat.get("beast_summoned"):
+                    reason = "本场战斗已经召唤过战宠"
+                elif int(active[1].get("vigor", 0)) < SpiritBeastEngine.SUMMON_VIGOR_COST:
+                    reason = "战宠精力不足"
+                elif state.player.spirit < SpiritBeastEngine.SUMMON_SPIRIT_COST:
+                    reason = f"需要 {SpiritBeastEngine.SUMMON_SPIRIT_COST} 点灵力"
+                choice["disabled"] = bool(reason)
+                choice["disabled_reason"] = reason
         return decision

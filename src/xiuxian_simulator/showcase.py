@@ -188,6 +188,29 @@ def _dao_tree(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("悟道")
 
 
+def _spirit_beasts(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.player.resources["妖兽材料"] = 3
+    engine.state.player.dao_levels["御兽道"] = 1
+    engine.state.spirit_beasts = {
+        "qingfeng-fox": {
+            "name": "青风狐", "level": 3, "experience": 18,
+            "bond": 72, "vigor": 64, "obtained_turn": 8,
+        },
+        "stoneback-turtle": {
+            "name": "玄甲灵龟", "level": 2, "experience": 7,
+            "bond": 45, "vigor": 92, "obtained_turn": 19,
+        },
+    }
+    engine.state.active_spirit_beast = "qingfeng-fox"
+    engine.state.spirit_beast_history = [
+        "第 8 回合｜收服青风狐（24/68）",
+        "第 21 回合｜青风狐历练 +8，成长至 2 级",
+        "第 34 回合｜喂养青风狐，羁绊 +12",
+    ]
+    return app.perform_action("御兽")
+
+
 def _inventory(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.player.health = 62
@@ -245,6 +268,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("new-era-pending", "新世余波", "检查结局驱动的新世事件、三项世界指标与真实资源门槛。", ["事件必须来自当前结局路线", "三项应对的长期后果清楚", "巡览中的余波选择必须禁用"], _new_era_pending),
     ("new-era-chronicle", "新世卷宗", "检查多轮余波之后的指标变化、阶段演化与永久历史。", ["三项指标不挤成一行文字", "每轮选择保留清晰记录", "三轮后形成新世纪里程碑"], _new_era_chronicle),
     ("dao-tree", "悟道九途", "检查感悟转化、九条永久道途、境界门槛与点亮状态。", ["九途必须使用独立小组件", "当前与下一层效果可快速比较", "巡览中的点亮与观想按钮必须禁用"], _dao_tree),
+    ("spirit-beasts", "万灵兽苑", "检查战宠羁绊、精力、成长、出战位与喂养状态。", ["每只灵兽使用独立养成卡", "三条成长仪表一眼可读", "巡览中的探寻、出战与喂养必须禁用"], _spirit_beasts),
     ("inventory", "乾坤万象", "检查物品分类、详情用途、装备槽位与真实操作状态。", ["品级与分类应清楚", "装备状态与槽位同步", "巡览中使用和装备按钮必须禁用"], _inventory),
     ("auction", "天机竞价", "检查限时拍品、对手情报、准入条件与竞价入口。", ["四件拍品层级清楚", "灵石或境界不足时自动锁定", "巡览中所有竞价入口必须禁用"], _auction),
     ("map", "九州舆图", "验证五域路线、区域商情、境界准入与当地探索。", ["当前所在地与已踏访状态明确", "高境界地域自动锁定", "特产、求购和行程可快速比较"], _map),

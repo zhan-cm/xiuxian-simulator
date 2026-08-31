@@ -216,6 +216,20 @@ export interface DaoSnapshot {
   can_contemplate: boolean; contemplate_reason: string; can_digest: boolean; digest_reason: string
 }
 
+export interface SpiritBeast {
+  id: string; name: string; mark: string; element: string; role: string
+  level: number; max_level: number; experience: number; experience_required: number
+  bond: number; vigor: number; vigor_max: number; summary: string; talent: string
+  active: boolean; deploy_action: string; can_deploy: boolean; deploy_reason: string; feed_action: string
+  can_feed: boolean; feed_reason: string
+}
+
+export interface SpiritBeastSnapshot {
+  count: number; active_id: string; active_name: string; beasts: SpiritBeast[]
+  pending: Record<string, unknown>; search_action: string; can_search: boolean
+  search_reason: string; materials: number; history: string[]; summon_cost: number
+}
+
 export interface InventoryItem {
   name: string; count: number; category: string; rarity: string
   description: string; usage: string; equipped: boolean; slot: string
@@ -332,6 +346,7 @@ export interface Snapshot {
   story: StorySnapshot
   new_era: NewEraSnapshot
   dao: DaoSnapshot
+  spirit_beasts: SpiritBeastSnapshot
   inventory: InventorySnapshot
   auction: AuctionSnapshot
   travel: TravelSnapshot

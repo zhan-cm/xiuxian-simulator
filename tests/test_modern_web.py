@@ -49,6 +49,8 @@ class ModernWebTests(unittest.TestCase):
             self.assertGreaterEqual(snapshot.json()["npc_network"]["bond_count"], 7)
             self.assertEqual(snapshot.json()["dao"]["points"], 0)
             self.assertEqual(len(snapshot.json()["dao"]["branches"]), 9)
+            self.assertEqual(snapshot.json()["spirit_beasts"]["count"], 0)
+            self.assertEqual(snapshot.json()["spirit_beasts"]["active_name"], "")
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -84,7 +86,7 @@ class ModernWebTests(unittest.TestCase):
             response = client.get("/api/v1/showcase")
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
-            self.assertGreaterEqual(len(pages), 25)
+            self.assertGreaterEqual(len(pages), 26)
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}
@@ -119,6 +121,11 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(len(dao["branches"]), 9)
             self.assertEqual(dao["points"], 2)
             self.assertEqual(next(item for item in dao["branches"] if item["id"] == "剑道")["level"], 2)
+            beasts = by_id["spirit-beasts"]["snapshot"]["spirit_beasts"]
+            self.assertEqual(beasts["count"], 2)
+            self.assertEqual(beasts["active_name"], "青风狐")
+            self.assertEqual(beasts["materials"], 3)
+            self.assertEqual(beasts["beasts"][0]["id"], "qingfeng-fox")
             inventory = by_id["inventory"]["snapshot"]["inventory"]
             self.assertGreaterEqual(inventory["total_types"], 7)
             self.assertEqual(inventory["equipped"]["weapon"], "青锋剑")

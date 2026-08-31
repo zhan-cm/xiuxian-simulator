@@ -17,6 +17,7 @@ from .commissions import CommissionEngine
 from .story import StoryEngine
 from .new_era import NewEraEngine
 from .dao import DaoEngine
+from .beasts import SpiritBeastEngine
 from .items import InventoryEngine
 from .auctions import AuctionEngine
 from .travel import REGIONS, TravelEngine
@@ -28,7 +29,7 @@ from .save_manager import SaveManager
 from .state import GameState
 
 
-COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 主线 新世 道途 委托 修炼 突破 悟道 御兽 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -95,6 +96,8 @@ class GameEngine:
             return self._travel_choice(action)
         if self.state.phase == "regional_choice":
             return self._regional_choice(action)
+        if self.state.phase == "beast_taming":
+            return self._beast_taming(action)
 
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
@@ -122,6 +125,14 @@ class GameEngine:
             return self._digest_insight()
         if action.startswith("点亮"):
             return self._enlighten_dao(action)
+        if action in {"御兽", "兽苑", "灵兽", "战宠"}:
+            return SpiritBeastEngine.panel_text(self.state)
+        if action == "探寻灵兽":
+            return self._search_beast()
+        if action.startswith("出战灵兽"):
+            return self._deploy_beast(action)
+        if action.startswith("喂养灵兽"):
+            return self._feed_beast(action)
         if action.startswith("领取道途奖励"):
             return self._claim_journey(action)
         if action in {"委托", "悬赏", "悬榜"}:
@@ -388,6 +399,97 @@ class GameEngine:
         self.state.remember(f"点亮{branch}第 {level} 层")
         self._autosave()
         return f"【悟道有成】{branch}已达第 {level} 层。\n\n{DaoEngine.panel_text(self.state)}"
+
+    def _search_beast(self) -> str:
+        try:
+            beast = SpiritBeastEngine.search(self.state)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.pending_spirit_beast = {}
+            self.state.player.condition = "寻兽途中寿元耗尽"
+            self._autosave()
+            return "你循着兽踪走入山林，却没能走出寿元的尽头。\n【坐化结局】"
+        self.state.remember(f"探寻兽踪，遇见{beast.name}")
+        self._autosave()
+        return (
+            f"{self.state.time_label}\n【灵兽相逢 · {beast.name}】\n{beast.summary}\n"
+            f"五行 {beast.element}｜定位 {beast.role}｜天赋：{beast.talent}\n"
+            "你必须亲自决定结印、以灵材安抚，或放归山林。"
+        )
+
+    def _beast_taming(self, action: str) -> str:
+        approach = ""
+        if action == "收服灵兽 结印":
+            approach = "bind"
+        elif action == "收服灵兽 安抚":
+            approach = "soothe"
+        elif action == "放归灵兽":
+            approach = "release"
+        if not approach:
+            return "请选择结印收服、灵材安抚或放归山林。"
+        try:
+            result = SpiritBeastEngine.resolve_taming(self.state, approach)
+        except ValueError as exc:
+            return str(exc)
+        if result.get("released"):
+            self.state.remember(f"放归{result['name']}，功德 +1")
+            text = f"你没有强求契约，目送{result['name']}重返山林。功德 +1。"
+        elif result["success"]:
+            self.state.remember(f"收服战宠{result['name']}（{result['roll']}/{result['chance']}）")
+            text = (
+                f"神识判定 {result['roll']}/{result['chance']}：契印落定，{result['name']}成为你的战宠。"
+            )
+        else:
+            self.state.remember(f"收服{result['name']}失败，气血 -{result['health_loss']}")
+            text = (
+                f"神识判定 {result['roll']}/{result['chance']}：{result['name']}挣脱契印，"
+                f"反噬令你气血 -{result['health_loss']}。"
+            )
+        self._autosave()
+        return f"【御兽结算】{text}\n\n{SpiritBeastEngine.panel_text(self.state)}"
+
+    def _deploy_beast(self, action: str) -> str:
+        name = action.removeprefix("出战灵兽").strip()
+        if not name:
+            return "请选择要随行的灵兽。"
+        try:
+            deployed = SpiritBeastEngine.deploy(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        self.state.remember(f"令{deployed}随行")
+        self._autosave()
+        return f"【战宠随行】{deployed}已进入出战位。\n\n{SpiritBeastEngine.panel_text(self.state)}"
+
+    def _feed_beast(self, action: str) -> str:
+        name = action.removeprefix("喂养灵兽").strip()
+        if not name:
+            return "请选择要喂养的灵兽。"
+        try:
+            beast_id = SpiritBeastEngine.owned_id_by_name(self.state, name)
+            vigor_before = int(self.state.spirit_beasts[beast_id].get("vigor", SpiritBeastEngine.MAX_VIGOR))
+        except ValueError as exc:
+            return str(exc)
+        try:
+            result = SpiritBeastEngine.feed(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "陪伴灵兽时寿元耗尽"
+        level_text = f"，成长至 {result['levels'][-1]} 级" if result["levels"] else ""
+        self.state.remember(f"喂养{result['name']}，羁绊 +{result['bond_gain']}{level_text}")
+        self._autosave()
+        if died_of_age:
+            return f"你在{result['name']}身旁走完此生。\n【坐化结局】"
+        vigor_gain = int(self.state.spirit_beasts[beast_id].get("vigor", 0)) - vigor_before
+        return (
+            f"{self.state.time_label}\n【灵兽喂养】妖兽材料 -1｜羁绊 +{result['bond_gain']}｜"
+            f"精力 +{vigor_gain}{level_text}\n\n{SpiritBeastEngine.panel_text(self.state)}"
+        )
 
     def _free_action(self, action: str) -> str:
         died_of_age = self._advance_time()
@@ -1681,6 +1783,11 @@ class GameEngine:
 
     def _status(self) -> str:
         p = self.state.player
+        active_beast = SpiritBeastEngine.active(self.state)
+        beast_text = (
+            f"{active_beast[1]['name']}·{active_beast[1].get('level', 1)}级·羁绊{active_beast[1].get('bond', 0)}"
+            if active_beast else "无"
+        )
         return (
             f"【状态卡 · 第 {self.state.turn} 回合 · {self.state.time_label}】\n"
             f"道号 {p.dao_name}｜姓名 {p.name}｜性别 {p.gender}｜年龄 {p.age}/{p.lifespan}\n"
@@ -1694,6 +1801,7 @@ class GameEngine:
             f"天赋：{'、'.join(p.talents) if p.talents else '无'}\n"
             f"逆天改命：{'、'.join(p.destiny_traits) if p.destiny_traits else '无'}｜突破冷却 {p.breakthrough_cooldown_months} 月\n"
             f"悟道：感悟 {p.dao_insight}/20｜悟道点 {p.dao_points}｜已点亮 {sum(p.dao_levels.values())} 层\n"
+            f"战宠：{beast_text}｜兽苑 {len(self.state.spirit_beasts)} 只\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
             f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"尘缘波澜：{self.state.relationship_tension}/100｜情劫记录 {len(self.state.relationship_events)}\n"
@@ -1859,6 +1967,7 @@ class GameEngine:
             cave_tick = CaveEngine.tick(self.state)
             for event in cave_tick.events:
                 self.state.remember(f"洞府月报：{event}")
+            SpiritBeastEngine.tick_month(self.state)
         return died_of_age
 
     @staticmethod
@@ -1872,6 +1981,7 @@ class GameEngine:
             "退出：退出／quit／Ctrl+C\n"
             "闭关｜闭关3月｜闭关2年：按修炼公式结算并推进岁月\n"
             "悟道｜观想积累感悟｜闭关悟道凝成悟道点｜点亮 [剑道/丹道等九途]\n"
+            "御兽｜探寻灵兽｜出战灵兽/喂养灵兽 [名称]；战斗中可召唤战宠\n"
             "地图/九州｜前往 [地域]｜选择商队或御风｜探索 [当地地点]\n"
             "地方｜查看五域声名与礼遇｜地方机缘后从三项应对中亲自选择\n"
             "坊市｜区域价格会随特产、求购、民生与地方声望变化｜买/卖 [物品] [数量]\n"

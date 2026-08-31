@@ -26,6 +26,7 @@ from .auctions import AuctionEngine
 from .travel import TravelEngine
 from .regional import RegionalEngine
 from .cave import CaveEngine
+from .beasts import SpiritBeastEngine
 
 
 CONTENT_TYPES = {
@@ -80,6 +81,7 @@ class WebApplication:
             "story": StoryEngine.snapshot(self.engine.state),
             "new_era": NewEraEngine.snapshot(self.engine.state),
             "dao": DaoEngine.snapshot(self.engine.state),
+            "spirit_beasts": SpiritBeastEngine.snapshot(self.engine.state),
             "inventory": InventoryEngine.snapshot(self.engine.state),
             "auction": AuctionEngine.snapshot(self.engine.state),
             "travel": TravelEngine.snapshot(self.engine.state),
@@ -141,7 +143,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.45"
+        server_version = "XiuxianSimulator/0.46"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

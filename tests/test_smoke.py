@@ -38,6 +38,7 @@ from xiuxian_simulator.commissions import CommissionEngine
 from xiuxian_simulator.story import StoryEngine
 from xiuxian_simulator.new_era import NewEraEngine
 from xiuxian_simulator.dao import DaoEngine, INSIGHT_PER_POINT
+from xiuxian_simulator.beasts import SpiritBeastEngine
 from xiuxian_simulator.items import InventoryEngine
 from xiuxian_simulator.auctions import AuctionEngine
 from xiuxian_simulator.travel import TravelEngine
@@ -2707,6 +2708,110 @@ class SimulatorSmokeTests(unittest.TestCase):
         snapshot = DaoEngine.snapshot(state)
         self.assertEqual(len(snapshot["branches"]), 9)
         self.assertFalse(snapshot["can_digest"])
+
+    def test_spirit_beast_search_taming_and_old_save_defaults(self) -> None:
+        state = GameState.from_dict({"version": "0.45.0", "phase": "playing", "player": {"name": "旧档修士"}})
+        self.assertEqual(state.spirit_beasts, {})
+        self.assertEqual(state.active_spirit_beast, "")
+        self.assertEqual(SpiritBeastEngine.snapshot(state)["count"], 0)
+
+        state.player.spirit_sense = 15
+        state.player.fortune = 12
+        state.player.destiny_traits.append("灵兽亲和")
+        state.player.dao_levels["御兽道"] = 2
+        state.player.resources["妖兽材料"] = 1
+        beast = SpiritBeastEngine.search(state)
+        self.assertEqual(beast.name, "青风狐")
+        self.assertEqual(state.phase, "beast_taming")
+        self.assertEqual(state.player.spirit, 90)
+        self.assertGreater(SpiritBeastEngine.tame_chance(state, "soothe"), SpiritBeastEngine.tame_chance(state, "bind"))
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+            result = SpiritBeastEngine.resolve_taming(state, "soothe")
+        self.assertTrue(result["success"])
+        self.assertEqual(state.active_spirit_beast, "qingfeng-fox")
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["bond"], 30)
+        self.assertNotIn("妖兽材料", state.player.resources)
+
+        state.player.spirit = state.player.spirit_max
+        state.pending_spirit_beast = {"id": "qingfeng-fox"}
+        state.phase = "beast_taming"
+        with mock.patch.object(ProgressionEngine, "deterministic_roll", return_value=1):
+            repeated = SpiritBeastEngine.resolve_taming(state, "bind")
+        self.assertTrue(repeated["success"])
+        self.assertEqual(len(state.spirit_beasts), 1)
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["bond"], 40)
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["experience"], 10)
+
+    def test_spirit_beast_feed_deploy_recovery_and_release(self) -> None:
+        state = GameState(phase="playing")
+        state.player.resources["妖兽材料"] = 2
+        state.spirit_beasts = {
+            "qingfeng-fox": {"name": "青风狐", "level": 1, "experience": 18, "bond": 90, "vigor": 40},
+            "stoneback-turtle": {"name": "玄甲灵龟", "level": 1, "experience": 0, "bond": 20, "vigor": 30},
+        }
+        state.active_spirit_beast = "qingfeng-fox"
+        fed = SpiritBeastEngine.feed(state, "青风狐")
+        self.assertEqual(fed["levels"], [2])
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["bond"], 100)
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["vigor"], 70)
+        self.assertEqual(SpiritBeastEngine.deploy(state, "玄甲灵龟"), "玄甲灵龟")
+        SpiritBeastEngine.tick_month(state)
+        self.assertEqual(state.spirit_beasts["stoneback-turtle"]["vigor"], 38)
+
+        state.pending_spirit_beast = {"id": "qingfeng-fox"}
+        state.phase = "beast_taming"
+        merit_before = state.player.merit
+        released = SpiritBeastEngine.resolve_taming(state, "release")
+        self.assertTrue(released["released"])
+        self.assertEqual(state.player.merit, merit_before + 1)
+        self.assertEqual(state.phase, "playing")
+
+    def test_spirit_beast_combat_summon_costs_resources_once_and_grows(self) -> None:
+        state = GameState(phase="playing", rng_seed=246)
+        state.spirit_beasts = {
+            "qingfeng-fox": {"name": "青风狐", "level": 2, "experience": 11, "bond": 42, "vigor": 80}
+        }
+        state.active_spirit_beast = "qingfeng-fox"
+        CombatEngine.prepare(state, "噬灵獾")
+        CombatEngine.start(state)
+        decision = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json").for_state(state)
+        summon_choice = next(choice for choice in decision["choices"] if choice["action"] == "召唤战宠")
+        self.assertFalse(summon_choice["disabled"])
+        spirit_before = state.player.spirit
+        vigor_before = state.spirit_beasts["qingfeng-fox"]["vigor"]
+        enemy_before = state.combat["enemy_health"]
+        round_result = CombatEngine.act(state, "召唤战宠")
+        self.assertIn("青风狐", round_result.player_text)
+        self.assertEqual(state.player.spirit, spirit_before - SpiritBeastEngine.SUMMON_SPIRIT_COST)
+        self.assertEqual(
+            state.spirit_beasts["qingfeng-fox"]["vigor"],
+            vigor_before - SpiritBeastEngine.SUMMON_VIGOR_COST,
+        )
+        self.assertLess(state.combat["enemy_health"], enemy_before)
+        with self.assertRaisesRegex(ValueError, "已经召唤"):
+            SpiritBeastEngine.summon(state)
+
+        state.combat["enemy_health"] = 0
+        experience_before = state.spirit_beasts["qingfeng-fox"]["experience"]
+        CombatEngine.finish_victory(state)
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["experience"], experience_before + 8)
+        self.assertEqual(state.spirit_beasts["qingfeng-fox"]["bond"], 43)
+
+    def test_spirit_beast_engine_commands_autosave_real_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            before_turn = engine.state.turn
+            result = engine.process("探寻灵兽")
+            self.assertIn("灵兽相逢", result)
+            self.assertEqual(engine.state.phase, "beast_taming")
+            self.assertEqual(engine.state.turn, before_turn + 1)
+            released = engine.process("放归灵兽")
+            self.assertIn("功德 +1", released)
+            payload = json.loads((Path(temp_dir) / "autosave.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["spirit_beast_searches"], 1)
+            self.assertEqual(payload["phase"], "playing")
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
         items = run_diagnostics(ROOT)

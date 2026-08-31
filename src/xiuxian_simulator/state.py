@@ -73,7 +73,7 @@ class PlayerState:
 
 @dataclass(slots=True)
 class GameState:
-    version: str = "0.45.0"
+    version: str = "0.46.0"
     phase: str = "new"
     turn: int = 0
     calendar_year: int = 387
@@ -170,6 +170,11 @@ class GameState:
     regional_encounters_completed: list[str] = field(default_factory=list)
     pending_regional_encounter: dict[str, Any] = field(default_factory=dict)
     regional_history: list[str] = field(default_factory=list)
+    spirit_beasts: dict[str, dict[str, Any]] = field(default_factory=dict)
+    active_spirit_beast: str = ""
+    pending_spirit_beast: dict[str, Any] = field(default_factory=dict)
+    spirit_beast_history: list[str] = field(default_factory=list)
+    spirit_beast_searches: int = 0
 
     @property
     def time_label(self) -> str:
