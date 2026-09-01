@@ -47,10 +47,10 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
     index_file = dist_root / "index.html"
     if not index_file.is_file():
         raise FileNotFoundError(
-            "新版界面尚未构建。请先在 frontend 目录运行 npm install 和 npm run build。"
+            "游戏界面尚未构建。请先在 frontend 目录运行 npm install 和 npm run build。"
         )
 
-    game = WebApplication(engine, root / "web")
+    game = WebApplication(engine, root)
     app = FastAPI(
         title="问道长生本地接口",
         version=__version__,
@@ -154,7 +154,7 @@ def run_modern_server(
 ) -> None:
     app = create_modern_app(engine, root)
     url = f"http://{host}:{port}/"
-    print(f"问道长生 V{__version__} 新版界面已启动：{url}")
+    print(f"问道长生 V{__version__} 游戏界面已启动：{url}")
     print("关闭此窗口即可停止游戏服务。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

@@ -19,7 +19,7 @@ class DiagnosticTests(unittest.TestCase):
             )
             (dist / "third-party-licenses.md").write_text("licenses", encoding="utf-8")
 
-            modern = next(item for item in run_diagnostics(root) if item.name == "新版界面资源")
+            modern = next(item for item in run_diagnostics(root) if item.name == "游戏界面资源")
             self.assertFalse(modern.passed)
             self.assertIn("assets/missing.js", modern.detail)
             self.assertNotIn(str(root), modern.detail)
@@ -48,7 +48,7 @@ class DiagnosticTests(unittest.TestCase):
             )
             (dist / "third-party-licenses.md").write_text("licenses", encoding="utf-8")
 
-            modern = next(item for item in run_diagnostics(root) if item.name == "新版界面资源")
+            modern = next(item for item in run_diagnostics(root) if item.name == "游戏界面资源")
             self.assertFalse(modern.passed)
             self.assertIn("远程资源", modern.detail)
 

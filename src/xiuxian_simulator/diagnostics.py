@@ -21,9 +21,9 @@ def _runtime_dependencies() -> DiagnosticItem:
     missing = [name for name in required if util.find_spec(name) is None]
     if missing:
         return DiagnosticItem(
-            "新版本地接口",
+            "游戏本地接口",
             False,
-            f"缺少 {', '.join(missing)}；启动新版界面时会尝试自动安装",
+            f"缺少 {', '.join(missing)}；启动游戏界面时会尝试自动安装",
         )
     versions: list[str] = []
     for name in required:
@@ -31,7 +31,7 @@ def _runtime_dependencies() -> DiagnosticItem:
             versions.append(f"{name} {metadata.version(name)}")
         except metadata.PackageNotFoundError:
             versions.append(name)
-    return DiagnosticItem("新版本地接口", True, " · ".join(versions))
+    return DiagnosticItem("游戏本地接口", True, " · ".join(versions))
 
 
 def _modern_assets(root: Path) -> DiagnosticItem:
@@ -39,15 +39,15 @@ def _modern_assets(root: Path) -> DiagnosticItem:
     index = dist / "index.html"
     licenses = dist / "third-party-licenses.md"
     if not index.is_file():
-        return DiagnosticItem("新版界面资源", False, "缺少 frontend/dist/index.html")
+        return DiagnosticItem("游戏界面资源", False, "缺少 frontend/dist/index.html")
     try:
         html = index.read_text(encoding="utf-8")
     except OSError as exc:
-        return DiagnosticItem("新版界面资源", False, f"入口无法读取：{type(exc).__name__}")
+        return DiagnosticItem("游戏界面资源", False, f"入口无法读取：{type(exc).__name__}")
     all_references = re.findall(r'(?:src|href)=["\']([^"\']+)["\']', html)
     remote = [name for name in all_references if name.startswith(("http://", "https://", "//"))]
     if remote:
-        return DiagnosticItem("新版界面资源", False, f"入口包含远程资源：{remote[0]}")
+        return DiagnosticItem("游戏界面资源", False, f"入口包含远程资源：{remote[0]}")
     references = sorted(
         {
             match.lstrip("/")
@@ -57,12 +57,12 @@ def _modern_assets(root: Path) -> DiagnosticItem:
     )
     missing = [name for name in references if not (dist / name).is_file()]
     if not references:
-        return DiagnosticItem("新版界面资源", False, "入口没有引用任何本地生产资源")
+        return DiagnosticItem("游戏界面资源", False, "入口没有引用任何本地生产资源")
     if missing:
-        return DiagnosticItem("新版界面资源", False, f"缺少 {len(missing)} 个生产资源：{missing[0]}")
+        return DiagnosticItem("游戏界面资源", False, f"缺少 {len(missing)} 个生产资源：{missing[0]}")
     if not licenses.is_file() or licenses.stat().st_size == 0:
-        return DiagnosticItem("新版界面资源", False, "缺少第三方许可清单")
-    return DiagnosticItem("新版界面资源", True, f"{len(references)} 个生产资源 · 第三方许可已就绪")
+        return DiagnosticItem("游戏界面资源", False, "缺少第三方许可清单")
+    return DiagnosticItem("游戏界面资源", True, f"{len(references)} 个生产资源 · 第三方许可已就绪")
 
 
 def _writable_save_directory(root: Path, save_dir: Path | None = None) -> DiagnosticItem:
@@ -111,8 +111,6 @@ def run_diagnostics(root: Path, *, save_dir: Path | None = None) -> list[Diagnos
         content_detail = f"data/content/decision_choices.json 无法读取或解析（{type(exc).__name__}）"
     items.append(DiagnosticItem("结构化内容", content_ok, content_detail))
 
-    web_assets = [root / "web" / name for name in ("index.html", "app.css", "app.js", "showcase.js")]
-    items.append(DiagnosticItem("网页资源", all(path.is_file() for path in web_assets), "HTML / CSS / JavaScript"))
     items.append(_modern_assets(root))
     items.append(_writable_save_directory(root, save_dir))
     return items
@@ -120,9 +118,9 @@ def run_diagnostics(root: Path, *, save_dir: Path | None = None) -> list[Diagnos
 
 def diagnostics_text(root: Path, *, save_dir: Path | None = None) -> tuple[bool, str]:
     items = run_diagnostics(root, save_dir=save_dir)
-    lines = ["《问道长生》V0.60 运行环境检查"]
+    lines = ["《问道长生》V0.61 运行环境检查"]
     for item in items:
         lines.append(f"[{'通过' if item.passed else '失败'}] {item.name}：{item.detail}")
     passed = all(item.passed for item in items)
-    lines.append("检查完成，可以启动新版界面。" if passed else "存在未通过项目，请按报告提示修复后重试。")
+    lines.append("检查完成，可以启动游戏界面。" if passed else "存在未通过项目，请按报告提示修复后重试。")
     return passed, "\n".join(lines)

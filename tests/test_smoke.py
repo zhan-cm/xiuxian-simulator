@@ -2255,20 +2255,11 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(settings.openai_api_key, "file-key")
             self.assertEqual(settings.model, "environment-model")
 
-    def test_web_app_serves_local_interface_and_state(self) -> None:
+    def test_game_application_builds_shared_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))
-            app = WebApplication(engine, ROOT / "web")
-            status, content_type, body = app.dispatch("GET", "/")
-            self.assertEqual(status, 200)
-            self.assertIn("text/html", content_type)
-            self.assertIn("问道长生", body.decode("utf-8"))
-            self.assertIn("eventHero", body.decode("utf-8"))
-            self.assertIn("archiveDialog", body.decode("utf-8"))
-            status, content_type, body = app.dispatch("GET", "/api/state")
-            payload = json.loads(body)
-            self.assertEqual(status, 200)
-            self.assertIn("application/json", content_type)
+            app = WebApplication(engine, ROOT)
+            payload = app.snapshot()
             self.assertEqual(payload["app_version"], __version__)
             self.assertEqual(payload["state"]["phase"], "new")
             self.assertIn("Narrator", payload["narrator"])
@@ -2277,19 +2268,12 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertEqual(payload["decision"]["choices"][0]["action"], "开始游戏")
             self.assertIn("顾清玄", payload["npc_profiles"])
             self.assertIn("清茶", payload["npc_profiles"]["顾清玄"]["likes"])
-            status, content_type, body = app.dispatch("GET", "/showcase.js")
-            self.assertEqual(status, 200)
-            self.assertIn("javascript", content_type)
-            self.assertIn("成果巡览", body.decode("utf-8"))
 
-    def test_web_action_endpoint_drives_same_game_engine(self) -> None:
+    def test_game_application_action_drives_same_game_engine(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))
-            app = WebApplication(engine, ROOT / "web")
-            request_body = json.dumps({"action": "开始游戏"}, ensure_ascii=False).encode("utf-8")
-            status, _, body = app.dispatch("POST", "/api/action", request_body)
-            payload = json.loads(body)
-            self.assertEqual(status, 200)
+            app = WebApplication(engine, ROOT)
+            payload = app.perform_action("开始游戏")
             self.assertIn("创角大面板", payload["output"])
             self.assertEqual(payload["state"]["phase"], "character_creation_basic")
             self.assertEqual(payload["presentation"]["tone"], "system")
@@ -2485,24 +2469,6 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual([block["title"] for block in view["blocks"]], ["尘缘波澜"])
         self.assertEqual(view["blocks"][0]["type"], "meter")
         self.assertIn("必须亲自选择", view["paragraphs"][1])
-
-    def test_web_app_rejects_invalid_or_oversized_actions(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            app = WebApplication(self.make_engine(Path(temp_dir)), ROOT / "web")
-            status, _, _ = app.dispatch("POST", "/api/action", b"not-json")
-            self.assertEqual(status, 400)
-            status, _, body = app.dispatch("POST", "/api/action", json.dumps({"action": ""}).encode())
-            self.assertEqual(status, 400)
-            self.assertIn("请输入行动", json.loads(body)["error"])
-            status, _, _ = app.dispatch("POST", "/api/action", b"x" * 65537)
-            self.assertEqual(status, 413)
-
-    def test_web_app_blocks_unknown_static_paths(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            app = WebApplication(self.make_engine(Path(temp_dir)), ROOT / "web")
-            for path in ("/../README.md", "/.env", "/missing.js"):
-                status, _, _ = app.dispatch("GET", path)
-                self.assertEqual(status, 404)
 
     def test_combat_decision_hides_impossible_leave_button(self) -> None:
         catalog = DecisionCatalog.load(ROOT / "data" / "content" / "decision_choices.json")
@@ -3074,62 +3040,15 @@ class SimulatorSmokeTests(unittest.TestCase):
             probe_dir = Path(temp_dir) / "saves"
             items = run_diagnostics(ROOT, save_dir=probe_dir)
             self.assertTrue(all(item.passed for item in items), [item.detail for item in items])
-            self.assertIn("新版本地接口", {item.name for item in items})
-            self.assertIn("新版界面资源", {item.name for item in items})
+            self.assertIn("游戏本地接口", {item.name for item in items})
+            self.assertIn("游戏界面资源", {item.name for item in items})
             passed, report = diagnostics_text(ROOT, save_dir=probe_dir)
             self.assertTrue(passed)
-            self.assertIn("可以启动新版界面", report)
+            self.assertIn("可以启动游戏界面", report)
             self.assertNotIn(str(ROOT), report)
 
-    def test_acceptance_guides_and_first_run_dialog_are_packaged(self) -> None:
-        launcher = (ROOT / "启动网页版.bat").read_text(encoding="utf-8")
-        page = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
-        showcase = (ROOT / "web" / "showcase.js").read_text(encoding="utf-8")
-        styles = (ROOT / "web" / "app.css").read_text(encoding="utf-8")
-        self.assertIn("--check", launcher)
-        self.assertTrue((ROOT / "检查环境.bat").is_file())
-        self.assertTrue((ROOT / "首次游玩指南.md").is_file())
-        self.assertIn('id="guideDialog"', page)
-        self.assertIn("xiuxian-guide-seen", script)
-        self.assertIn('id="icon-cultivate"', page)
-        self.assertIn("点击后立即执行", page)
-        self.assertIn("仅填入输入框 · 点“推演此行”后生效", page)
-        self.assertIn('id="icon-calendar"', page)
-        self.assertIn('id="turnBadgeText"', page)
-        self.assertIn("function actionAvailability", script)
-        self.assertIn("修为已圆满，请先尝试突破", script)
-        self.assertIn(".has-tooltip::after", styles)
-        self.assertIn(".quick-actions button:disabled", styles)
-        self.assertIn("repeat(auto-fit, minmax(min(230px, 100%), 1fr))", styles)
-        self.assertIn('.location-action:disabled', styles)
-        self.assertIn('location.accessible === false', script)
-        self.assertIn('location.danger_help', script)
-        self.assertIn('id="openShowcase"', page)
-        self.assertIn('id="showcasePanel"', page)
-        self.assertIn('src="/showcase.js"', page)
-        self.assertIn('label: "01 · 初始入世"', showcase)
-        self.assertIn('label: "14 · 游玩指引"', showcase)
-        self.assertIn("不修改存档", page)
-        self.assertIn("ui.renderSnapshot(liveSnapshot, { suppressNotices: true })", showcase)
-        self.assertNotIn('/api/action', showcase)
-        self.assertIn(".showcase-panel", styles)
-        self.assertIn("容量不限 · 格位按物品自动扩展", script)
-        self.assertNotIn('id="narratorLabel"', page)
-        self.assertNotIn('id="moreActionCount"', page)
-        self.assertNotIn("decision-badge", page)
-        self.assertIn('classList.toggle("is-empty"', script)
-        self.assertIn('.bar.is-empty[data-kind="cultivation"]', styles)
-        self.assertIn('id="detailDialog"', page)
-        self.assertIn('id="toastRegion"', page)
-        self.assertIn("function announceResult", script)
-        self.assertIn("function personDetail", script)
-        self.assertIn('.decision-choice.is-selected', styles)
-        self.assertIn('.semantic-data-region[data-overflow="true"]', styles)
-        self.assertIn('.content-indicator', styles)
-
     def test_windows_launchers_use_cmd_compatible_line_endings(self) -> None:
-        for name in ("启动网页版.bat", "启动新版界面.bat", "检查环境.bat"):
+        for name in ("启动新版界面.bat", "检查环境.bat"):
             payload = (ROOT / name).read_bytes()
             self.assertIn(b"\r\n", payload)
             self.assertNotIn(b"\n", payload.replace(b"\r\n", b""))

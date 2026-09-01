@@ -17,12 +17,10 @@ ROOT_FILES = (
     "README.md",
     "首次游玩指南.md",
     "检查环境.bat",
-    "启动网页版.bat",
     "启动新版界面.bat",
 )
 PACKAGE_TREES = (
     "src",
-    "web",
     "frontend",
     "data/content",
     "docs",
@@ -47,7 +45,6 @@ REQUIRED_FILES = {
     "pyproject.toml",
     "README.md",
     "检查环境.bat",
-    "启动网页版.bat",
     "启动新版界面.bat",
     "src/xiuxian_simulator/__init__.py",
     "data/content/decision_choices.json",
@@ -57,7 +54,6 @@ REQUIRED_FILES = {
     "frontend/dist/index.html",
     "frontend/dist/third-party-licenses.md",
     "scripts/verify_release.py",
-    "web/index.html",
 }
 VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?")
 

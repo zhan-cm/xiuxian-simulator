@@ -56,7 +56,7 @@ if not exist "frontend\dist\index.html" (
     )
     popd
   )
-  echo 正在构建《问道长生》V0.60 新版界面……
+  echo 正在构建《问道长生》V0.61 游戏界面……
   pushd frontend
   call npm run build
   if errorlevel 1 (
@@ -73,7 +73,7 @@ if errorlevel 1 (
   goto failed
 )
 echo 启动自检通过，报告已保存到“%XIU_CHECK_LOG%”。
-echo 正在打开《问道长生》V0.60 新版界面……
+echo 正在打开《问道长生》V0.61 游戏界面……
 "%XIU_PYTHON%" main.py --modern-web
 set "XIU_EXIT=%errorlevel%"
 if not "%XIU_EXIT%"=="0" goto failed
@@ -100,6 +100,6 @@ exit /b 1
 echo.
 echo 新版界面未能启动，请保留此窗口中的错误信息。
 if exist "%XIU_CHECK_LOG%" echo 环境检查报告位于“%XIU_CHECK_LOG%”。
-echo 旧版仍可通过“启动网页版.bat”正常使用。
+echo 请先双击“检查环境.bat”，根据报告修复后再试。
 pause
 exit /b 1

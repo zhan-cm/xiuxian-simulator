@@ -40,7 +40,7 @@ jobs:
           python scripts/verify_release.py --smoke
 
   modern-interface:
-    name: React 新版界面
+    name: React 游戏界面
     runs-on: windows-latest
     timeout-minutes: 15
     defaults:

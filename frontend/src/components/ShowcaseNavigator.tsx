@@ -77,7 +77,7 @@ export function ShowcaseNavigator({ pages, index, appVersion, onIndex, onExit }:
   }
   return (
     <aside className="showcase-navigator" aria-label="成果巡览控制器">
-      <header><div><span><Eye size={14} />只读巡览</span><h2>新版成果验收</h2></div><button type="button" onClick={onExit} aria-label="退出成果巡览"><X size={17} /></button></header>
+      <header><div><span><Eye size={14} />只读巡览</span><h2>游戏成果验收</h2></div><button type="button" onClick={onExit} aria-label="退出成果巡览"><X size={17} /></button></header>
       <div className="showcase-progress"><span>浏览 {String(index + 1).padStart(2, '0')} / {String(pages.length).padStart(2, '0')}</span><i><b style={{ width: `${browseProgress}%` }} /></i></div>
       <div className="showcase-review-progress"><span>已验收 {review.completedIds.length} / {pages.length}</span><i><b style={{ width: `${reviewProgress}%` }} /></i></div>
       <label>当前展示页面<select value={index} onChange={(event) => navigate(Number(event.target.value))}>{pages.map((item, itemIndex) => <option value={itemIndex} key={item.id}>{review.completedIds.includes(item.id) ? '✓ ' : ''}{item.title}</option>)}</select></label>

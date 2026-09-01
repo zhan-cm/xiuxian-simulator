@@ -208,7 +208,7 @@ def _smoke_modern_server(project_root: Path) -> None:
         while time.monotonic() < deadline:
             if process.poll() is not None:
                 output = process.communicate()[0].strip()[-4000:]
-                raise VerificationError(f"新版界面服务提前退出（退出码 {process.returncode}）：\n{output}")
+                raise VerificationError(f"游戏界面服务提前退出（退出码 {process.returncode}）：\n{output}")
             try:
                 health = _read_json(f"{base_url}/api/v1/health")
                 break
@@ -216,7 +216,7 @@ def _smoke_modern_server(project_root: Path) -> None:
                 last_error = exc
                 time.sleep(0.25)
         if health is None:
-            raise VerificationError(f"新版界面服务未能在 30 秒内就绪：{last_error}")
+            raise VerificationError(f"游戏界面服务未能在 30 秒内就绪：{last_error}")
         if health.get("interface") != "react" or health.get("status") != "ok":
             raise VerificationError(f"健康接口返回异常：{health}")
 
@@ -276,7 +276,7 @@ def main() -> None:
     parser.add_argument("archive", nargs="?", type=Path, default=default_archive(), help="待验证的 ZIP 发布包")
     parser.add_argument("--checksum", type=Path, help="SHA-256 文件，默认使用 ZIP 同名 .sha256")
     parser.add_argument("--expected-version", help="期望的语义版本号")
-    parser.add_argument("--smoke", action="store_true", help="解压到临时目录并验证新版页面与本地接口")
+    parser.add_argument("--smoke", action="store_true", help="解压到临时目录并验证游戏页面与本地接口")
     args = parser.parse_args()
 
     archive = args.archive.resolve()
@@ -292,7 +292,7 @@ def main() -> None:
     print(f"发布包验证通过：v{version}，{count} 个文件。")
     print(f"SHA-256：{digest}")
     if args.smoke:
-        print("全新解压目录中的新版页面、本地接口、行动推进、便携卷宗与成果巡览均已通过。")
+        print("全新解压目录中的游戏页面、本地接口、行动推进、便携卷宗与成果巡览均已通过。")
 
 
 if __name__ == "__main__":

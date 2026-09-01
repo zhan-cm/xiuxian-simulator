@@ -16,7 +16,7 @@ from xiuxian_simulator.state import GameState
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.60.0"
+VERSION = "0.61.0"
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -64,12 +64,22 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("permissions:\n  contents: read", workflow)
         self.assertNotIn("release:", workflow)
 
-    def test_player_guide_defaults_to_modern_interface(self) -> None:
+    def test_player_guide_uses_only_modern_interface(self) -> None:
         guide = (ROOT / "首次游玩指南.md").read_text(encoding="utf-8")
-        self.assertLess(guide.index("启动新版界面.bat"), guide.index("启动网页版.bat"))
+        self.assertIn("启动新版界面.bat", guide)
+        self.assertNotIn("启动网页版.bat", guide)
         self.assertIn("成果巡览", guide)
         self.assertIn("不会修改真实存档", guide)
         self.assertIn("自动保留备份", guide)
+
+    def test_legacy_web_interface_is_removed(self) -> None:
+        self.assertFalse((ROOT / "启动网页版.bat").exists())
+        self.assertFalse((ROOT / "web").exists())
+        cli = (ROOT / "src" / "xiuxian_simulator" / "cli.py").read_text(encoding="utf-8")
+        package = (ROOT / "scripts" / "package_release.py").read_text(encoding="utf-8")
+        self.assertNotIn('parser.add_argument("--web"', cli)
+        self.assertNotIn('"web",', package)
+        self.assertNotIn('"启动网页版.bat"', package)
 
     def test_modern_launcher_accepts_both_windows_python_commands(self) -> None:
         launcher_path = ROOT / "启动新版界面.bat"
@@ -98,7 +108,7 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_windows_release_bundle_is_clean_and_verifiable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            archive = Path(temp_dir) / "Wendao-Changsheng-v0.60.0-windows.zip"
+            archive = Path(temp_dir) / "Wendao-Changsheng-v0.61.0-windows.zip"
             second_archive = Path(temp_dir) / "rebuild.zip"
             for output in (archive, second_archive):
                 subprocess.run(
@@ -129,7 +139,6 @@ class ReleaseReadinessTests(unittest.TestCase):
                 ".env.example",
                 "main.py",
                 "检查环境.bat",
-                "启动网页版.bat",
                 "启动新版界面.bat",
                 "src/xiuxian_simulator/__init__.py",
                 "frontend/dist/index.html",
@@ -138,6 +147,8 @@ class ReleaseReadinessTests(unittest.TestCase):
                 self.assertIn(prefix + required, names)
             self.assertFalse(any("/tests/" in name or "/node_modules/" in name or "/data/logs/" in name for name in names))
             self.assertFalse(any(name.endswith(("autosave.json", "autosave.json.bak", ".env")) for name in names))
+            self.assertNotIn(prefix + "启动网页版.bat", names)
+            self.assertFalse(any(name.startswith(prefix + "web/") for name in names))
 
             verified = subprocess.run(
                 [
