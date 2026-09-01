@@ -120,7 +120,7 @@ def run_diagnostics(root: Path, *, save_dir: Path | None = None) -> list[Diagnos
 
 def diagnostics_text(root: Path, *, save_dir: Path | None = None) -> tuple[bool, str]:
     items = run_diagnostics(root, save_dir=save_dir)
-    lines = ["《问道长生》V0.59 运行环境检查"]
+    lines = ["《问道长生》V0.60 运行环境检查"]
     for item in items:
         lines.append(f"[{'通过' if item.passed else '失败'}] {item.name}：{item.detail}")
     passed = all(item.passed for item in items)

@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from xiuxian_simulator import __version__
 from xiuxian_simulator.engine import GameEngine
 from xiuxian_simulator.choices import DecisionCatalog
 from xiuxian_simulator.economy import EconomyEngine
@@ -2268,6 +2269,7 @@ class SimulatorSmokeTests(unittest.TestCase):
             payload = json.loads(body)
             self.assertEqual(status, 200)
             self.assertIn("application/json", content_type)
+            self.assertEqual(payload["app_version"], __version__)
             self.assertEqual(payload["state"]["phase"], "new")
             self.assertIn("Narrator", payload["narrator"])
             self.assertEqual(payload["presentation"]["title"], "灵气潮汐将至")

@@ -19,6 +19,7 @@ import { NewEraChronicle } from './components/NewEraChronicle'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
 import { ShowcaseNavigator } from './components/ShowcaseNavigator'
+import { loadShowcaseReview } from './showcaseReview'
 import { StoryChronicle } from './components/StoryChronicle'
 import { SpiritBeastSanctuary } from './components/SpiritBeastSanctuary'
 import { FormationAtlas } from './components/FormationAtlas'
@@ -155,7 +156,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>}
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.59 正式候选自检</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.60 玩家验收</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
@@ -190,7 +191,11 @@ export default function App() {
   const displayed = inShowcase ? pages[showcaseIndex].snapshot : snapshot.data
   const openShowcase = async () => {
     const result = await showcase.refetch()
-    if (result.data?.pages.length) setShowcaseIndex(0)
+    if (result.data?.pages.length) {
+      const review = loadShowcaseReview(result.data.pages, snapshot.data.app_version)
+      const resumedIndex = result.data.pages.findIndex((page) => page.id === review.currentId)
+      setShowcaseIndex(resumedIndex >= 0 ? resumedIndex : 0)
+    }
   }
   return (
     <>
@@ -208,7 +213,7 @@ export default function App() {
         onArchiveChanged={async () => { await snapshot.refetch() }}
         onNotice={(message) => { setActionError(''); setNotice(message) }}
       />
-      {inShowcase && <ShowcaseNavigator pages={pages} index={showcaseIndex} onIndex={setShowcaseIndex} onExit={() => setShowcaseIndex(null)} />}
+      {inShowcase && <ShowcaseNavigator pages={pages} index={showcaseIndex} appVersion={snapshot.data.app_version} onIndex={setShowcaseIndex} onExit={() => setShowcaseIndex(null)} />}
     </>
   )
 }

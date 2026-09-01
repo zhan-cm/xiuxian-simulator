@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from xiuxian_simulator import __version__
 from xiuxian_simulator.cli import build_engine
 from xiuxian_simulator.modern_web import create_modern_app
 
@@ -27,8 +28,11 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(health.headers["cache-control"], "no-store")
 
             before_snapshot = engine.state.to_dict()
+            engine.state.version = "0.43.0"
             snapshot = client.get("/api/v1/state")
             self.assertEqual(snapshot.status_code, 200)
+            self.assertEqual(snapshot.json()["app_version"], __version__)
+            self.assertEqual(snapshot.json()["state"]["version"], "0.43.0")
             self.assertEqual(snapshot.json()["state"]["phase"], "new")
             self.assertIn("presentation", snapshot.json())
             self.assertEqual(snapshot.json()["journey"]["active_chapter_id"], "chapter-1")
@@ -65,6 +69,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["recovery"]["count"], 0)
             self.assertFalse(snapshot.json()["legacy"]["ended"])
             self.assertEqual(snapshot.json()["legacy"]["life_number"], 1)
+            before_snapshot["version"] = "0.43.0"
             self.assertEqual(engine.state.to_dict(), before_snapshot)
 
     def test_action_endpoint_advances_the_same_state_machine(self) -> None:
@@ -148,6 +153,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             pages = response.json()["pages"]
             self.assertGreaterEqual(len(pages), 34)
+            self.assertTrue(all(page["snapshot"]["app_version"] == __version__ for page in pages))
             self.assertEqual(engine.state.to_dict(), original_state)
             self.assertFalse(list(Path(temp_dir).glob("*.json")))
             by_id = {page["id"]: page for page in pages}

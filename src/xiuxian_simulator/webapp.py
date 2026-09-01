@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from . import __version__
 from .choices import DecisionCatalog
 from .engine import GameEngine
 from .presentation import present_action, welcome_presentation
@@ -79,6 +80,7 @@ class WebApplication:
         sect_domain = SectFoundationEngine.snapshot(self.engine.state)
         sect_domain["diplomacy"] = SectDiplomacyEngine.snapshot(self.engine.state)
         return {
+            "app_version": __version__,
             "state": self.engine.state.to_dict(),
             "narrator": self.engine.narrator.name,
             "save_names": self.engine.saves.list_names(),
@@ -181,7 +183,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.59"
+        server_version = f"XiuxianSimulator/{__version__}"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")
