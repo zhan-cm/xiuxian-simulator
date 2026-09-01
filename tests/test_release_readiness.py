@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import subprocess
+import sys
+import tempfile
 import tomllib
 import unittest
+import zipfile
 from pathlib import Path
 
 from xiuxian_simulator import __version__
@@ -11,7 +16,7 @@ from xiuxian_simulator.state import GameState
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.55.0"
+VERSION = "0.56.0"
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -47,6 +52,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         for expected in (
             "python -m pytest",
             "python -m xiuxian_simulator --check",
+            "python scripts/package_release.py --check",
             "npm run lint",
             "npm test",
             "npm run build",
@@ -70,6 +76,49 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("内部 V0.x 迭代不再创建标签或 GitHub Release", readme)
         self.assertIn("v1.0.0", readme)
         self.assertIn("唯一的 v1.0.0 标签", checklist)
+
+    def test_windows_release_bundle_is_clean_and_verifiable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            archive = Path(temp_dir) / "Wendao-Changsheng-v0.56.0-windows.zip"
+            second_archive = Path(temp_dir) / "rebuild.zip"
+            for output in (archive, second_archive):
+                subprocess.run(
+                    [
+                        sys.executable,
+                        str(ROOT / "scripts" / "package_release.py"),
+                        "--version",
+                        VERSION,
+                        "--output",
+                        str(output),
+                    ],
+                    cwd=ROOT,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                )
+
+            self.assertEqual(archive.read_bytes(), second_archive.read_bytes())
+
+            checksum_file = archive.with_suffix(".zip.sha256")
+            expected = hashlib.sha256(archive.read_bytes()).hexdigest()
+            self.assertEqual(checksum_file.read_text(encoding="utf-8").split()[0], expected)
+
+            with zipfile.ZipFile(archive) as bundle:
+                names = set(bundle.namelist())
+            prefix = f"Wendao-Changsheng-v{VERSION}/"
+            for required in (
+                ".env.example",
+                "main.py",
+                "检查环境.bat",
+                "启动网页版.bat",
+                "启动新版界面.bat",
+                "src/xiuxian_simulator/__init__.py",
+                "frontend/dist/index.html",
+                "data/saves/.gitkeep",
+            ):
+                self.assertIn(prefix + required, names)
+            self.assertFalse(any("/tests/" in name or "/node_modules/" in name for name in names))
+            self.assertFalse(any(name.endswith(("autosave.json", "autosave.json.bak", ".env")) for name in names))
 
 
 if __name__ == "__main__":
