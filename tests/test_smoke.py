@@ -3068,11 +3068,16 @@ class SimulatorSmokeTests(unittest.TestCase):
             self.assertGreater(payload["artifact_refinements"]["青锋剑"]["resonance"], 15)
 
     def test_release_tree_passes_environment_diagnostics(self) -> None:
-        items = run_diagnostics(ROOT)
-        self.assertTrue(all(item.passed for item in items), [item.detail for item in items])
-        passed, report = diagnostics_text(ROOT)
-        self.assertTrue(passed)
-        self.assertIn("可以启动网页版", report)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            probe_dir = Path(temp_dir) / "saves"
+            items = run_diagnostics(ROOT, save_dir=probe_dir)
+            self.assertTrue(all(item.passed for item in items), [item.detail for item in items])
+            self.assertIn("新版本地接口", {item.name for item in items})
+            self.assertIn("新版界面资源", {item.name for item in items})
+            passed, report = diagnostics_text(ROOT, save_dir=probe_dir)
+            self.assertTrue(passed)
+            self.assertIn("可以启动新版界面", report)
+            self.assertNotIn(str(ROOT), report)
 
     def test_acceptance_guides_and_first_run_dialog_are_packaged(self) -> None:
         launcher = (ROOT / "启动网页版.bat").read_text(encoding="utf-8")

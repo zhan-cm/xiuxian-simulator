@@ -2,6 +2,7 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
+set "XIU_CHECK_LOG=data\logs\最近一次环境检查.txt"
 
 if exist ".venv\Scripts\python.exe" (
   set "XIU_PYTHON=.venv\Scripts\python.exe"
@@ -33,9 +34,12 @@ pause
 exit /b 1
 
 :run_checks
-"%XIU_PYTHON%" %XIU_PYTHON_ARGS% main.py --check
+if not exist "data\logs" mkdir "data\logs"
+"%XIU_PYTHON%" %XIU_PYTHON_ARGS% main.py --check > "%XIU_CHECK_LOG%" 2>&1
 set "XIU_EXIT=%errorlevel%"
+type "%XIU_CHECK_LOG%"
 echo.
+echo 检查报告已保存到“%XIU_CHECK_LOG%”。
 if "%XIU_EXIT%"=="0" (
   echo 检查完成。按任意键关闭此窗口。
 ) else (

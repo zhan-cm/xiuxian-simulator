@@ -4,6 +4,11 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 set "XIU_PYTHON=.venv\Scripts\python.exe"
+set "XIU_CHECK_LOG=data\logs\最近一次环境检查.txt"
+if exist "%XIU_PYTHON%" (
+  "%XIU_PYTHON%" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>nul
+  if errorlevel 1 goto incompatible_environment
+)
 if not exist "%XIU_PYTHON%" (
   echo 正在创建新版所需的 Python 环境……
   set "XIU_BOOTSTRAP="
@@ -51,7 +56,7 @@ if not exist "frontend\dist\index.html" (
     )
     popd
   )
-  echo 正在构建《问道长生》V0.58 新版界面……
+  echo 正在构建《问道长生》V0.59 新版界面……
   pushd frontend
   call npm run build
   if errorlevel 1 (
@@ -61,11 +66,28 @@ if not exist "frontend\dist\index.html" (
   popd
 )
 
-echo 正在打开《问道长生》V0.58 新版界面……
+if not exist "data\logs" mkdir "data\logs"
+"%XIU_PYTHON%" main.py --check > "%XIU_CHECK_LOG%" 2>&1
+if errorlevel 1 (
+  type "%XIU_CHECK_LOG%"
+  goto failed
+)
+echo 启动自检通过，报告已保存到“%XIU_CHECK_LOG%”。
+echo 正在打开《问道长生》V0.59 新版界面……
 "%XIU_PYTHON%" main.py --modern-web
 set "XIU_EXIT=%errorlevel%"
 if not "%XIU_EXIT%"=="0" goto failed
 exit /b 0
+
+:incompatible_environment
+if not exist "data\logs" mkdir "data\logs"
+> "%XIU_CHECK_LOG%" echo [失败] 现有 .venv 已损坏或 Python 版本低于 3.11。
+>> "%XIU_CHECK_LOG%" echo 请关闭游戏，将项目中的 .venv 文件夹重命名后再次双击启动器。
+type "%XIU_CHECK_LOG%"
+echo.
+echo 环境检查报告位于“%XIU_CHECK_LOG%”。
+pause
+exit /b 1
 
 :missing_python
 echo.
@@ -77,6 +99,7 @@ exit /b 1
 :failed
 echo.
 echo 新版界面未能启动，请保留此窗口中的错误信息。
+if exist "%XIU_CHECK_LOG%" echo 环境检查报告位于“%XIU_CHECK_LOG%”。
 echo 旧版仍可通过“启动网页版.bat”正常使用。
 pause
 exit /b 1

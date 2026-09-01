@@ -9,3 +9,4 @@ __pycache__/
 data/saves/*.json
 data/saves/*.bak
 !data/saves/.gitkeep
+data/logs/

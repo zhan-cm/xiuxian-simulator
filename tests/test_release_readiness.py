@@ -16,7 +16,7 @@ from xiuxian_simulator.state import GameState
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.58.0"
+VERSION = "0.59.0"
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -83,6 +83,11 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("EnableDelayedExpansion", launcher)
         self.assertIn('"!XIU_BOOTSTRAP!" !XIU_BOOTSTRAP_ARGS! -m venv .venv', launcher)
         self.assertIn(":missing_python", launcher)
+        self.assertIn("最近一次环境检查.txt", launcher)
+        self.assertLess(launcher.index("main.py --check"), launcher.index("main.py --modern-web"))
+        self.assertIn(":incompatible_environment", launcher)
+        self.assertIn("sys.version_info >= (3, 11)", launcher)
+        self.assertIn("data/logs/", (ROOT / ".gitignore").read_text(encoding="utf-8"))
 
     def test_formal_release_policy_is_explicit(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -93,7 +98,7 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_windows_release_bundle_is_clean_and_verifiable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            archive = Path(temp_dir) / "Wendao-Changsheng-v0.58.0-windows.zip"
+            archive = Path(temp_dir) / "Wendao-Changsheng-v0.59.0-windows.zip"
             second_archive = Path(temp_dir) / "rebuild.zip"
             for output in (archive, second_archive):
                 subprocess.run(
@@ -131,7 +136,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                 "data/saves/.gitkeep",
             ):
                 self.assertIn(prefix + required, names)
-            self.assertFalse(any("/tests/" in name or "/node_modules/" in name for name in names))
+            self.assertFalse(any("/tests/" in name or "/node_modules/" in name or "/data/logs/" in name for name in names))
             self.assertFalse(any(name.endswith(("autosave.json", "autosave.json.bak", ".env")) for name in names))
 
             verified = subprocess.run(
