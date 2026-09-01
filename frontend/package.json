@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/normalize-dist.mjs",
+    "verify:dist": "node scripts/verify-dist.mjs",
     "lint": "oxlint src",
     "preview": "vite preview",
     "test": "vitest run"

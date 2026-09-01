@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONUTF8: '1'
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -52,6 +55,5 @@ jobs:
         run: npm test
       - name: 生产构建
         run: npm run build
-      - name: 确认预构建资源已同步
-        working-directory: .
-        run: git diff --exit-code -- frontend/dist
+      - name: 验证生产资源完整性
+        run: npm run verify:dist

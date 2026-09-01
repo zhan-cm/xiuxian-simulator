@@ -50,9 +50,10 @@ class ReleaseReadinessTests(unittest.TestCase):
             "npm run lint",
             "npm test",
             "npm run build",
-            "git diff --exit-code -- frontend/dist",
+            "npm run verify:dist",
         ):
             self.assertIn(expected, workflow)
+        self.assertIn("PYTHONUTF8: '1'", workflow)
         self.assertIn("permissions:\n  contents: read", workflow)
         self.assertNotIn("release:", workflow)
 
