@@ -16,7 +16,7 @@ from xiuxian_simulator.state import GameState
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.57.0"
+VERSION = "0.58.0"
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -93,7 +93,7 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_windows_release_bundle_is_clean_and_verifiable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            archive = Path(temp_dir) / "Wendao-Changsheng-v0.57.0-windows.zip"
+            archive = Path(temp_dir) / "Wendao-Changsheng-v0.58.0-windows.zip"
             second_archive = Path(temp_dir) / "rebuild.zip"
             for output in (archive, second_archive):
                 subprocess.run(

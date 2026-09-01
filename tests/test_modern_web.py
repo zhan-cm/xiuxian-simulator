@@ -81,6 +81,53 @@ class ModernWebTests(unittest.TestCase):
             invalid = client.post("/api/v1/actions", json={"action": ""})
             self.assertEqual(invalid.status_code, 422)
 
+    def test_portable_save_endpoints_preserve_active_game_and_avoid_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            engine.state.phase = "playing"
+            engine.state.turn = 27
+            engine.state.player.name = "林渡"
+            engine.saves.save("筑基之前", engine.state)
+            before = engine.state.to_dict()
+            client = TestClient(create_modern_app(engine, ROOT))
+
+            exported = client.get("/api/v1/saves/export", params={"name": "筑基之前"})
+            self.assertEqual(exported.status_code, 200)
+            self.assertIn("attachment", exported.headers["content-disposition"])
+            self.assertIn("filename*=UTF-8''", exported.headers["content-disposition"])
+            payload = exported.json()
+            self.assertEqual(payload["format"], "wendao-changsheng-save")
+            self.assertEqual(payload["state"]["turn"], 27)
+
+            imported = client.post(
+                "/api/v1/saves/import",
+                json={"data": payload, "preferred_name": "", "overwrite": False},
+            )
+            self.assertEqual(imported.status_code, 200)
+            self.assertEqual(imported.json()["name"], "筑基之前_导入1")
+            self.assertTrue(imported.json()["renamed"])
+            self.assertEqual(engine.state.to_dict(), before)
+            self.assertTrue((Path(temp_dir) / "筑基之前_导入1.json").is_file())
+
+            payload["state"]["turn"] = 28
+            rejected = client.post("/api/v1/saves/import", json={"data": payload})
+            self.assertEqual(rejected.status_code, 400)
+            self.assertIn("内容校验失败", rejected.json()["detail"])
+
+    def test_save_import_request_size_is_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            client = TestClient(create_modern_app(engine, ROOT))
+            response = client.post(
+                "/api/v1/saves/import",
+                content=b"x" * (2 * 1024 * 1024 + 70_000),
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(response.status_code, 413)
+            self.assertIn("2 MB", response.json()["detail"])
+
     def test_react_shell_and_unknown_frontend_route_use_spa_entry(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = build_engine(ROOT)

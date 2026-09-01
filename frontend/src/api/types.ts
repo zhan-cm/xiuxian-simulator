@@ -523,3 +523,15 @@ export interface ShowcasePage {
 export interface ShowcaseResponse {
   pages: ShowcasePage[]
 }
+
+export interface SaveImportResponse {
+  name: string
+  requested_name: string
+  renamed: boolean
+  source_format: 'portable' | 'legacy'
+  game_version: string
+  player_name: string
+  realm: string
+  turn: number
+  save_summaries: Snapshot['save_summaries']
+}

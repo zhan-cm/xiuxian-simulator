@@ -123,6 +123,27 @@ class WebApplication:
             snapshot = self.snapshot()
         return {"output": output, **snapshot}
 
+    def export_save(self, name: str) -> dict[str, Any]:
+        with self._lock:
+            return self.engine.saves.export_payload(name)
+
+    def import_save(
+        self,
+        payload: dict[str, Any],
+        *,
+        preferred_name: str = "",
+        overwrite: bool = False,
+    ) -> dict[str, Any]:
+        with self._lock:
+            result = self.engine.saves.import_payload(
+                payload,
+                preferred_name=preferred_name,
+                overwrite=overwrite,
+                expected_rule_sha256=self.engine.rules.sha256,
+            )
+            result["save_summaries"] = self.engine.saves.list_summaries()
+        return result
+
     @staticmethod
     def _json(payload: dict[str, Any], status: int = 200) -> tuple[int, str, bytes]:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -160,7 +181,7 @@ class WebApplication:
 
 def make_handler(app: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "XiuxianSimulator/0.57"
+        server_version = "XiuxianSimulator/0.58"
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch("GET")

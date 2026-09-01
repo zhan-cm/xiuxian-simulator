@@ -234,6 +234,18 @@ def _smoke_modern_server(project_root: Path) -> None:
         )
         if not isinstance(action.get("state"), dict) or action["state"].get("phase") != "character_creation_basic":
             raise VerificationError("行动接口未能从入世推进到创角阶段。")
+        exported_save = _read_json(f"{base_url}/api/v1/saves/export?name=autosave")
+        if exported_save.get("format") != "wendao-changsheng-save":
+            raise VerificationError("自动存档未能导出为便携卷宗。")
+        imported_save = _read_json(
+            f"{base_url}/api/v1/saves/import",
+            data=json.dumps(
+                {"data": exported_save, "preferred_name": "", "overwrite": False},
+                ensure_ascii=False,
+            ).encode("utf-8"),
+        )
+        if imported_save.get("name") != "autosave_导入1" or imported_save.get("renamed") is not True:
+            raise VerificationError("便携卷宗未能在同名冲突时安全另存。")
         showcase = _read_json(f"{base_url}/api/v1/showcase")
         pages = showcase.get("pages")
         if not isinstance(pages, list) or len(pages) < 34:
@@ -280,7 +292,7 @@ def main() -> None:
     print(f"发布包验证通过：v{version}，{count} 个文件。")
     print(f"SHA-256：{digest}")
     if args.smoke:
-        print("全新解压目录中的新版页面、本地接口、行动推进与成果巡览均已通过。")
+        print("全新解压目录中的新版页面、本地接口、行动推进、便携卷宗与成果巡览均已通过。")
 
 
 if __name__ == "__main__":

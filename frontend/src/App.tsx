@@ -76,9 +76,11 @@ interface GameProps {
   onShowcase: () => void
   onExitShowcase: () => void
   notice: string
+  onArchiveChanged: () => Promise<unknown> | void
+  onNotice: (message: string) => void
 }
 
-function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, notice }: GameProps) {
+function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, notice, onArchiveChanged, onNotice }: GameProps) {
   const { state, presentation, decision } = snapshot
   const { player } = state
   const canUseQuickActions = state.phase === 'playing'
@@ -94,7 +96,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           <div className="topbar-actions">
             <div className="time-badge"><CalendarDays size={16} /><span>第 {state.turn} 回合</span><b /><strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong></div>
             <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>{showcase ? <X size={16} /> : <Eye size={16} />}{showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}</button>
-            {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} />}
+            {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} onChanged={onArchiveChanged} onNotice={onNotice} />}
             <CharacterSheet player={player} />
           </div>
         </header>
@@ -153,7 +155,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </Panel>
           </aside>}
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.57 正式候选验证</footer>
+        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · V0.58 便携卷宗</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
@@ -203,6 +205,8 @@ export default function App() {
         onShowcase={openShowcase}
         onExitShowcase={() => setShowcaseIndex(null)}
         notice={inShowcase ? '' : notice}
+        onArchiveChanged={async () => { await snapshot.refetch() }}
+        onNotice={(message) => { setActionError(''); setNotice(message) }}
       />
       {inShowcase && <ShowcaseNavigator pages={pages} index={showcaseIndex} onIndex={setShowcaseIndex} onExit={() => setShowcaseIndex(null)} />}
     </>
