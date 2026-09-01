@@ -16,7 +16,7 @@ from xiuxian_simulator.state import GameState
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.56.0"
+VERSION = "0.57.0"
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -53,6 +53,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             "python -m pytest",
             "python -m xiuxian_simulator --check",
             "python scripts/package_release.py --check",
+            "python scripts/verify_release.py --smoke",
             "npm run lint",
             "npm test",
             "npm run build",
@@ -70,6 +71,19 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("不会修改真实存档", guide)
         self.assertIn("自动保留备份", guide)
 
+    def test_modern_launcher_accepts_both_windows_python_commands(self) -> None:
+        launcher_path = ROOT / "启动新版界面.bat"
+        launcher_bytes = launcher_path.read_bytes()
+        launcher = launcher_bytes.decode("utf-8")
+        self.assertIn(b"\r\n", launcher_bytes)
+        self.assertNotIn(b"\n", launcher_bytes.replace(b"\r\n", b""))
+        self.assertIn("where py", launcher)
+        self.assertIn("where python", launcher)
+        self.assertIn("XIU_BOOTSTRAP", launcher)
+        self.assertIn("EnableDelayedExpansion", launcher)
+        self.assertIn('"!XIU_BOOTSTRAP!" !XIU_BOOTSTRAP_ARGS! -m venv .venv', launcher)
+        self.assertIn(":missing_python", launcher)
+
     def test_formal_release_policy_is_explicit(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         checklist = (ROOT / "docs" / "正式发布检查清单.md").read_text(encoding="utf-8")
@@ -79,7 +93,7 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_windows_release_bundle_is_clean_and_verifiable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            archive = Path(temp_dir) / "Wendao-Changsheng-v0.56.0-windows.zip"
+            archive = Path(temp_dir) / "Wendao-Changsheng-v0.57.0-windows.zip"
             second_archive = Path(temp_dir) / "rebuild.zip"
             for output in (archive, second_archive):
                 subprocess.run(
@@ -119,6 +133,46 @@ class ReleaseReadinessTests(unittest.TestCase):
                 self.assertIn(prefix + required, names)
             self.assertFalse(any("/tests/" in name or "/node_modules/" in name for name in names))
             self.assertFalse(any(name.endswith(("autosave.json", "autosave.json.bak", ".env")) for name in names))
+
+            verified = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "verify_release.py"),
+                    str(archive),
+                    "--expected-version",
+                    VERSION,
+                    "--smoke",
+                ],
+                cwd=ROOT,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            self.assertEqual(verified.returncode, 0, verified.stdout.decode(errors="replace"))
+
+            archive.write_bytes(archive.read_bytes()[:-1] + b"x")
+            corrupted = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "verify_release.py"), str(archive)],
+                cwd=ROOT,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            self.assertNotEqual(corrupted.returncode, 0)
+
+    def test_formal_release_notes_are_player_ready(self) -> None:
+        notes = (ROOT / "docs" / "正式版发布说明.md").read_text(encoding="utf-8")
+        for expected in (
+            "Wendao-Changsheng-v1.0.0-windows.zip",
+            "启动新版界面.bat",
+            "检查环境.bat",
+            "SHA-256",
+            "存档与隐私",
+            "已知限制",
+            "v1.0.0",
+            "《问道长生》正式版",
+        ):
+            self.assertIn(expected, notes)
 
 
 if __name__ == "__main__":

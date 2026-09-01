@@ -44,7 +44,7 @@ def build_engine(root: Path | None = None) -> GameEngine:
 def main() -> None:
     parser = argparse.ArgumentParser(description="《问道长生》本地修仙模拟器")
     parser.add_argument("--web", action="store_true", help="启动本地网页界面")
-    parser.add_argument("--modern-web", action="store_true", help="启动 V0.56 React 新版界面")
+    parser.add_argument("--modern-web", action="store_true", help="启动 V0.57 React 新版界面")
     parser.add_argument("--port", type=int, default=8765, help="网页界面端口，默认 8765")
     parser.add_argument("--no-open-browser", action="store_true", help="启动网页服务但不自动打开浏览器")
     parser.add_argument("--check", action="store_true", help="检查本地运行环境后退出")
@@ -80,7 +80,7 @@ def main() -> None:
         )
         return
 
-    print("问道长生 V0.56 Windows 交付整备")
+    print("问道长生 V0.57 正式候选验证")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

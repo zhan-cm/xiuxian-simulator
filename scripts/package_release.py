@@ -53,8 +53,10 @@ REQUIRED_FILES = {
     "data/content/decision_choices.json",
     "data/saves/.gitkeep",
     "docs/修仙模拟器 · 问道长生.docx",
+    "docs/正式版发布说明.md",
     "frontend/dist/index.html",
     "frontend/dist/third-party-licenses.md",
+    "scripts/verify_release.py",
     "web/index.html",
 }
 VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?")

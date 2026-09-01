@@ -34,6 +34,10 @@ jobs:
         run: python -m xiuxian_simulator --check
       - name: Windows 发布清单检查
         run: python scripts/package_release.py --check
+      - name: Windows 发布包端到端验收
+        run: |
+          python scripts/package_release.py
+          python scripts/verify_release.py --smoke
 
   modern-interface:
     name: React 新版界面
