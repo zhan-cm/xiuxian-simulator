@@ -16,7 +16,7 @@ afterEach(() => cleanup())
 
 describe('ShowcaseNavigator', () => {
   it('persists checked pages and page notes', () => {
-    render(<ShowcaseNavigator pages={pages} index={0} appVersion="0.61.0" onIndex={() => undefined} onExit={() => undefined} />)
+    render(<ShowcaseNavigator pages={pages} index={0} appVersion="1.0.0" onIndex={() => undefined} onExit={() => undefined} />)
     fireEvent.click(screen.getByRole('button', { name: '标记本页已检查' }))
     fireEvent.click(screen.getByText('记录本页问题或建议'))
     fireEvent.change(screen.getByPlaceholderText(/手机宽度/), { target: { value: '主界面在窄屏正常' } })
@@ -30,11 +30,11 @@ describe('ShowcaseNavigator', () => {
   it('copies a privacy-safe acceptance summary', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
-    render(<ShowcaseNavigator pages={pages} index={0} appVersion="0.61.0" onIndex={() => undefined} onExit={() => undefined} />)
+    render(<ShowcaseNavigator pages={pages} index={0} appVersion="1.0.0" onIndex={() => undefined} onExit={() => undefined} />)
 
     fireEvent.click(screen.getByRole('button', { name: /复制摘要/ }))
     await waitFor(() => expect(writeText).toHaveBeenCalledOnce())
-    expect(writeText.mock.calls[0][0]).toContain('《问道长生》V0.61.0 玩家验收摘要')
+    expect(writeText.mock.calls[0][0]).toContain('《问道长生》V1.0.0 玩家验收摘要')
     expect(writeText.mock.calls[0][0]).toContain('不包含角色、存档、密钥或本机路径')
     expect(screen.getByRole('status').textContent).toContain('已复制')
   })

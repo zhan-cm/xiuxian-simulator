@@ -56,7 +56,7 @@ if not exist "frontend\dist\index.html" (
     )
     popd
   )
-  echo 正在构建《问道长生》V0.61 游戏界面……
+  echo 正在构建《问道长生》正式版游戏界面……
   pushd frontend
   call npm run build
   if errorlevel 1 (
@@ -73,7 +73,7 @@ if errorlevel 1 (
   goto failed
 )
 echo 启动自检通过，报告已保存到“%XIU_CHECK_LOG%”。
-echo 正在打开《问道长生》V0.61 游戏界面……
+echo 正在打开《问道长生》正式版游戏界面……
 "%XIU_PYTHON%" main.py --modern-web
 set "XIU_EXIT=%errorlevel%"
 if not "%XIU_EXIT%"=="0" goto failed

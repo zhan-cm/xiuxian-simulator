@@ -13,18 +13,18 @@ const pages = [
 
 describe('showcase review', () => {
   it('resets malformed and older-version progress', () => {
-    expect(parseShowcaseReview('{broken', pages, '0.61.0')).toEqual(createShowcaseReview(pages, '0.61.0'))
-    expect(parseShowcaseReview(JSON.stringify({ schemaVersion: 1, appVersion: '0.60.0', completedIds: ['home'] }), pages, '0.61.0')).toEqual(createShowcaseReview(pages, '0.61.0'))
+    expect(parseShowcaseReview('{broken', pages, '1.0.0')).toEqual(createShowcaseReview(pages, '1.0.0'))
+    expect(parseShowcaseReview(JSON.stringify({ schemaVersion: 1, appVersion: '0.61.0', completedIds: ['home'] }), pages, '1.0.0')).toEqual(createShowcaseReview(pages, '1.0.0'))
   })
 
   it('keeps only known pages and bounded notes', () => {
     const review = parseShowcaseReview(JSON.stringify({
       schemaVersion: 1,
-      appVersion: '0.61.0',
+      appVersion: '1.0.0',
       currentId: 'battle',
       completedIds: ['unknown', 'battle', 'home', 'battle'],
       notes: { battle: '按钮在窄屏被遮挡', unknown: '不应保留', ending: 'x'.repeat(800) },
-    }), pages, '0.61.0')
+    }), pages, '1.0.0')
     expect(review.currentId).toBe('battle')
     expect(review.completedIds).toEqual(['home', 'battle'])
     expect(review.notes.unknown).toBeUndefined()
@@ -33,7 +33,7 @@ describe('showcase review', () => {
 
   it('builds a shareable summary without game-state fields', () => {
     const review = {
-      ...createShowcaseReview(pages, '0.61.0'),
+      ...createShowcaseReview(pages, '1.0.0'),
       completedIds: ['home'],
       notes: { battle: '  敌方情报需要更醒目\n一些  ' },
     }
