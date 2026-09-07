@@ -19,7 +19,8 @@ import { loadShowcaseReview } from './showcaseReview'
 import { PathwaysCodex } from './components/PathwaysCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
 import { LegacyChronicle } from './components/LegacyChronicle'
-import { CultivatorHud, ImmersiveScene, WorldNavigation } from './components/ImmersiveScene'
+import { CultivatorHud, ImmersiveScene, SocialActionBar, WorldNavigation } from './components/ImmersiveScene'
+import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -88,6 +89,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = canUseQuickActions || ['character_creation_basic', 'character_creation_traits'].includes(state.phase)
   const hasUpdates = snapshot.story.available || snapshot.new_era.available || snapshot.commissions.active.some((item) => item.ready)
+  const encounterNpc = findEncounterNpc(snapshot.npc_profiles, presentation)
   const onCodexAction = (value: string) => {
     if (busy || showcase || !canUseQuickActions) return
     closeCodex()
@@ -112,7 +114,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
 
         <main className="game-grid immersive-grid">
           <section className="main-stage">
-            {!legacySurface && <ImmersiveScene state={state} presentation={presentation} calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`} />}
+            {!legacySurface && <ImmersiveScene state={state} presentation={presentation} npcProfiles={snapshot.npc_profiles} calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`} />}
             {legacySurface && <div className="stage-heading"><div><span>本世已终</span><h2>{player.name} · 仙途评传</h2></div></div>}
             {!legacySurface && <>
               <AnimatePresence mode="wait">
@@ -120,6 +122,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                   <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase || busy} immersive onAction={onAction} />
                 </motion.div>
               </AnimatePresence>
+              <SocialActionBar npc={encounterNpc} inventory={snapshot.inventory} disabled={busy || showcase || !canUseQuickActions} onAction={onAction} />
               {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
             </>}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}

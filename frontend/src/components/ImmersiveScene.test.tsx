@@ -3,9 +3,9 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { GameState, Presentation } from '../api/types'
+import type { GameState, InventorySnapshot, NpcProfile, Presentation } from '../api/types'
 import { EventPanel } from './EventPanel'
-import { CultivatorHud, ImmersiveScene, WorldNavigation } from './ImmersiveScene'
+import { CultivatorHud, ImmersiveScene, SocialActionBar, WorldNavigation } from './ImmersiveScene'
 
 const state = {
   version: '1.0.0', phase: 'playing', turn: 12, calendar_year: 387, month: 12, world_era: '灵潮前夜', last_world_event: '青岳灵雾渐浓。', relationship_tension: 0, main_quest: '', history: [], npc_relations: {},
@@ -13,6 +13,7 @@ const state = {
 } as GameState
 
 const presentation = { action: '修炼', title: '松间吐纳', eyebrow: '当前道途', seal: '修', tone: 'story', paragraphs: ['晨雾沿着石阶漫入洞府。'], changes: [], blocks: [], details: '', has_details: false } as Presentation
+const npc = { name: '顾清玄', gender: '男', identity: '青云宗真传·温润剑修', age: 24, lifespan: 180, realm: '筑基·后期', location: '青云宗', greeting: '剑有锋芒，道心却不必处处伤人。', likes: ['剑穗', '清茶'], dislikes: ['情蛊'], affinity: 66, relation: '知己', alive: true, status: '静修' } as NpcProfile
 
 afterEach(() => cleanup())
 
@@ -88,5 +89,39 @@ describe('immersive game shell', () => {
     render(<ImmersiveScene state={state} presentation={presentation} calendarLabel="冬十二月" />)
     expect(screen.getByRole('region', { name: '当前场景：东洲青岳' })).toHaveAttribute('data-scene', 'cave')
     expect(screen.getByText(/第 12 回合/)).toBeInTheDocument()
+  })
+
+  it('stages a named relationship action as a two-character encounter', () => {
+    const meeting = { ...presentation, action: '对话 顾清玄', title: '顾清玄', tone: 'relation', paragraphs: ['“剑有锋芒，道心却不必处处伤人。”'] }
+    render(<ImmersiveScene state={state} presentation={meeting} npcProfiles={{ 顾清玄: npc }} calendarLabel="冬十二月" />)
+    const scene = screen.getByRole('region', { name: '当前场景：东洲青岳' })
+    expect(scene).toHaveAttribute('data-scene', 'relation')
+    expect(scene).toHaveAttribute('data-conversation', 'true')
+    expect(screen.getByLabelText('正在与顾清玄会面')).toBeVisible()
+    expect(screen.getByText('青云宗真传·温润剑修')).toBeVisible()
+    expect(screen.getByText('心意相知 · 静修')).toBeVisible()
+  })
+
+  it('keeps the full relationship roster neutral until a person is chosen', () => {
+    const roster = { ...presentation, action: '情缘', title: '人物与情缘', tone: 'relation', paragraphs: ['六位故人的近况已经汇入卷册。'] }
+    render(<ImmersiveScene state={state} presentation={roster} npcProfiles={{ 顾清玄: npc }} calendarLabel="冬十二月" />)
+    expect(screen.queryByLabelText('正在与顾清玄会面')).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '当前场景：东洲青岳' })).not.toHaveAttribute('data-conversation')
+  })
+
+  it('offers concrete follow-up actions and only submits the selected gift', () => {
+    const act = vi.fn()
+    const inventory = { items: [
+      { name: '清茶', count: 2, category: '礼物' },
+      { name: '剑穗', count: 1, category: '礼物' },
+      { name: '疗伤丹', count: 2, category: '丹药' },
+    ], categories: ['全部', '礼物', '丹药'], total_types: 3, total_count: 5, equipped: { weapon: '', armor: '' } } as InventorySnapshot
+    render(<SocialActionBar npc={npc} inventory={inventory} onAction={act} />)
+    fireEvent.click(screen.getByRole('button', { name: /继续交谈/ }))
+    expect(act).toHaveBeenLastCalledWith('对话 顾清玄')
+    fireEvent.change(screen.getByRole('combobox', { name: /赠一份心意/ }), { target: { value: '剑穗' } })
+    fireEvent.click(screen.getByRole('button', { name: '送出' }))
+    expect(act).toHaveBeenLastCalledWith('送礼 顾清玄 剑穗')
+    expect(screen.queryByRole('option', { name: /疗伤丹/ })).not.toBeInTheDocument()
   })
 })

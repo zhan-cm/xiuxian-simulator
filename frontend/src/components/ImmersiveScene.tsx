@@ -1,11 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { CalendarDays, CloudSun, Compass, Home, Landmark, Map, Menu, Mountain, ScrollText, Sparkles, UsersRound, X } from 'lucide-react'
-import type { RefObject } from 'react'
-import type { GameState, PlayerState, Presentation } from '../api/types'
+import { CalendarDays, CloudSun, Compass, Gift, Home, Landmark, Map, Menu, MessageCircleMore, Mountain, ScrollText, Sparkles, Swords, UsersRound, X } from 'lucide-react'
+import { useMemo, useState, type RefObject } from 'react'
+import type { GameState, InventorySnapshot, NpcProfile, PlayerState, Presentation } from '../api/types'
+import { findEncounterNpc } from '../sceneLogic'
 
 const sceneFrom = (state: GameState, presentation: Presentation) => {
   const action = presentation.action || ''
   if (state.phase.startsWith('combat') || presentation.tone === 'combat') return 'battle'
+  if (presentation.tone === 'relation') return 'relation'
   if (/坊市|拍卖|交易|买入|卖出/.test(action)) return 'market'
   if (/洞府|修炼|闭关|调息/.test(action)) return 'cave'
   if (/宗|门派|藏经/.test(action)) return 'sect'
@@ -21,17 +23,30 @@ interface ImmersiveSceneProps {
   state: GameState
   presentation: Presentation
   calendarLabel: string
+  npcProfiles?: Record<string, NpcProfile>
 }
 
-export function ImmersiveScene({ state, presentation, calendarLabel }: ImmersiveSceneProps) {
+const encounterMood = (npc: NpcProfile, action: string) => {
+  if (!npc.alive) return { key: 'memory', label: '故人旧影' }
+  if (/伤|危|虚弱/.test(npc.status)) return { key: 'wounded', label: '气息不稳' }
+  if (action.startsWith('论道')) return { key: 'focused', label: '凝神论道' }
+  if (action.startsWith('送礼')) return { key: 'warm', label: npc.affinity >= 40 ? '欣然相受' : '礼数相交' }
+  if (npc.affinity >= 60) return { key: 'warm', label: '心意相知' }
+  if (npc.affinity < 0) return { key: 'guarded', label: '心有戒备' }
+  return { key: 'calm', label: '从容相叙' }
+}
+
+export function ImmersiveScene({ state, presentation, calendarLabel, npcProfiles }: ImmersiveSceneProps) {
   const { player } = state
   const scene = sceneFrom(state, presentation)
+  const npc = findEncounterNpc(npcProfiles, presentation)
+  const mood = npc ? encounterMood(npc, presentation.action) : undefined
   const summary = presentation.paragraphs?.[0] || state.last_world_event || '天地无言，灵机正在暗处流转。'
   const summaryCharacters = Array.from(summary)
   const shortened = summaryCharacters.length > 120
   const preview = shortened ? `${summaryCharacters.slice(0, 120).join('')}…` : summary
   return (
-    <section className="immersive-scene" data-scene={scene} aria-label={`当前场景：${player.location}`}>
+    <section className="immersive-scene" data-scene={scene} data-conversation={npc ? 'true' : undefined} aria-label={`当前场景：${player.location}`}>
       <div className="scene-sky" aria-hidden="true" />
       <div className="scene-sun" aria-hidden="true" />
       <div className="scene-mountain scene-mountain-far" aria-hidden="true" />
@@ -45,11 +60,16 @@ export function ImmersiveScene({ state, presentation, calendarLabel }: Immersive
         <small><CloudSun size={13} />{state.world_era}</small>
       </header>
 
-      <div className="scene-character" aria-label={`${player.name}，${player.realm}`}>
+      <div className="scene-character" data-side="player" aria-label={`${player.name}，${player.realm}`}>
         <div className="scene-aura" aria-hidden="true" />
         <span className="scene-portrait">{player.name.slice(0, 1)}</span>
         <div><small>{player.sect || '散修'} · {player.condition}</small><strong>{player.name}</strong><em>{player.realm}</em></div>
       </div>
+
+      {npc && <div className="scene-npc" data-mood={mood?.key} aria-label={`正在与${npc.name}会面`}>
+        <div className="scene-npc-copy"><small>{mood?.label} · {npc.status}</small><strong>{npc.name}</strong><em>{npc.identity}</em><div title={`好感 ${npc.affinity}，关系：${npc.relation}`}><span>{npc.relation || '缘分未定'}</span><i><b style={{ width: `${Math.max(3, Math.min(100, npc.affinity))}%` }} /></i><span>好感 {npc.affinity}</span></div></div>
+        <span className="scene-npc-portrait">{npc.name.slice(0, 1)}</span>
+      </div>}
 
       <article className="scene-narrative">
         <span><CalendarDays size={13} />第 {state.turn} 回合 · {calendarLabel}</span>
@@ -66,6 +86,39 @@ export function ImmersiveScene({ state, presentation, calendarLabel }: Immersive
       </article>
     </section>
   )
+}
+
+interface SocialActionBarProps {
+  npc?: NpcProfile
+  inventory: InventorySnapshot
+  disabled?: boolean
+  onAction: (action: string) => void
+}
+
+export function SocialActionBar({ npc, inventory, disabled = false, onAction }: SocialActionBarProps) {
+  const gifts = useMemo(() => inventory.items.filter((item) => item.category === '礼物' && item.count > 0), [inventory.items])
+  const [selectedGift, setSelectedGift] = useState('')
+  const gift = gifts.some((item) => item.name === selectedGift) ? selectedGift : gifts[0]?.name || ''
+  if (!npc) return null
+  const unavailable = disabled || !npc.alive
+  const relationAction = npc.relation === '道侣'
+    ? { label: '合修一月', action: `双修 ${npc.name}` }
+    : npc.affinity >= 80
+      ? { label: '结道侣契', action: `结为道侣 ${npc.name}` }
+      : null
+  return <section className="social-action-bar" aria-label={`与${npc.name}互动`}>
+    <header><span>{npc.name.slice(0, 1)}</span><div><small>此刻相逢</small><strong>接下来想与{npc.name}做什么？</strong></div></header>
+    <div className="social-primary-actions">
+      <button type="button" disabled={unavailable} onClick={() => onAction(`对话 ${npc.name}`)}><MessageCircleMore size={16} /><span><strong>继续交谈</strong><small>推进一月 · 增进了解</small></span></button>
+      <button type="button" disabled={unavailable} onClick={() => onAction(`论道 ${npc.name}`)}><Swords size={16} /><span><strong>论道印证</strong><small>真实判定 · 获得感悟</small></span></button>
+      {relationAction && <button type="button" disabled={unavailable} onClick={() => onAction(relationAction.action)}><Sparkles size={16} /><span><strong>{relationAction.label}</strong><small>{npc.relation === '道侣' ? '共同修行 · 增长修为' : '需要好感达到 80'}</small></span></button>}
+    </div>
+    <div className="social-gift-action">
+      <label htmlFor="encounter-gift"><Gift size={15} /><span><strong>赠一份心意</strong><small>{gifts.length ? `袋中有 ${gifts.length} 种礼物` : '乾坤袋中暂无礼物'}</small></span></label>
+      <select id="encounter-gift" value={gift} disabled={unavailable || !gifts.length} onChange={(event) => setSelectedGift(event.target.value)}>{gifts.map((item) => <option key={item.name} value={item.name}>{item.name} ×{item.count}</option>)}</select>
+      <button type="button" disabled={unavailable || !gift} title={gift ? `${npc.name}喜欢：${npc.likes.join('、') || '尚待了解'}` : '先从探索或坊市获得礼物'} onClick={() => onAction(`送礼 ${npc.name} ${gift}`)}>送出</button>
+    </div>
+  </section>
 }
 
 interface CultivatorHudProps {

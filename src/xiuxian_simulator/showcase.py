@@ -88,6 +88,13 @@ def _relations(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("情缘")
 
 
+def _dialogue(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    engine.state.npc_relations = {"顾清玄": {"affinity": 66, "path": "知己"}}
+    engine.state.player.resources.update({"清茶": 2, "剑穗": 1})
+    return app.perform_action("对话 顾清玄")
+
+
 def _network(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     _ready(engine, app)
     engine.state.npc_relations = {
@@ -456,6 +463,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("sect-domain", "开宗立派", "检查自立山门后的门人、库藏、道统方针与设施营造。", ["宗门经营使用独立组件而非文字长串", "收徒、传法、方针和营造状态清楚", "巡览中的所有经营操作必须禁用"], _sect_domain),
     ("sect-diplomacy", "九州争锋", "检查自立宗门的关系、盟约、商路收益与遭遇宗门战争时的掌门抉择。", ["四方关系与盟约状态可快速比较", "战争方向、月份和声势必须明确", "巡览中的外交与护宗按钮必须禁用"], _sect_diplomacy_war),
     ("relations", "浮生故人", "验证人物寿元、生平、护道抉择和关系路径。", ["年龄、境界与在世状态来自真实存档", "护道资源门槛与三种选择清楚", "故人生平不挤成一行"], _relations),
+    ("dialogue", "松间相叙", "检查双角色会面、人物近况、好感与后续交互。", ["玩家与人物在场景中分列两侧", "身份、情绪和关系层级清楚", "交谈、论道、赠礼均有可点击入口"], _dialogue),
     ("network", "众生缘网", "验证人物彼此结交、嫌隙、往来履历与玩家介入。", ["关系方向和强度可快速辨认", "纷争介入有真实门槛与后果", "巡览中的所有介入按钮必须禁用"], _network),
     ("battle", "临阵抉择", "查看战前敌情和所有可点击战斗抉择。", ["敌我风险明确", "危险操作视觉统一", "选择按钮状态清楚"], _battle),
     ("realms", "九州秘境", "验证秘境危险度、准入境界和确认流程。", ["致命区域必须锁定", "描述与操作分层", "进入前仍有二次确认"], _action("秘境")),

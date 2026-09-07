@@ -71,6 +71,7 @@ export interface DecisionChoice {
   tone?: 'primary' | 'danger' | 'safe' | 'quiet'
   disabled?: boolean
   disabled_reason?: string
+  tooltip?: string
 }
 
 export interface Decision {
@@ -90,6 +91,8 @@ export interface NpcProfile {
   realm: string
   location: string
   greeting: string
+  likes: string[]
+  dislikes: string[]
   affinity: number
   relation: string
   alive: boolean

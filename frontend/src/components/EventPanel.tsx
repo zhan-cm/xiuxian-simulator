@@ -42,6 +42,7 @@ function PeopleBlock({ block, lives, readOnly, onAction }: { block: Presentation
                 {!alive && profile.cause_of_death && <p className="memorial-line">{profile.cause_of_death}</p>}
                 {profile.life_events.length > 0 && <details className="life-events"><summary>查看生平近事</summary><ol>{profile.life_events.map((entry) => <li key={entry}>{entry}</li>)}</ol></details>}
               </>}
+              {alive && <div className="person-actions"><button type="button" disabled={readOnly} onClick={() => onAction(`对话 ${name}`)}>与其交谈</button><button type="button" disabled={readOnly} onClick={() => onAction(`论道 ${name}`)}>论道印证</button></div>}
             </article>
           )
         })}
