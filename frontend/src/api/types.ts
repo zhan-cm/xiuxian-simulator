@@ -259,6 +259,26 @@ export interface SectLibrarySnapshot {
   can_receive_guidance: boolean; guidance_reason: string; history: string[]
 }
 
+export interface SectTaskView {
+  name: string; mark: string; attribute: string; attribute_value: number; chance: number
+  stones: number; contribution: number; rewards: Record<string, number>
+  tone: 'safe' | 'steady' | 'danger' | 'severe'; action: string
+}
+
+export interface SectMembershipSnapshot {
+  member: boolean; sect: string; rank: string; contribution: number; privileges: string[]
+  tasks: SectTaskView[]
+  promotion: {
+    target?: string; contribution_required?: number; contribution_met?: boolean
+    minimum_realm?: number; minimum_realm_label?: string; realm_met?: boolean
+    chance?: number; available?: boolean; reason?: string; action?: string
+  }
+  tournament: {
+    available?: boolean; participated?: boolean; result?: string; next_year?: number
+    reason?: string; action?: string
+  }
+}
+
 export interface ArtifactGrowthItem {
   name: string; mark: string; grade: string; slot: string; element: string
   level: number; level_label: string; level_cap: number; resonance: number; victories: number
@@ -501,6 +521,7 @@ export interface Snapshot {
   spirit_beasts: SpiritBeastSnapshot
   formations: FormationSnapshot
   sect_library: SectLibrarySnapshot
+  sect_membership: SectMembershipSnapshot
   artifacts: ArtifactGrowthSnapshot
   art_mastery: ArtMasterySnapshot
   recovery: RecoverySnapshot

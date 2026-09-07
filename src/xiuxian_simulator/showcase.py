@@ -299,6 +299,20 @@ def _sect_library(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
     return app.perform_action("藏经阁")
 
 
+def _sect_membership(engine: GameEngine, app: WebApplication) -> dict[str, Any]:
+    _ready(engine, app)
+    player = engine.state.player
+    player.sect = "青云宗"
+    player.sect_rank = "外门弟子"
+    player.sect_contribution = 140
+    player.realm_index = 1
+    player.realm = "筑基·初期"
+    player.reputation = 18
+    engine.state.calendar_year = 390
+    engine.state.sect_privileges = ["青云宗外门权限", "藏经阁一层"]
+    return app.perform_action("宗门")
+
+
 def _established_sect(engine: GameEngine, app: WebApplication) -> None:
     _ready(engine, app)
     player = engine.state.player
@@ -459,6 +473,7 @@ SHOWCASE_PAGES: tuple[tuple[str, str, str, list[str], PageSetup], ...] = (
     ("regional", "地方机缘", "检查五域声望、资源门槛和会被世界记住的地方抉择。", ["三项应对的后果清楚", "资源不足选项自动锁定", "巡览中的选择不会改动正式存档"], _regional),
     ("market", "青岳坊市", "验证分类货架、物品详情、购买能力和持有数量。", ["点击货物可查看品级、来历与实际用途", "买卖价格可直接比较", "巡览中可浏览分类但交易按钮必须禁用"], _action("坊市")),
     ("sects", "宗门择路", "查看各宗门的独立身份卡与试炼入口。", ["宗门气质容易区分", "试炼后果有提示", "按钮接入真实行动"], _action("宗门")),
+    ("sect-membership", "本宗事务", "检查入宗后的职位阶序、宗门差事、晋升门槛与十年大比。", ["五类差事的胜算、风险和报酬各自成卡", "晋升贡献与境界门槛来自真实状态", "大比与叛宗入口均保留明确后果"], _sect_membership),
     ("sect-library", "宗门藏经阁", "检查贡献兑换、职位权限、年度传功与宗门专属传承。", ["职位阶序和解锁范围一眼可读", "贡献不足或已领取会明确锁定", "巡览中的兑换与传功必须禁用"], _sect_library),
     ("sect-domain", "开宗立派", "检查自立山门后的门人、库藏、道统方针与设施营造。", ["宗门经营使用独立组件而非文字长串", "收徒、传法、方针和营造状态清楚", "巡览中的所有经营操作必须禁用"], _sect_domain),
     ("sect-diplomacy", "九州争锋", "检查自立宗门的关系、盟约、商路收益与遭遇宗门战争时的掌门抉择。", ["四方关系与盟约状态可快速比较", "战争方向、月份和声势必须明确", "巡览中的外交与护宗按钮必须禁用"], _sect_diplomacy_war),

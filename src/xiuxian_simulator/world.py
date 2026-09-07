@@ -109,6 +109,105 @@ class SectProgressionEngine:
         return state.calendar_year >= 390 and (state.calendar_year - 390) % 10 == 0
 
     @classmethod
+    def snapshot(cls, state: GameState) -> dict[str, object]:
+        """Expose ordinary sect life as structured, read-only UI data."""
+        from .economy import SECT_TASKS
+        from .progression import REALMS
+
+        player = state.player
+        if player.sect == "散修":
+            return {
+                "member": False,
+                "sect": "散修",
+                "rank": "无",
+                "contribution": 0,
+                "privileges": [],
+                "tasks": [],
+                "promotion": {},
+                "tournament": {},
+            }
+
+        attribute_labels = {
+            "fortune": "福缘",
+            "spirit_sense": "神识",
+            "speed": "遁速",
+            "dao_heart": "道心",
+        }
+        task_tones = {"采药": "safe", "巡逻": "steady", "猎妖": "danger", "护送": "danger", "镇守": "severe"}
+        tasks = []
+        for name, (attribute, stones, contribution, rewards) in SECT_TASKS.items():
+            value = int(getattr(player, attribute))
+            chance = max(20, min(95, 58 + value * 2 + player.realm_index * 5))
+            tasks.append(
+                {
+                    "name": name,
+                    "mark": name[:1],
+                    "attribute": attribute_labels.get(attribute, attribute),
+                    "attribute_value": value,
+                    "chance": chance,
+                    "stones": stones,
+                    "contribution": contribution,
+                    "rewards": dict(rewards),
+                    "tone": task_tones[name],
+                    "action": f"宗门任务 {name}",
+                }
+            )
+
+        target, contribution_required, minimum_realm = cls.promotion_requirements(state)
+        contribution_met = player.sect_contribution >= contribution_required if target else True
+        realm_met = player.realm_index >= minimum_realm if target else True
+        promotion_chance = max(20, min(95, 60 + player.comprehension + player.reputation // 5 + player.realm_index * 5))
+        if not target:
+            promotion_reason = "已位列掌门"
+        elif not contribution_met:
+            promotion_reason = f"还需 {contribution_required - player.sect_contribution} 宗门贡献"
+        elif not realm_met:
+            promotion_reason = f"至少需要{REALMS[minimum_realm]}境"
+        else:
+            promotion_reason = "资历已足，可以申请晋升试炼"
+
+        tournament_key = f"{state.calendar_year}:{player.sect}"
+        participated = tournament_key in state.sect_tournament_results
+        calendar_open = cls.tournament_available(state)
+        tournament_available = calendar_open and not participated
+        next_year = state.calendar_year if tournament_available else WorldTimelineEngine.next_year(state.calendar_year, 10, 390)
+        if participated:
+            tournament_reason = f"本届已{state.sect_tournament_results[tournament_key]}"
+        elif calendar_open:
+            tournament_reason = "本届宗门大比正在举行"
+        else:
+            tournament_reason = f"下一届：天玄历 {next_year} 年"
+
+        return {
+            "member": True,
+            "sect": player.sect,
+            "rank": player.sect_rank,
+            "contribution": player.sect_contribution,
+            "privileges": list(state.sect_privileges),
+            "tasks": tasks,
+            "promotion": {
+                "target": target,
+                "contribution_required": contribution_required,
+                "contribution_met": contribution_met,
+                "minimum_realm": minimum_realm,
+                "minimum_realm_label": REALMS[minimum_realm] if target else "已达顶阶",
+                "realm_met": realm_met,
+                "chance": promotion_chance,
+                "available": bool(target and contribution_met and realm_met),
+                "reason": promotion_reason,
+                "action": "申请晋升",
+            },
+            "tournament": {
+                "available": tournament_available,
+                "participated": participated,
+                "result": state.sect_tournament_results.get(tournament_key, ""),
+                "next_year": next_year,
+                "reason": tournament_reason,
+                "action": "宗门大比",
+            },
+        }
+
+    @classmethod
     def tournament(cls, state: GameState) -> TournamentResult:
         player = state.player
         if player.sect == "散修":

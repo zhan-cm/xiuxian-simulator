@@ -11,6 +11,7 @@ import { JourneyTracker } from './JourneyTracker'
 import { NewEraChronicle } from './NewEraChronicle'
 import { SectDominion } from './SectDominion'
 import { SectLibrary } from './SectLibrary'
+import { SectMembershipEntry } from './SectMembershipPage'
 import { SpiritBeastSanctuary } from './SpiritBeastSanctuary'
 import { StoryChronicle } from './StoryChronicle'
 
@@ -49,6 +50,7 @@ export function PathwaysCodex({ snapshot, busy, readOnly, onAction }: Props) {
       <ArtifactForge artifacts={snapshot.artifacts} {...actions} />
     </section>}
     {current.id === 'sect' && <section className="pathways-surface" aria-labelledby="pathways-sect"><header><span>宗</span><div><small>山门有序</small><h3 id="pathways-sect">山门事务</h3><p>研读藏经，经营属于你的道统。</p></div></header>
+      <SectMembershipEntry membership={snapshot.sect_membership} {...actions} />
       <SectLibrary library={snapshot.sect_library} {...actions} />
       <SectDominion domain={snapshot.sect_domain} {...actions} />
     </section>}

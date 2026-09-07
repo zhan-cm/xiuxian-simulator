@@ -133,7 +133,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             {!legacySurface && <>
               <AnimatePresence mode="wait">
                 <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase || busy} immersive onAction={onAction} />
+                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} sectMembership={snapshot.sect_membership} readOnly={showcase || busy} immersive onAction={onAction} />
                 </motion.div>
               </AnimatePresence>
               <SocialActionBar npc={encounterNpc} inventory={snapshot.inventory} disabled={busy || showcase || !canUseQuickActions} onAction={onAction} />

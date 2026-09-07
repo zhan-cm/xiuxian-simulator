@@ -59,6 +59,7 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(snapshot.json()["formations"]["active_name"], "")
             self.assertFalse(snapshot.json()["sect_library"]["member"])
             self.assertEqual(snapshot.json()["sect_library"]["claimed_count"], 0)
+            self.assertFalse(snapshot.json()["sect_membership"]["member"])
             self.assertFalse(snapshot.json()["sect_domain"]["founded"])
             self.assertFalse(snapshot.json()["sect_domain"]["visible"])
             self.assertFalse(snapshot.json()["sect_domain"]["diplomacy"]["visible"])
@@ -218,6 +219,15 @@ class ModernWebTests(unittest.TestCase):
             self.assertEqual(library["rank"], "真传弟子")
             self.assertEqual(len(library["offerings"]), 4)
             self.assertTrue(next(item for item in library["offerings"] if item["id"] == "qingyun-evergreen")["claimed"])
+            membership = by_id["sect-library"]["snapshot"]["sect_membership"]
+            self.assertTrue(membership["member"])
+            self.assertEqual(membership["sect"], "青云宗")
+            self.assertEqual(len(membership["tasks"]), 5)
+            self.assertEqual(membership["tasks"][0]["action"], "宗门任务 采药")
+            sect_page = by_id["sect-membership"]["snapshot"]
+            self.assertEqual(sect_page["presentation"]["action"], "宗门")
+            self.assertTrue(sect_page["sect_membership"]["promotion"]["available"])
+            self.assertTrue(sect_page["sect_membership"]["tournament"]["available"])
             domain = by_id["sect-domain"]["snapshot"]["sect_domain"]
             self.assertTrue(domain["founded"])
             self.assertEqual(domain["sect"]["name"], "青玄宗")

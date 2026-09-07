@@ -31,6 +31,7 @@ from .recovery import RecoveryEngine
 from .legacy import LegacyEngine
 from .sect_foundation import SectFoundationEngine
 from .sect_diplomacy import SectDiplomacyEngine
+from .world import SectProgressionEngine
 
 
 class WebApplication:
@@ -88,6 +89,7 @@ class WebApplication:
             "spirit_beasts": SpiritBeastEngine.snapshot(self.engine.state),
             "formations": FormationEngine.snapshot(self.engine.state),
             "sect_library": SectLibraryEngine.snapshot(self.engine.state),
+            "sect_membership": SectProgressionEngine.snapshot(self.engine.state),
             "artifacts": ArtifactGrowthEngine.snapshot(self.engine.state),
             "art_mastery": ArtMasteryEngine.snapshot(self.engine.state),
             "recovery": RecoveryEngine.snapshot(self.engine.state),

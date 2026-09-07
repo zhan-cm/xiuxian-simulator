@@ -2,7 +2,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock } from '../api/types'
+import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
+import { SectMembershipPage } from './SectMembershipPage'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -244,11 +245,36 @@ function MarketBlock({ block, readOnly, onAction }: { block: PresentationBlock; 
   )
 }
 
+const facilityDescriptions: Record<string, string> = {
+  静室: '隔绝尘扰，供闭关吐纳与疗愈伤势；层级越高，静修越安稳。',
+  丹房: '引地火、布药炉，可安排丹药在后台炼制并随月份完成。',
+  器坊: '淬炼灵铁与妖材，用于打造兵刃、法袍及后续器物。',
+  灵田: '培育灵药的洞府沃土；种下灵植后，需等待真实月份成熟。',
+  聚灵阵: '汇聚四周灵机，提高洞府灵蕴上限与每月自然生成。',
+  禁制: '护住洞府门户与工坊资粮，为高阶经营预留安稳根基。',
+}
+
 function FacilitiesBlock({ block, cave, readOnly, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
   const energyPercent = cave ? Math.max(0, Math.min(100, Math.round(cave.spirit_energy / Math.max(1, cave.spirit_energy_cap) * 100))) : 0
+  const facilities = useMemo(() => block.items || [], [block.items])
+  const [selectedFacilityName, setSelectedFacilityName] = useState('')
+  const selectedFacility = facilities.find((item) => text(item.name) === selectedFacilityName) || facilities[0]
   return (
     <section className="semantic-block facility-block">
       <SystemBlockHeader mark="府" eyebrow="一方洞天" title={cave?.name || block.title || '洞府设施'} description={`灵气 ${cave?.aura || text(block.aura, '普通')} · 灵田 ${text(block.crops, '无作物')}`} meta={cave ? `${cave.active_jobs} / ${cave.capacity} 工坊运转` : '洞府营造'} icon={<Landmark size={21} />} />
+      {selectedFacility && <div className="cave-scene-stage">
+        <div className="cave-landscape" aria-label="洞府设施分布">
+          <div className="cave-landscape-mist" aria-hidden="true" /><div className="cave-landscape-ridge" aria-hidden="true" />
+          {facilities.map((item, index) => { const name = text(item.name); const level = Number(item.level || 0); return <button type="button" data-spot={name} data-index={index} data-selected={selectedFacility === item || undefined} aria-pressed={selectedFacility === item} onClick={() => setSelectedFacilityName(name)} key={name}><span>{name.slice(0, 1)}</span><strong>{name}</strong><small>{level ? `${level} 级` : '待营造'}</small></button> })}
+          <p>点击洞府热点查看设施详情</p>
+        </div>
+        <aside className="cave-hotspot-inspector">
+          <header><span>{text(selectedFacility.name, '府').slice(0, 1)}</span><div><small>当前设施</small><h3>{text(selectedFacility.name)}</h3></div><em>{Number(selectedFacility.level || 0) ? `${text(selectedFacility.level)} 级` : '尚未营造'}</em></header>
+          <p>{text(selectedFacility.description, facilityDescriptions[text(selectedFacility.name)] || `${text(selectedFacility.name)}承载着洞府的一项核心能力。`)}</p>
+          <dl><div><dt>当前层级</dt><dd>{text(selectedFacility.level, '0')} / 3</dd></div><div><dt>升级灵石</dt><dd>{text(selectedFacility.cost_stones, '—')}</dd></div><div><dt>所需材料</dt><dd>{selectedFacility.materials && typeof selectedFacility.materials === 'object' ? Object.entries(selectedFacility.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') || '无需材料' : '无需材料'}</dd></div></dl>
+          <button type="button" disabled={readOnly || selectedFacility.affordable !== true} title={readOnly ? '成果巡览仅供查看' : selectedFacility.affordable === true ? '升级会推进一个月' : text(selectedFacility.disabled_reason)} onClick={() => onAction(text(selectedFacility.action))}>{Number(selectedFacility.level || 0) >= 3 ? '已达最高层级' : selectedFacility.affordable === true ? `营造至 ${Number(selectedFacility.level || 0) + 1} 级` : text(selectedFacility.disabled_reason, '资粮不足')}</button>
+        </aside>
+      </div>}
       {cave && <>
         <div className="cave-overview">
           <article className="cave-energy"><span><Sparkles size={17} /></span><div><small>洞府灵蕴</small><strong>{cave.spirit_energy} <i>/ {cave.spirit_energy_cap}</i></strong><div><b style={{ width: `${energyPercent}%` }} /></div></div><em>每月 +{cave.monthly_generation}</em></article>
@@ -262,15 +288,15 @@ function FacilitiesBlock({ block, cave, readOnly, onAction }: { block: Presentat
           {cave.jobs.length ? <div className="cave-job-grid">{cave.jobs.map((job) => <article key={job.id}><span>{job.recipe.slice(0, 1)}</span><div><strong>{job.recipe}<small>{job.facility} · 成功率 {job.chance}%</small></strong><div><b style={{ width: `${job.progress}%` }} /></div><p>{job.months_left ? `还需 ${job.months_left} 个月` : '本月结算'} · {job.output}×{job.output_count}</p></div><button type="button" disabled={readOnly} title={readOnly ? '成果巡览仅供查看' : '取消后取回全部预留材料'} onClick={() => onAction(job.cancel_action)}><X size={13} />取消</button></article>)}</div> : <div className="cave-empty-job"><Clock3 size={18} /><span><strong>尚无后台生产</strong><small>先建成对应设施，再从下方配方安排任务。</small></span></div>}
         </section>
       </>}
-      <details className="cave-fold" open>
+      <details className="cave-fold">
         <summary><span>洞府设施</span><small>升级设施会推进一个月，并提升对应能力</small></summary>
         <div className="facility-grid">
-          {(block.items || []).map((item) => {
+          {facilities.map((item) => {
             const level = Number(item.level || 0)
             const materials = item.materials && typeof item.materials === 'object' ? Object.entries(item.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') : ''
             const available = item.affordable === true
             return (
-              <article className="facility-card" key={text(item.name)}>
+              <article className="facility-card" data-selected={selectedFacility === item || undefined} key={text(item.name)}>
                 <header><span><Hammer size={15} /></span><div><strong>{text(item.name)}</strong><small>{level ? `${level} 级设施` : '尚未营造'}</small></div><div className="level-pips">{[1, 2, 3].map((value) => <i data-filled={value <= level || undefined} key={value} />)}</div></header>
                 <p>灵石 {text(item.cost_stones)}{materials ? ` · ${materials}` : ''}</p>
                 <button type="button" disabled={readOnly || !available} title={readOnly ? '成果巡览仅供查看' : available ? '升级会推进一个月' : text(item.disabled_reason)} onClick={() => onAction(text(item.action))}>{level >= 3 ? '已达上限' : available ? `升至 ${level + 1} 级` : text(item.disabled_reason, '材料不足')}</button>
@@ -342,13 +368,14 @@ function Block({ block, cave, lives, readOnly, onAction }: { block: Presentation
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly = false, immersive = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, readOnly = false, immersive = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void }) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
+  const showSectMembership = Boolean(sectMembership?.member && (['宗门', '申请晋升', '宗门大比'].includes(presentation.action) || presentation.action.startsWith('宗门任务')))
   const paragraphs = presentation.paragraphs || []
   const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
   const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
-  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || presentation.has_details
+  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || showSectMembership || presentation.has_details
   const surfaceType = (presentation.blocks || []).find((block) => ['people', 'locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
   const act = (action: string) => { if (!readOnly) onAction(action) }
   if (immersive && !hasSecondaryContent) return null
@@ -368,8 +395,9 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly 
         </div>
       )}
       <div className="event-blocks" aria-label="本次推演数据">
-        {!showNetwork && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} key={`${block.type}-${index}`} />)}
+        {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} key={`${block.type}-${index}`} />)}
         {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={act} />}
+        {showSectMembership && sectMembership && <SectMembershipPage membership={sectMembership} busy={readOnly} readOnly={readOnly} onAction={act} />}
       </div>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>
