@@ -4,7 +4,9 @@ import re
 from typing import Any
 
 from .crafting import FACILITY_COSTS, RECIPES
+from .items import ITEMS
 from .progression import REALMS
+from .regional import REGIONAL_EVENTS
 
 
 HEADER_PATTERN = re.compile(r"【([^】]+)】")
@@ -309,6 +311,8 @@ def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
     current_location = str(player.get("location", "东洲"))
     current_region = next((name for name in ("东洲", "南疆", "西漠", "北原", "中州") if current_location.startswith(name)), "东洲")
     visited = {str(name) for name in (state.get("visited_regions", []) or [])} | {current_region}
+    completed_encounters = {str(event_id) for event_id in (state.get("regional_encounters_completed", []) or [])}
+    pending_encounter = state.get("pending_regional_encounter", {}) or {}
     regions: list[dict[str, Any]] = []
     for line in lines:
         if line.startswith(("输入：", "指令：")):
@@ -329,6 +333,9 @@ def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
         realm_name = REALMS[min(realm_index, len(REALMS) - 1)]
         reputation_match = re.search(r"声望\s*([+-]?\d+)（(.+?)）", parts[7]) if len(parts) > 7 else None
         benefit_match = re.search(r"买价优惠\s*([+-]?\d+)%·卖价礼遇\s*([+-]?\d+)%", parts[8]) if len(parts) > 8 else None
+        regional_event = REGIONAL_EVENTS.get(key, {})
+        event_id = str(regional_event.get("id", ""))
+        has_event = current and bool(event_id) and event_id not in completed_encounters
         regions.append(
             {
                 "key": key,
@@ -348,6 +355,9 @@ def _region_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
                 "accessible": accessible,
                 "locked_reason": "当前所在" if current else "" if accessible else f"需要达到{realm_name}境才可前往",
                 "action": f"前往 {key}",
+                "has_event": has_event,
+                "event_pending": has_event and str(pending_encounter.get("id", "")) == event_id,
+                "event_title": str(regional_event.get("title", "地方机缘")) if has_event else "",
                 "reputation": int(reputation_match.group(1)) if reputation_match else 0,
                 "rank": reputation_match.group(2) if reputation_match else "初来乍到",
                 "buy_discount": int(benefit_match.group(1)) if benefit_match else 0,
@@ -383,10 +393,14 @@ def _market_items(lines: list[str], state: dict[str, Any]) -> list[dict[str, Any
             continue
         name, buy, sell = match.group(1), int(match.group(2)), int(match.group(3))
         owned = int(resources.get(name, 0) or 0) + inventory.count(name)
+        definition = ITEMS.get(name)
         items.append(
             {
                 "name": name,
                 "category": _market_category(name),
+                "rarity": definition.rarity if definition else "凡品",
+                "description": definition.description if definition else "尚未鉴定来历的修行物品。",
+                "usage": definition.usage if definition else "可在坊市交易，具体用途尚待辨识。",
                 "buy": buy,
                 "sell": sell,
                 "owned": owned,

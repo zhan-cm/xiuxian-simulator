@@ -2399,6 +2399,9 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertTrue(block["items"][0]["affordable"])
         self.assertFalse(block["items"][1]["affordable"])
         self.assertEqual(block["items"][0]["buy_action"], "买 聚气丹")
+        self.assertEqual(block["items"][0]["rarity"], "凡品")
+        self.assertIn("温养经脉", block["items"][0]["description"])
+        self.assertIn("增加当前大境界修为", block["items"][0]["usage"])
         self.assertEqual(block["standing"], "略有薄名 · +12")
 
     def test_world_atlas_becomes_structured_region_cards(self) -> None:
@@ -2418,6 +2421,8 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertEqual(block["items"][0]["rank"], "受人敬重")
         self.assertEqual(block["items"][0]["reputation"], 26)
         self.assertEqual(block["items"][0]["buy_discount"], 5)
+        self.assertTrue(block["items"][0]["has_event"])
+        self.assertTrue(block["items"][0]["event_title"])
         self.assertEqual(block["items"][1]["action"], "前往 南疆")
         self.assertIn("元婴境", block["items"][2]["locked_reason"])
 

@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { GameState, InventorySnapshot, NpcProfile, Presentation } from '../api/types'
+import type { GameState, InventorySnapshot, NpcLifeSnapshot, NpcProfile, Presentation } from '../api/types'
 import { EventPanel } from './EventPanel'
 import { CultivatorHud, ImmersiveScene, SocialActionBar, WorldNavigation } from './ImmersiveScene'
 
@@ -87,12 +87,13 @@ describe('immersive game shell', () => {
 
   it('presents exploration as a themed system surface with legible danger and locked routes', () => {
     const map = { ...presentation, blocks: [{ type: 'locations', title: '东洲探索地图', legend: '危险越高，历练与危机越多。', items: [
-      { name: '青岳山麓', danger: 12, danger_label: '低危', requirement_label: '炼气境', description: '林风清润，适合初入道途者试炼。', accessible: true, action: '探索 青岳山麓', tone: 'safe' },
+      { name: '青岳山麓', danger: 12, danger_label: '低危', requirement_label: '炼气境', description: '林风清润，适合初入道途者试炼。', accessible: true, visited: false, action: '探索 青岳山麓', tone: 'safe' },
       { name: '古战场外围', danger: 38, danger_label: '绝境', requirement_label: '筑基境', description: '残阵与煞气终年不散。', accessible: false, locked_reason: '需要达到筑基境才可进入', tone: 'danger' },
     ] }] } as Presentation
     render(<EventPanel presentation={map} immersive onAction={() => undefined} />)
     expect(screen.getByText('东洲探索地图').closest('.event-panel')).toHaveAttribute('data-surface', 'locations')
     expect(screen.getByText('山河可赴')).toBeVisible()
+    expect(screen.getByText('机缘未探')).toBeVisible()
     expect(screen.getByLabelText('危险等级 4 / 4')).toBeVisible()
     expect(screen.getByRole('button', { name: /需要达到筑基境才可进入/ })).toBeDisabled()
   })
@@ -100,16 +101,50 @@ describe('immersive game shell', () => {
   it('turns the market into a filterable shelf with explicit buy and sell states', () => {
     const act = vi.fn()
     const market = { ...presentation, blocks: [{ type: 'market', title: '青岳坊市', currency: 20, items: [
-      { name: '聚气丹', category: '丹药', owned: 0, affordable: true, buy: 12, sell: 6, buy_action: '购买 聚气丹', sell_action: '出售 聚气丹' },
+      { name: '聚气丹', category: '丹药', rarity: '凡品', description: '温养经脉、凝聚灵气的入门丹药。', usage: '服用后增加当前大境界修为。', owned: 0, affordable: true, buy: 12, sell: 6, buy_action: '购买 聚气丹', sell_action: '出售 聚气丹' },
       { name: '青灵草', category: '材料', owned: 2, affordable: false, buy: 30, sell: 9, buy_action: '购买 青灵草', sell_action: '出售 青灵草' },
     ] }] } as Presentation
     render(<EventPanel presentation={market} immersive onAction={act} />)
     fireEvent.click(screen.getByRole('button', { name: '丹药' }))
-    expect(screen.getByText('聚气丹')).toBeVisible()
+    expect(screen.getAllByText('聚气丹')).toHaveLength(2)
     expect(screen.queryByText('青灵草')).not.toBeInTheDocument()
+    expect(screen.getByText('温养经脉、凝聚灵气的入门丹药。')).toBeVisible()
+    expect(screen.getByText('服用后增加当前大境界修为。')).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: /买入.*12/ }))
     expect(act).toHaveBeenCalledWith('购买 聚气丹')
     expect(screen.getByRole('button', { name: /卖出.*6/ })).toBeDisabled()
+  })
+
+  it('keeps browsing available but mutations disabled in showcase mode', () => {
+    const act = vi.fn()
+    const market = { ...presentation, blocks: [{ type: 'market', title: '青岳坊市', currency: 20, items: [
+      { name: '聚气丹', category: '丹药', owned: 0, affordable: true, buy: 12, sell: 6, buy_action: '购买 聚气丹', sell_action: '出售 聚气丹' },
+      { name: '青灵草', category: '材料', owned: 2, affordable: true, buy: 8, sell: 4, buy_action: '购买 青灵草', sell_action: '出售 青灵草' },
+    ] }] } as Presentation
+    render(<EventPanel presentation={market} readOnly immersive onAction={act} />)
+    fireEvent.click(screen.getByRole('button', { name: '材料' }))
+    expect(screen.getByRole('complementary', { name: '青灵草详情' })).toBeVisible()
+    expect(screen.getByRole('button', { name: /买入.*8/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /卖出.*4/ })).toBeDisabled()
+    expect(act).not.toHaveBeenCalled()
+  })
+
+  it('opens a complete character dossier without allowing showcase actions', () => {
+    const act = vi.fn()
+    const lives = { living_count: 1, pending_count: 0, memorials: [], history: [], last_event: '', profiles: [{
+      name: '顾清玄', gender: '男', identity: '青云宗真传·温润剑修', realm: '筑基·后期', age: 24, lifespan: 180,
+      years_remaining: 156, life_percent: 13, location: '青云宗', activity: '山门静修', status: '安好', alive: true,
+      wounded: false, affinity: 66, relation: '知己', likes: ['清茶', '剑穗'], pending: false, pending_kind: '', expires_in: 0,
+      pill: '', can_gift_pill: false, can_guard: false, life_events: ['第 8 回合｜青岳论剑'], cause_of_death: '',
+    }] } as NpcLifeSnapshot
+    const people = { ...presentation, action: '情缘', blocks: [{ type: 'people', title: '浮生故人', items: [{ name: '顾清玄' }] }] } as Presentation
+    render(<EventPanel presentation={people} npcLives={lives} readOnly immersive onAction={act} />)
+    fireEvent.click(screen.getByRole('button', { name: '查看档案' }))
+    const dialog = screen.getByRole('dialog', { name: '顾清玄' })
+    expect(within(dialog).getByText('青云宗真传·温润剑修')).toBeVisible()
+    expect(within(dialog).getByText('清茶')).toBeVisible()
+    expect(within(dialog).getByRole('button', { name: '前往交谈' })).toBeDisabled()
+    expect(act).not.toHaveBeenCalled()
   })
 
   it('matches cultivation to the cave even when the current location contains a region name', () => {
