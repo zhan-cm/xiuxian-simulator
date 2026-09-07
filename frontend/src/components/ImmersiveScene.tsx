@@ -1,12 +1,19 @@
-import { CloudSun, Compass, Home, Landmark, Map, Menu, Mountain, ScrollText, Sparkles, UsersRound } from 'lucide-react'
+import * as Dialog from '@radix-ui/react-dialog'
+import { CalendarDays, CloudSun, Compass, Home, Landmark, Map, Menu, Mountain, ScrollText, Sparkles, UsersRound, X } from 'lucide-react'
+import type { RefObject } from 'react'
 import type { GameState, PlayerState, Presentation } from '../api/types'
 
 const sceneFrom = (state: GameState, presentation: Presentation) => {
-  const source = `${state.player.location} ${presentation.action} ${presentation.tone}`
-  if (/战|斗法|妖|敌|危/.test(source)) return 'battle'
-  if (/坊市|拍卖|交易/.test(source)) return 'market'
-  if (/宗|门派|藏经/.test(source)) return 'sect'
-  if (/地图|探索|秘境|山|洲|域/.test(source)) return 'wilds'
+  const action = presentation.action || ''
+  if (state.phase.startsWith('combat') || presentation.tone === 'combat') return 'battle'
+  if (/坊市|拍卖|交易|买入|卖出/.test(action)) return 'market'
+  if (/洞府|修炼|闭关|调息/.test(action)) return 'cave'
+  if (/宗|门派|藏经/.test(action)) return 'sect'
+  if (/地图|探索|秘境|行旅/.test(action)) return 'wilds'
+  const location = state.player.location
+  if (/坊市/.test(location)) return 'market'
+  if (/宗|门派|藏经/.test(location)) return 'sect'
+  if (/山|洲|域/.test(location)) return 'wilds'
   return 'cave'
 }
 
@@ -20,6 +27,9 @@ export function ImmersiveScene({ state, presentation, calendarLabel }: Immersive
   const { player } = state
   const scene = sceneFrom(state, presentation)
   const summary = presentation.paragraphs?.[0] || state.last_world_event || '天地无言，灵机正在暗处流转。'
+  const summaryCharacters = Array.from(summary)
+  const shortened = summaryCharacters.length > 120
+  const preview = shortened ? `${summaryCharacters.slice(0, 120).join('')}…` : summary
   return (
     <section className="immersive-scene" data-scene={scene} aria-label={`当前场景：${player.location}`}>
       <div className="scene-sky" aria-hidden="true" />
@@ -42,12 +52,18 @@ export function ImmersiveScene({ state, presentation, calendarLabel }: Immersive
       </div>
 
       <article className="scene-narrative">
-        <span>{presentation.eyebrow || '此刻道途'} · {calendarLabel}</span>
+        <span><CalendarDays size={13} />第 {state.turn} 回合 · {calendarLabel}</span>
         <h2>{presentation.title || '灵气潮汐将至'}</h2>
-        <p>{summary}</p>
+        <p>{preview}</p>
+        {shortened && <Dialog.Root key={summary}>
+          <Dialog.Trigger asChild><button type="button" className="scene-read-more"><ScrollText size={14} />读完这段</button></Dialog.Trigger>
+          <Dialog.Portal><Dialog.Overlay className="dialog-overlay" /><Dialog.Content className="character-dialog narrative-dialog">
+            <header><div><Dialog.Title>{presentation.title || '此刻道途'}</Dialog.Title><Dialog.Description>第 {state.turn} 回合 · {calendarLabel}</Dialog.Description></div><Dialog.Close aria-label="关闭完整叙事"><X size={20} /></Dialog.Close></header>
+            <div className="narrative-dialog-copy"><p>{summary}</p></div>
+          </Dialog.Content></Dialog.Portal>
+        </Dialog.Root>}
         {presentation.changes?.length > 0 && <div>{presentation.changes.slice(0, 3).map((change, index) => <small key={`${change.label}-${index}`}><b>{change.label}</b>{change.value}</small>)}</div>}
       </article>
-      <div className="scene-scroll-cue" aria-hidden="true"><ScrollText size={14} />下方展开本次推演</div>
     </section>
   )
 }
@@ -88,17 +104,20 @@ const destinations = [
 interface WorldNavigationProps {
   activeAction: string
   disabled?: boolean
+  disabledReason?: string
   codexOpen: boolean
+  codexButtonRef?: RefObject<HTMLButtonElement | null>
+  hasUpdates?: boolean
   onNavigate: (action: string) => void
   onToggleCodex: () => void
 }
 
-export function WorldNavigation({ activeAction, disabled = false, codexOpen, onNavigate, onToggleCodex }: WorldNavigationProps) {
+export function WorldNavigation({ activeAction, disabled = false, disabledReason, codexOpen, codexButtonRef, hasUpdates, onNavigate, onToggleCodex }: WorldNavigationProps) {
   return (
     <nav className="world-navigation" aria-label="修仙世界导航">
       <span className="world-navigation-mark">问道</span>
-      {destinations.map(({ label, action, icon: Icon }) => <button type="button" key={action} disabled={disabled} data-active={activeAction === action || undefined} onClick={() => onNavigate(action)}><Icon size={18} /><span>{label}</span></button>)}
-      <button type="button" data-active={codexOpen || undefined} onClick={onToggleCodex}><Menu size={18} /><span>{codexOpen ? '收起侧记' : '洞天侧记'}</span></button>
+      {destinations.map(({ label, action, icon: Icon }) => <button type="button" key={action} disabled={disabled} title={disabled ? disabledReason : `查看${label}`} aria-current={activeAction === action ? 'page' : undefined} data-active={activeAction === action || undefined} onClick={() => onNavigate(action)}><Icon size={18} /><span>{label}</span></button>)}
+      <button type="button" ref={codexButtonRef} aria-haspopup="dialog" aria-expanded={codexOpen} data-active={codexOpen || undefined} onClick={onToggleCodex}><Menu size={18} /><span>{codexOpen ? '收起侧记' : '洞天侧记'}</span>{hasUpdates && <i className="nav-update-dot" aria-label="修行百艺有可推进事项" />}</button>
     </nav>
   )
 }

@@ -285,28 +285,34 @@ function Block({ block, cave, lives, readOnly, onAction }: { block: Presentation
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; readOnly?: boolean; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly = false, immersive = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void }) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
+  const paragraphs = presentation.paragraphs || []
+  const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
+  const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
+  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || presentation.has_details
+  const act = (action: string) => { if (!readOnly) onAction(action) }
+  if (immersive && !hasSecondaryContent) return null
   return (
-    <article className="event-panel" data-tone={presentation.tone || 'story'}>
+    <article className="event-panel" data-tone={presentation.tone || 'story'} data-immersive={immersive || undefined}>
       <div className="event-ornament" aria-hidden="true" />
-      <header className="event-heading">
+      {!immersive && <header className="event-heading">
         <span className="event-seal">{presentation.seal || '道'}</span>
         <div><p>{presentation.eyebrow || '当前道途'}</p><h2>{presentation.title || '灵气潮汐将至'}</h2></div>
-      </header>
-      {(!showNetwork || showNetworkOutcome) && <div className="event-copy">
-        {(presentation.paragraphs || []).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+      </header>}
+      {visibleParagraphs.length > 0 && (!showNetwork || showNetworkOutcome) && <div className="event-copy scene-continuation">
+        {visibleParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
       </div>}
-      {presentation.changes?.length > 0 && (
+      {changes.length > 0 && (
         <div className="change-row">
-          {presentation.changes.map((change, index) => <span key={`${change.label}-${index}`}><small>{change.label}</small><strong>{change.value}</strong></span>)}
+          {changes.map((change, index) => <span key={`${change.label}-${index}`}><small>{change.label}</small><strong>{change.value}</strong></span>)}
         </div>
       )}
-      <div className="event-blocks">
-        {!showNetwork && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={onAction} key={`${block.type}-${index}`} />)}
-        {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={onAction} />}
-      </div>
+      <fieldset className="event-blocks" disabled={readOnly} aria-label="本次推演数据">
+        {!showNetwork && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} key={`${block.type}-${index}`} />)}
+        {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={act} />}
+      </fieldset>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>
       )}

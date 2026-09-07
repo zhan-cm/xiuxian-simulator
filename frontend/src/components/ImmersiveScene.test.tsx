@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GameState, Presentation } from '../api/types'
+import { EventPanel } from './EventPanel'
 import { CultivatorHud, ImmersiveScene, WorldNavigation } from './ImmersiveScene'
 
 const state = {
@@ -31,5 +33,60 @@ describe('immersive game shell', () => {
     fireEvent.click(screen.getByRole('button', { name: /洞天侧记/ }))
     expect(navigate).toHaveBeenCalledWith('坊市')
     expect(toggle).toHaveBeenCalledOnce()
+  })
+
+  it('hands the first paragraph to the scene without repeating the event heading', () => {
+    const detailed = { ...presentation, paragraphs: ['场景中的首段。', '仅在下方展开的补充段落。'] }
+    render(<EventPanel presentation={detailed} immersive readOnly onAction={() => undefined} />)
+    expect(screen.queryByText('松间吐纳')).toBeNull()
+    expect(screen.queryByText('场景中的首段。')).toBeNull()
+    expect(screen.getByText('仅在下方展开的补充段落。')).toBeTruthy()
+  })
+
+  it('lets readers open every character of a long narrative without needing a debug record', () => {
+    const full = '山雨初歇，道旁古松间传来一声清越的剑鸣。'.repeat(14) + '来人终于道出了秘境的真正入口。'
+    render(<ImmersiveScene state={state} presentation={{ ...presentation, paragraphs: [full] }} calendarLabel="冬十二月" />)
+    expect(screen.queryByText(full)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '读完这段' }))
+    const dialog = screen.getByRole('dialog', { name: '松间吐纳' })
+    expect(within(dialog).getByText(full)).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: '关闭完整叙事' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('keeps every settlement change visible exactly once across the scene and event', () => {
+    const settled = { ...presentation, changes: [
+      { label: '气血', value: '-12' }, { label: '灵力', value: '-8' },
+      { label: '灵石', value: '+50' }, { label: '寿元', value: '+10' },
+    ] }
+    render(<><ImmersiveScene state={state} presentation={settled} calendarLabel="冬十二月" /><EventPanel presentation={settled} immersive onAction={() => undefined} /></>)
+    for (const change of settled.changes) expect(screen.getAllByText(change.value)).toHaveLength(1)
+  })
+
+  it('keeps the codex accessible while an exclusive decision locks travel', () => {
+    const navigate = vi.fn()
+    const toggle = vi.fn()
+    render(<WorldNavigation activeAction="" disabled disabledReason="请先完成当前抉择" codexOpen={false} onNavigate={navigate} onToggleCodex={toggle} />)
+    fireEvent.click(screen.getByRole('button', { name: '坊市' }))
+    expect(screen.getByRole('button', { name: '坊市' })).toBeDisabled()
+    expect(navigate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '洞天侧记' }))
+    expect(toggle).toHaveBeenCalledOnce()
+  })
+
+  it('cannot explore or buy through event cards in preview mode', () => {
+    const act = vi.fn()
+    const map = { ...presentation, blocks: [{ type: 'locations', items: [{ name: '青岳山麓', accessible: true, action: '探索 青岳山麓' }] }] }
+    render(<EventPanel presentation={map} readOnly immersive onAction={act} />)
+    const explore = screen.getByRole('button', { name: '前往探索' })
+    expect(explore).toBeDisabled()
+    fireEvent.click(explore)
+    expect(act).not.toHaveBeenCalled()
+  })
+
+  it('matches cultivation to the cave even when the current location contains a region name', () => {
+    render(<ImmersiveScene state={state} presentation={presentation} calendarLabel="冬十二月" />)
+    expect(screen.getByRole('region', { name: '当前场景：东洲青岳' })).toHaveAttribute('data-scene', 'cave')
+    expect(screen.getByText(/第 12 回合/)).toBeInTheDocument()
   })
 })

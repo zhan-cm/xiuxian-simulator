@@ -1,34 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
 import { ActionDock } from './components/ActionDock'
 import { ArchiveDialog } from './components/ArchiveDialog'
-import { AuctionHouse } from './components/AuctionHouse'
 import { CharacterSheet } from './components/CharacterSheet'
-import { CommissionBoard } from './components/CommissionBoard'
+import { CodexDrawer } from './components/CodexDrawer'
 import { DecisionPanel } from './components/DecisionPanel'
-import { DaoTree } from './components/DaoTree'
 import { EventPanel } from './components/EventPanel'
 import { GameTooltip, TooltipProvider } from './components/GameTooltip'
-import { JourneyTracker } from './components/JourneyTracker'
 import { InventoryDialog } from './components/InventoryDialog'
-import { NewEraChronicle } from './components/NewEraChronicle'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
 import { ShowcaseNavigator } from './components/ShowcaseNavigator'
 import { loadShowcaseReview } from './showcaseReview'
-import { StoryChronicle } from './components/StoryChronicle'
-import { SpiritBeastSanctuary } from './components/SpiritBeastSanctuary'
-import { FormationAtlas } from './components/FormationAtlas'
-import { SectLibrary } from './components/SectLibrary'
-import { ArtifactForge } from './components/ArtifactForge'
-import { ArtMasteryCodex } from './components/ArtMasteryCodex'
+import { PathwaysCodex } from './components/PathwaysCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
 import { LegacyChronicle } from './components/LegacyChronicle'
-import { SectDominion } from './components/SectDominion'
 import { CultivatorHud, ImmersiveScene, WorldNavigation } from './components/ImmersiveScene'
 import { useUiStore } from './store/ui'
 
@@ -42,15 +32,22 @@ function ErrorScreen({ message }: { message: string }) {
   return <main className="loading-screen error"><CircleAlert /><h1>暂时未能连通本地世界</h1><p>{message}</p><button type="button" onClick={() => window.location.reload()}>重新尝试</button></main>
 }
 
-function Relations({ snapshot, onAction }: { snapshot: Snapshot; onAction: (action: string) => void }) {
+function Relations({ snapshot, disabled, onAction }: { snapshot: Snapshot; disabled: boolean; onAction: (action: string) => void }) {
   const known = Object.entries(snapshot.state.npc_relations || {}).filter(([, relation]) => Number(relation.affinity || 0) !== 0 || relation.path)
   const lifePending = snapshot.npc_lives?.pending_count || 0
   const networkPending = snapshot.npc_network?.pending?.id ? 1 : 0
   const pendingMeta = [lifePending ? `${lifePending} 封护道书` : '', networkPending ? '1 桩人情待决' : ''].filter(Boolean).join(' · ')
   return (
     <Panel title="人物牵绊" icon={<HeartHandshake size={18} />} meta={pendingMeta || (known.length ? `${known.length} 位` : '缘分未定')} className="balanced-panel">
-      {known.length ? <div className="relation-stack">{known.slice(0, 4).map(([name, relation]) => { const profile = snapshot.npc_profiles[name]; return <button type="button" onClick={() => onAction('情缘')} title="打开完整人物生平" key={name} data-alive={profile?.alive !== false || undefined}><span>{name.slice(0, 1)}</span><div><strong>{name}</strong><small>{profile?.realm || '境界未明'} · {profile?.age ?? '?'}岁 · {profile?.status || '近况未明'}</small><i><b style={{ width: `${Math.max(0, Math.min(100, Number(relation.affinity || 0)))}%` }} /></i></div><em>{relation.path || '相识'}<small>好感 {relation.affinity || 0}</small></em></button>})}</div> : <div className="empty-state"><UserRound size={24} /><strong>尘缘尚未落笔</strong><p>结识人物后，这里会显示关系、好感与最近变化。</p></div>}
-      <button className="network-shortcut" type="button" onClick={() => onAction('人脉')}><Waypoints size={13} /><span>查看众生缘网</span>{networkPending ? <em>有新纷争</em> : <small>{snapshot.npc_network?.bond_count || 0} 段因缘</small>}</button>
+      {known.length ? <div className="relation-stack">{known.slice(0, 4).map(([name, relation]) => {
+        const profile = snapshot.npc_profiles[name]
+        return <button type="button" disabled={disabled} onClick={() => onAction('情缘')} title={disabled ? '请在正常游玩且无待决抉择时查看' : '打开完整人物生平'} key={name} data-alive={profile?.alive !== false || undefined}>
+          <span>{name.slice(0, 1)}</span>
+          <div><strong>{name}</strong><small>{profile?.realm || '境界未明'} · {profile?.age ?? '?'}岁 · {profile?.status || '近况未明'}</small><i><b style={{ width: `${Math.max(0, Math.min(100, Number(relation.affinity || 0)))}%` }} /></i></div>
+          <em>{relation.path || '相识'}<small>好感 {relation.affinity || 0}</small></em>
+        </button>
+      })}</div> : <div className="empty-state"><UserRound size={24} /><strong>尘缘尚未落笔</strong><p>结识人物后，这里会显示关系、好感与最近变化。</p></div>}
+      <button className="network-shortcut" type="button" disabled={disabled} onClick={() => onAction('人脉')}><Waypoints size={13} /><span>查看众生缘网</span>{networkPending ? <em>有新纷争</em> : <small>{snapshot.npc_network?.bond_count || 0} 段因缘</small>}</button>
     </Panel>
   )
 }
@@ -86,8 +83,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const { state, presentation, decision } = snapshot
   const { player } = state
   const { codexOpen, toggleCodex, closeCodex } = useUiStore()
+  const codexTrigger = useRef<HTMLButtonElement>(null)
+  // 人情纷争也带 exclusive 标记，但规则允许暂缓；只有实际游戏阶段锁定行动。
   const canUseQuickActions = state.phase === 'playing'
-  const canDraft = ['playing', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)
+  const canDraft = canUseQuickActions || ['character_creation_basic', 'character_creation_traits'].includes(state.phase)
+  const hasUpdates = snapshot.story.available || snapshot.new_era.available || snapshot.commissions.active.some((item) => item.ready)
+  const onCodexAction = (value: string) => {
+    if (busy || showcase || !canUseQuickActions) return
+    closeCodex()
+    onAction(value)
+  }
   const networkSurface = ['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')
   const legacySurface = state.phase === 'ended'
   const activeLegacy = snapshot.legacy.active_legacy
@@ -110,33 +115,19 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             {!legacySurface && <ImmersiveScene state={state} presentation={presentation} calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`} />}
             {legacySurface && <div className="stage-heading"><div><span>本世已终</span><h2>{player.name} · 仙途评传</h2></div></div>}
             {!legacySurface && <>
-              <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
-              <NewEraChronicle era={snapshot.new_era} busy={busy} readOnly={showcase} onAction={onAction} />
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <DaoTree dao={snapshot.dao} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtMasteryCodex mastery={snapshot.art_mastery} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SpiritBeastSanctuary beasts={snapshot.spirit_beasts} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <FormationAtlas formations={snapshot.formations} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <ArtifactForge artifacts={snapshot.artifacts} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SectLibrary library={snapshot.sect_library} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <SectDominion domain={snapshot.sect_domain} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <JourneyTracker journey={snapshot.journey} busy={busy} readOnly={showcase} onAction={onAction} />}
-              {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <CommissionBoard commissions={snapshot.commissions} busy={busy} readOnly={showcase} onAction={onAction} />}
               <AnimatePresence mode="wait">
                 <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase} onAction={onAction} />
+                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} readOnly={showcase || busy} immersive onAction={onAction} />
                 </motion.div>
               </AnimatePresence>
               {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
             </>}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
-            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />}
+            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} readOnly={showcase} recovery={snapshot.recovery} onAction={onAction} />}
           </section>
-          <AnimatePresence>
-            {!legacySurface && codexOpen && <motion.aside className="immersive-codex" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: .2 }} aria-label="洞天侧记">
-              <header><div><span>随身卷册</span><h2>洞天侧记</h2></div><button type="button" onClick={closeCodex} aria-label="关闭洞天侧记"><X size={19} /></button></header>
-              <div className="immersive-codex-grid">
+            {!legacySurface && <CodexDrawer open={codexOpen} onClose={closeCodex} returnFocusRef={codexTrigger} hasUpdates={Boolean(hasUpdates)}
+              character={
                 <section className="codex-column">
                   <Panel title="修士名帖" icon={<UserRound size={18} />} meta={player.location}>
                     <div className="name-card"><span>{player.name.slice(0, 1)}</span><div><h3>{player.name}</h3><p>道号 · {player.dao_name}</p></div></div>
@@ -150,23 +141,25 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                       <ProgressStat label="修为" value={player.cultivation} max={player.cultivation_required} tone="cultivation" help="修为达到当前上限后，可以尝试突破境界。" />
                     </div>
                     <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span>{activeLegacy.name && <GameTooltip label={activeLegacy.effect || '来自上一世的轮回传承。'}><span tabIndex={0}><RotateCcw size={14} />{activeLegacy.name}</span></GameTooltip>}</div>
-                    <RecoveryCodex recovery={snapshot.recovery} busy={busy} readOnly={showcase} onAction={onAction} />
+                    <RecoveryCodex recovery={snapshot.recovery} busy={busy || !canUseQuickActions} readOnly={showcase} onAction={onCodexAction} />
                   </Panel>
-                  <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
+                  <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onCodexAction} />
                 </section>
+              }
+              pathways={<PathwaysCodex snapshot={snapshot} busy={busy || !canUseQuickActions} readOnly={showcase} onAction={onCodexAction} />}
+              world={
                 <section className="codex-column">
-                  <Relations snapshot={snapshot} onAction={onAction} />
+                  <Relations snapshot={snapshot} disabled={busy || showcase || !canUseQuickActions} onAction={onCodexAction} />
                   <HistoryPanel snapshot={snapshot} />
                   <Panel title="九州风声" icon={<CloudSun size={18} />} meta={state.world_era} className="balanced-panel world-panel">
                     <div><span aria-hidden="true">闻</span><p>{state.last_world_event || '灵气潮汐尚在暗中酝酿，九州表面仍显平静。'}</p></div>
                   </Panel>
                 </section>
-              </div>
-            </motion.aside>}
-          </AnimatePresence>
+              }
+            />}
         </main>
-        {!legacySurface && <WorldNavigation activeAction={presentation.action} disabled={busy || showcase} codexOpen={codexOpen} onNavigate={onAction} onToggleCodex={toggleCodex} />}
-        <footer className="game-footer">V2 沉浸式界面 · 阶段一开发中 · 规则与存档沿用正式版 v1.0.0</footer>
+        {!legacySurface && <WorldNavigation activeAction={presentation.action} disabled={busy || showcase || !canUseQuickActions} disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'} codexOpen={codexOpen} codexButtonRef={codexTrigger} hasUpdates={Boolean(hasUpdates)} onNavigate={onAction} onToggleCodex={toggleCodex} />}
+        <footer className="game-footer">问道长生 · 本地运行 · 进度保存在你的电脑中</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
@@ -184,7 +177,11 @@ export default function App() {
   const action = useMutation({
     mutationFn: performAction,
     onMutate: (value) => { setActiveAction(value); setActionError(''); setNotice('') },
-    onSuccess: (data, value) => { queryClient.setQueryData(['snapshot'], data); setNotice(data.presentation?.title || `已完成：${value}`) },
+    onSuccess: (data, value) => {
+      queryClient.setQueryData(['snapshot'], data)
+      setNotice(data.presentation?.title || `已完成：${value}`)
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    },
     onError: (reason: Error) => setActionError(reason.message),
     onSettled: () => setActiveAction(''),
   })
