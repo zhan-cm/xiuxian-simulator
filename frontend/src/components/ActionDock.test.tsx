@@ -40,4 +40,13 @@ describe('action drafts', () => {
     fireEvent.click(screen.getByRole('button', { name: '静养疗伤' }))
     expect(act).toHaveBeenCalledExactlyOnceWith('静养')
   })
+
+  it('surfaces the highest-priority rule-backed contextual action', () => {
+    const act = vi.fn()
+    render(<ActionDock busy={false} canQuickAct canDraft contextActions={[{ action: '突破', label: '叩问突破', description: '炼气·圆满修为已圆满', tone: 'breakthrough' }]} onAction={act} />)
+    const breakthrough = screen.getByRole('button', { name: /叩问突破/ })
+    expect(breakthrough).toHaveAttribute('title', '炼气·圆满修为已圆满')
+    fireEvent.click(breakthrough)
+    expect(act).toHaveBeenCalledExactlyOnceWith('突破')
+  })
 })

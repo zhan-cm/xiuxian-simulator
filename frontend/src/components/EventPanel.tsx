@@ -70,23 +70,21 @@ function PeopleBlock({ block, lives, readOnly, onAction }: { block: Presentation
   const selectedProfile = lifeByName.get(selectedName)
   return (
     <><section className="semantic-block people-block">
-      <header><UserRound size={16} /><strong>{block.title || '人物牵绊'}</strong><small>{lives ? `${lives.living_count} 位尚在世 · ${lives.pending_count} 封护道书` : '众生各循其道'}</small></header>
-      <div className="person-grid">
+      <SystemBlockHeader mark="人" eyebrow="浮生万象" title={block.title || '人物牵绊'} description="故人各有行迹与寿数；先观近况，再决定是否叩门相见。" meta={lives ? `${lives.living_count} 位尚在世 · ${lives.pending_count} 封护道书` : '众生各循其道'} icon={<UserRound size={21} />} />
+      <div className="person-gallery">
         {(block.items || []).map((item, index) => {
           const name = text(item.name, '未知道友')
           const profile = lifeByName.get(name)
           const alive = profile?.alive !== false
           return (
-            <article className="person-card life-card" data-alive={alive || undefined} data-pending={profile?.pending || undefined} key={`${name}-${index}`}>
-              <span className="person-avatar">{name.slice(0, 1)}</span>
-              <div className="person-heading"><strong>{name}</strong><small>{profile?.identity || text(item.identity || item.descriptor, '身份未明')}</small></div>
-              <div className="person-tags"><span>{profile?.realm || text(item.realm, '境界未明')}</span><span>{profile?.relation || text(item.relation, '缘分未定')} · 好感 {profile?.affinity ?? text(item.affinity, '0')}</span></div>
+            <article className="person-gallery-card" data-alive={alive || undefined} data-pending={profile?.pending || undefined} key={`${name}-${index}`}>
+              <div className="person-gallery-portrait"><span>{name.slice(0, 1)}</span><em data-danger={profile?.wounded || !alive || undefined}>{profile?.status || (alive ? '近况未明' : '已故')}</em></div>
+              <header><small>{profile ? `${profile.gender}修 · ${profile.location}` : '来处未明'}</small><strong>{name}</strong><p>{profile?.identity || text(item.identity || item.descriptor, '身份未明')}</p></header>
+              <div className="person-gallery-vitals"><span><small>境界</small><strong>{profile?.realm || text(item.realm, '境界未明')}</strong></span><span><small>年岁</small><strong>{profile ? `${profile.age} / ${profile.lifespan}` : '未载'}</strong></span></div>
+              <div className="person-gallery-affinity"><span><small>{profile?.relation || text(item.relation, '缘分未定')}</small><strong>好感 {profile?.affinity ?? text(item.affinity, '0')}</strong></span><i title={`好感 ${profile?.affinity ?? text(item.affinity, '0')}`}><b style={{ width: `${Math.max(0, Math.min(100, Number(profile?.affinity ?? item.affinity ?? 0)))}%` }} /></i></div>
               {profile && <>
-                <div className="life-meter" title={`年龄 ${profile.age} 岁，寿元上限 ${profile.lifespan} 岁`}><span><HeartPulse size={11} />{alive ? `${profile.age}岁 · 尚余 ${profile.years_remaining} 年` : `${profile.age}岁 · 已故`}</span><i><b style={{ width: `${Math.max(3, 100 - profile.life_percent)}%` }} /></i></div>
-                <div className="life-status"><span>{profile.location}</span><em>{profile.activity}</em><b data-danger={profile.wounded || !alive || undefined}>{profile.status}</b></div>
                 {profile.pending && <div className="guard-request"><header><ShieldCheck size={14} /><span><strong>{profile.pending_kind}</strong><small>{profile.expires_in} 个月内回应</small></span></header><p>可赠 {profile.pill} 提高胜算，或亲自消耗灵力护持。</p><div><button type="button" disabled={readOnly || !profile.can_gift_pill} title={profile.can_gift_pill ? `消耗 ${profile.pill}×1` : `乾坤袋中没有${profile.pill}`} onClick={() => onAction(`护道 ${name} 赠丹`)}>赠丹</button><button type="button" disabled={readOnly || !profile.can_guard} title={profile.can_guard ? '消耗灵力 30，失败时可能受反噬' : '灵力不足 30'} onClick={() => onAction(`护道 ${name} 护持`)}>亲自护持</button><button type="button" disabled={readOnly} onClick={() => onAction(`护道 ${name} 守候`)}>静候天命</button></div></div>}
                 {!alive && profile.cause_of_death && <p className="memorial-line">{profile.cause_of_death}</p>}
-                {profile.life_events.length > 0 && <details className="life-events"><summary>查看生平近事</summary><ol>{profile.life_events.map((entry) => <li key={entry}>{entry}</li>)}</ol></details>}
               </>}
               <div className="person-actions"><button className="profile-action" type="button" onClick={() => setSelectedName(name)}>查看档案</button>{alive && <><button type="button" disabled={readOnly} onClick={() => onAction(`对话 ${name}`)}>与其交谈</button><button type="button" disabled={readOnly} onClick={() => onAction(`论道 ${name}`)}>论道印证</button></>}</div>
             </article>
@@ -163,38 +161,45 @@ function LocationsBlock({ block, readOnly, onAction }: { block: PresentationBloc
 }
 
 function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
-  const count = block.items?.length || 0
+  const items = useMemo(() => block.items || [], [block.items])
+  const [selectedKey, setSelectedKey] = useState('')
+  const selected = items.find((item) => text(item.key) === selectedKey) || items.find((item) => item.current === true) || items[0]
+  const count = items.length
   return (
     <section className="semantic-block region-block">
       <SystemBlockHeader mark="州" eyebrow="云路万里" title={block.title || '九州舆图'} description={block.legend || '各域物产、声望与行程不同，启程前请细察路途。'} meta={`${count} 方地域`} icon={<Route size={21} />} />
-      <div className="region-grid">
-        {(block.items || []).map((item, index) => {
-          const current = item.current === true
-          const accessible = item.accessible === true
-          const visited = item.visited === true
-          return (
-            <article className="region-card" data-tone={text(item.tone, 'safe')} data-current={current || undefined} key={`${text(item.key)}-${index}`}>
-              <header>
-                <span>{text(item.key, '州').slice(0, 1)}</span>
-                <div><small>{visited ? <><Check size={10} />已踏访</> : '未踏访'}</small><strong>{text(item.name, '无名地域')}</strong></div>
-                <em>{current ? '当前落脚' : `${text(item.danger_label)} · ${text(item.danger)}`}</em>
-              </header>
-              <p>{text(item.description)}</p>
-              <div className="route-facts"><span><Wind size={12} />{text(item.months)} 月</span><span>{text(item.requirement_label)}</span></div>
-              {item.has_event === true && <div className="region-event-badge" data-pending={item.event_pending === true || undefined} title={text(item.event_title, '地方机缘')}><Sparkles size={12} /><strong>{item.event_pending === true ? '机缘待决' : '有地方机缘'}</strong><small>{text(item.event_title)}</small></div>}
-              <div className="region-standing" title="地方声望会影响坊市价格、探索判定与行旅安全">
-                <Landmark size={12} /><strong>{text(item.rank, '初来乍到')}</strong><span>{Number(item.reputation || 0) >= 0 ? '+' : ''}{text(item.reputation, '0')}</span>
-              </div>
-              <dl>
-                <div><dt>本地特产</dt><dd>{words(item.specialties).join(' · ')}</dd></div>
-                <div><dt>热门求购</dt><dd>{words(item.demands).join(' · ')}</dd></div>
-              </dl>
-              <button type="button" disabled={readOnly || !accessible} title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(item.locked_reason)} onClick={() => onAction(text(item.action))}>
-                {current ? <><MapPin size={13} />当前所在</> : accessible ? <><ArrowRight size={13} />规划行程</> : <><LockKeyhole size={13} />{text(item.locked_reason, '尚未解锁')}</>}
-              </button>
-            </article>
-          )
-        })}
+      <div className="region-atlas">
+        <nav className="region-atlas-map" aria-label="五域卷轴舆图">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M50 13 C42 25 52 35 50 50 C44 65 55 78 50 88" /><path d="M15 50 C30 42 38 53 50 50 C64 45 73 55 86 48" /></svg>
+          <span className="atlas-compass" aria-hidden="true"><i>北</i><b>九州</b><i>南</i></span>
+          {items.map((item, index) => {
+            const current = item.current === true
+            const accessible = item.accessible === true
+            const visited = item.visited === true
+            const key = text(item.key, `地域-${index}`)
+            const chosen = selected === item
+            return <button type="button" className="region-node" data-region={key} data-current={current || undefined} data-visited={visited || undefined} data-locked={!accessible && !current || undefined} aria-pressed={chosen} aria-label={`查看${text(item.name, key)}地域`} onClick={() => setSelectedKey(key)} key={key}>
+              <span>{key.slice(0, 1)}</span><strong>{text(item.name, '无名地域')}</strong><small>{current ? '当前落脚' : visited ? '已经踏访' : text(item.danger_label, '路途未明')}</small>
+              {item.has_event === true && <i aria-label="有地方机缘" />}
+            </button>
+          })}
+          <p>山河入卷 · 五域可观</p>
+        </nav>
+        {selected && (() => {
+          const current = selected.current === true
+          const accessible = selected.accessible === true
+          const visited = selected.visited === true
+          return <aside className="region-atlas-detail" data-tone={text(selected.tone, 'safe')} aria-label={`${text(selected.name)}地域详情`}>
+            <header><span>{text(selected.key, '州').slice(0, 1)}</span><div><small>{visited ? '足迹已至' : '山河未访'}</small><h3>{text(selected.name, '无名地域')}</h3></div><em>{current ? '当前落脚' : `${text(selected.danger_label)} · ${text(selected.danger)}`}</em></header>
+            <p>{text(selected.description)}</p>
+            {selected.has_event === true && <div className="region-event-badge" data-pending={selected.event_pending === true || undefined} title={text(selected.event_title, '地方机缘')}><Sparkles size={12} /><strong>{selected.event_pending === true ? '机缘待决' : '有地方机缘'}</strong><small>{text(selected.event_title)}</small></div>}
+            <div className="region-atlas-stats"><span><Wind size={12} /><small>行程</small><strong>{text(selected.months)} 月</strong></span><span><ShieldCheck size={12} /><small>准入</small><strong>{text(selected.requirement_label)}</strong></span><span><Landmark size={12} /><small>声望</small><strong>{text(selected.rank, '初来乍到')} · {Number(selected.reputation || 0) >= 0 ? '+' : ''}{text(selected.reputation, '0')}</strong></span></div>
+            <dl><div><dt>本地特产</dt><dd>{words(selected.specialties).join(' · ') || '尚待寻访'}</dd></div><div><dt>热门求购</dt><dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd></div></dl>
+            <button type="button" disabled={readOnly || !accessible} title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)} onClick={() => onAction(text(selected.action))}>
+              {current ? <><MapPin size={13} />当前所在</> : accessible ? <><ArrowRight size={13} />规划前往{text(selected.key)}</> : <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>}
+            </button>
+          </aside>
+        })()}
       </div>
     </section>
   )
@@ -344,7 +349,7 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly 
   const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
   const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
   const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || presentation.has_details
-  const surfaceType = (presentation.blocks || []).find((block) => ['locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
+  const surfaceType = (presentation.blocks || []).find((block) => ['people', 'locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
   const act = (action: string) => { if (!readOnly) onAction(action) }
   if (immersive && !hasSecondaryContent) return null
   return (

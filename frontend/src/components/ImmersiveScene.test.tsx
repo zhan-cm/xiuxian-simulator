@@ -29,11 +29,12 @@ describe('immersive game shell', () => {
   it('keeps world navigation explicit and separates the codex tray', () => {
     const navigate = vi.fn()
     const toggle = vi.fn()
-    render(<WorldNavigation activeAction="地图" codexOpen={false} onNavigate={navigate} onToggleCodex={toggle} />)
+    render(<WorldNavigation activeAction="地图" codexOpen={false} hasUpdates onNavigate={navigate} onToggleCodex={toggle} />)
     fireEvent.click(screen.getByRole('button', { name: /坊市/ }))
     fireEvent.click(screen.getByRole('button', { name: /洞天侧记/ }))
     expect(navigate).toHaveBeenCalledWith('坊市')
     expect(toggle).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('世界与修行有可推进事项')).toBeVisible()
   })
 
   it('hands the first paragraph to the scene without repeating the event heading', () => {
@@ -96,6 +97,25 @@ describe('immersive game shell', () => {
     expect(screen.getByText('机缘未探')).toBeVisible()
     expect(screen.getByLabelText('危险等级 4 / 4')).toBeVisible()
     expect(screen.getByRole('button', { name: /需要达到筑基境才可进入/ })).toBeDisabled()
+  })
+
+  it('turns five regions into a selectable atlas with one focused route detail', () => {
+    const act = vi.fn()
+    const atlas = { ...presentation, blocks: [{ type: 'regions', title: '九州舆图', items: [
+      { key: '东洲', name: '东洲·青岳', current: true, visited: true, accessible: false, danger: 12, danger_label: '低危', requirement_label: '炼气境', description: '散修汇聚之地。', months: 0, specialties: ['灵药'], demands: ['妖兽材料'], rank: '略有薄名', reputation: 12, locked_reason: '当前所在', action: '前往 东洲', has_event: true, event_title: '青岳灵雾' },
+      { key: '南疆', name: '南疆·赤炎', current: false, visited: false, accessible: true, danger: 34, danger_label: '高危', requirement_label: '筑基境', description: '火脉与妖兽并存。', months: 3, specialties: ['烈酒'], demands: ['灵药'], rank: '初来乍到', reputation: 0, action: '前往 南疆' },
+      { key: '北原', name: '北原·寒渊', current: false, visited: false, accessible: false, danger: 72, danger_label: '绝境', requirement_label: '元婴境', description: '长夜雪暴笼罩寒渊。', months: 4, specialties: ['冰莲'], demands: ['疗伤丹'], rank: '初来乍到', reputation: 0, locked_reason: '需要达到元婴境才可前往', action: '前往 北原' },
+    ] }] } as Presentation
+    render(<EventPanel presentation={atlas} immersive onAction={act} />)
+    expect(screen.getByRole('navigation', { name: '五域卷轴舆图' })).toBeVisible()
+    expect(screen.getByRole('complementary', { name: '东洲·青岳地域详情' })).toBeVisible()
+    expect(screen.getByLabelText('有地方机缘')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: '查看南疆·赤炎地域' }))
+    expect(screen.getByRole('complementary', { name: '南疆·赤炎地域详情' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: '规划前往南疆' }))
+    expect(act).toHaveBeenCalledExactlyOnceWith('前往 南疆')
+    fireEvent.click(screen.getByRole('button', { name: '查看北原·寒渊地域' }))
+    expect(screen.getByRole('button', { name: '需要达到元婴境才可前往' })).toBeDisabled()
   })
 
   it('turns the market into a filterable shelf with explicit buy and sell states', () => {

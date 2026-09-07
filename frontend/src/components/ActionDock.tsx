@@ -1,4 +1,4 @@
-import { ArrowUpRight, BedDouble, Compass, MoonStar, Save, Sparkles } from 'lucide-react'
+import { ArrowUpRight, BedDouble, BookOpenCheck, Compass, MoonStar, MountainSnow, Save, ScrollText, Sparkles, Waves } from 'lucide-react'
 import type { RecoverySnapshot } from '../api/types'
 import { useUiStore } from '../store/ui'
 
@@ -10,16 +10,26 @@ const quickActions = [
 
 const drafts = ['去坊市打听最近的秘境传闻', '谨慎探索青岳山麓', '拜访一位相识修士并询问近况']
 
+export interface ContextAction {
+  action: string
+  label: string
+  description: string
+  tone: 'breakthrough' | 'story' | 'commission' | 'world'
+}
+
+const contextIcons = { breakthrough: MountainSnow, story: BookOpenCheck, commission: ScrollText, world: Waves }
+
 interface ActionDockProps {
   busy: boolean
   canQuickAct: boolean
   canDraft: boolean
   readOnly?: boolean
   recovery?: RecoverySnapshot
+  contextActions?: ContextAction[]
   onAction: (action: string) => void
 }
 
-export function ActionDock({ busy, canQuickAct, canDraft, readOnly = false, recovery, onAction }: ActionDockProps) {
+export function ActionDock({ busy, canQuickAct, canDraft, readOnly = false, recovery, contextActions = [], onAction }: ActionDockProps) {
   const { draft, setDraft, clearDraft } = useUiStore()
   const submit = () => {
     if (!draft.trim() || busy || readOnly || !canDraft) return
@@ -31,6 +41,7 @@ export function ActionDock({ busy, canQuickAct, canDraft, readOnly = false, reco
       <div className="quick-action-row" aria-label="一键行动">
         <span>一键行动</span>
         {recovery?.active && <button type="button" disabled={!canQuickAct || busy || readOnly || !recovery.can_rest} title={readOnly ? '成果巡览仅供查看' : !canQuickAct ? '请先完成当前抉择' : recovery.can_rest ? '静养一个月，恢复伤势' : recovery.rest_reason} onClick={() => onAction(recovery.rest_action)}><BedDouble size={16} />静养疗伤</button>}
+        {contextActions.slice(0, 1).map((item) => { const Icon = contextIcons[item.tone]; return <button className="context-action" type="button" data-tone={item.tone} key={item.action} disabled={!canQuickAct || busy || readOnly} onClick={() => onAction(item.action)} title={readOnly ? '成果巡览仅供查看' : item.description}><Icon size={16} /><span><strong>{item.label}</strong><small>{item.description}</small></span></button> })}
         {quickActions.map(({ action, label, icon: Icon }) => (
           <button type="button" key={action} disabled={!canQuickAct || busy || readOnly} onClick={() => onAction(action)} title={readOnly ? '成果巡览仅供查看' : canQuickAct ? `立即执行：${label}` : '请先完成当前抉择'}>
             <Icon size={16} />{label}

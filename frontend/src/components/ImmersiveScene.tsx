@@ -170,7 +170,7 @@ export function WorldNavigation({ activeAction, disabled = false, disabledReason
     <nav className="world-navigation" aria-label="修仙世界导航">
       <span className="world-navigation-mark">问道</span>
       {destinations.map(({ label, action, icon: Icon }) => <button type="button" key={action} disabled={disabled} title={disabled ? disabledReason : `查看${label}`} aria-current={activeAction === action ? 'page' : undefined} data-active={activeAction === action || undefined} onClick={() => onNavigate(action)}><Icon size={18} /><span>{label}</span></button>)}
-      <button type="button" ref={codexButtonRef} aria-haspopup="dialog" aria-expanded={codexOpen} data-active={codexOpen || undefined} onClick={onToggleCodex}><Menu size={18} /><span>{codexOpen ? '收起侧记' : '洞天侧记'}</span>{hasUpdates && <i className="nav-update-dot" aria-label="修行百艺有可推进事项" />}</button>
+      <button type="button" ref={codexButtonRef} aria-haspopup="dialog" aria-expanded={codexOpen} data-active={codexOpen || undefined} onClick={onToggleCodex}><Menu size={18} /><span>{codexOpen ? '收起侧记' : '洞天侧记'}</span>{hasUpdates && <i className="nav-update-dot" aria-label="世界与修行有可推进事项" />}</button>
     </nav>
   )
 }

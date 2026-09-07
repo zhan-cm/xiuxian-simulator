@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
 import { ActionDock } from './components/ActionDock'
+import type { ContextAction } from './components/ActionDock'
 import { ArchiveDialog } from './components/ArchiveDialog'
 import { CharacterSheet } from './components/CharacterSheet'
 import { CodexDrawer } from './components/CodexDrawer'
@@ -88,7 +89,18 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   // 人情纷争也带 exclusive 标记，但规则允许暂缓；只有实际游戏阶段锁定行动。
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = canUseQuickActions || ['character_creation_basic', 'character_creation_traits'].includes(state.phase)
-  const hasUpdates = snapshot.story.available || snapshot.new_era.available || snapshot.commissions.active.some((item) => item.ready)
+  const localStanding = snapshot.regional.standings.find((item) => item.key === snapshot.regional.current)
+  const hasUpdates = snapshot.story.available || snapshot.new_era.available || snapshot.commissions.active.some((item) => item.ready) || snapshot.npc_lives.pending_count > 0 || Boolean(snapshot.npc_network.pending?.id) || Boolean(localStanding && !localStanding.encounter_completed)
+  const contextActions: ContextAction[] = (() => {
+    if (snapshot.recovery.active) return []
+    if (player.cultivation >= player.cultivation_required) return [{ action: '突破', label: '叩问突破', description: `${player.realm}修为已圆满`, tone: 'breakthrough' }]
+    if (snapshot.new_era.available) return [{ action: snapshot.new_era.begin_action, label: '处置新世余波', description: snapshot.new_era.event.title || '新的时代波澜正在显现', tone: 'world' }]
+    if (snapshot.story.available) return [{ action: snapshot.story.begin_action, label: '续写灵潮因果', description: snapshot.story.title || snapshot.story.next_hint, tone: 'story' }]
+    const readyCommission = snapshot.commissions.active.find((item) => item.ready)
+    if (readyCommission) return [{ action: '委托', label: '悬榜可以交付', description: readyCommission.title, tone: 'commission' }]
+    if (localStanding && !localStanding.encounter_completed) return [{ action: '地方机缘', label: '探查地方机缘', description: localStanding.encounter_title, tone: 'world' }]
+    return []
+  })()
   const encounterNpc = findEncounterNpc(snapshot.npc_profiles, presentation)
   const onCodexAction = (value: string) => {
     if (busy || showcase || !canUseQuickActions) return
@@ -127,7 +139,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             </>}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
-            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} readOnly={showcase} recovery={snapshot.recovery} onAction={onAction} />}
+            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} readOnly={showcase} recovery={snapshot.recovery} contextActions={contextActions} onAction={onAction} />}
           </section>
             {!legacySurface && <CodexDrawer open={codexOpen} onClose={closeCodex} returnFocusRef={codexTrigger} hasUpdates={Boolean(hasUpdates)}
               character={
