@@ -2,7 +2,7 @@ name: 持续集成
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
   pull_request:
 
 permissions:
