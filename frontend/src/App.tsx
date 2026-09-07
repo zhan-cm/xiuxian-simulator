@@ -16,6 +16,7 @@ import { InventoryDialog } from './components/InventoryDialog'
 import { Panel } from './components/Panel'
 import { ProgressStat } from './components/ProgressStat'
 import { ShowcaseNavigator } from './components/ShowcaseNavigator'
+import { TravelDecisionPanel } from './components/TravelDecisionPanel'
 import { loadShowcaseReview } from './showcaseReview'
 import { PathwaysCodex } from './components/PathwaysCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
@@ -108,6 +109,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
     onAction(value)
   }
   const networkSurface = ['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')
+  const travelSurface = state.phase === 'travel_choice' && Boolean(Object.keys(snapshot.travel.pending || {}).length)
   const legacySurface = state.phase === 'ended'
   const activeLegacy = snapshot.legacy.active_legacy
   return (
@@ -135,7 +137,8 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 </motion.div>
               </AnimatePresence>
               <SocialActionBar npc={encounterNpc} inventory={snapshot.inventory} disabled={busy || showcase || !canUseQuickActions} onAction={onAction} />
-              {!networkSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
+              {travelSurface && <TravelDecisionPanel decision={decision} travel={snapshot.travel} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
+              {!networkSurface && !travelSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
             </>}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}

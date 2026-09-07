@@ -11,7 +11,8 @@ const sceneFrom = (state: GameState, presentation: Presentation) => {
   if (/坊市|拍卖|交易|买入|卖出/.test(action)) return 'market'
   if (/洞府|修炼|闭关|调息/.test(action)) return 'cave'
   if (/宗|门派|藏经/.test(action)) return 'sect'
-  if (/地图|探索|秘境|行旅/.test(action)) return 'wilds'
+  if (/行旅|前往\s/.test(action)) return 'travel'
+  if (/地图|探索|秘境/.test(action)) return 'wilds'
   const location = state.player.location
   if (/坊市/.test(location)) return 'market'
   if (/宗|门派|藏经/.test(location)) return 'sect'
