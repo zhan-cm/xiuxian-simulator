@@ -29,6 +29,7 @@ import { ArtMasteryCodex } from './components/ArtMasteryCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
 import { LegacyChronicle } from './components/LegacyChronicle'
 import { SectDominion } from './components/SectDominion'
+import { CultivatorHud, ImmersiveScene, WorldNavigation } from './components/ImmersiveScene'
 import { useUiStore } from './store/ui'
 
 const monthNames = ['春一月', '春二月', '春三月', '夏四月', '夏五月', '夏六月', '秋七月', '秋八月', '秋九月', '冬十月', '冬十一月', '冬十二月']
@@ -84,6 +85,7 @@ interface GameProps {
 function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, notice, onArchiveChanged, onNotice }: GameProps) {
   const { state, presentation, decision } = snapshot
   const { player } = state
+  const { codexOpen, toggleCodex, closeCodex } = useUiStore()
   const canUseQuickActions = state.phase === 'playing'
   const canDraft = ['playing', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)
   const networkSurface = ['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')
@@ -92,8 +94,9 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   return (
     <TooltipProvider>
       <div className="game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
-        <header className="topbar">
+        <header className="topbar immersive-topbar">
           <div className="brand"><span>高自由修仙文字模拟</span><h1>问道长生</h1><p>凡尘一念，万法由心</p></div>
+          {!legacySurface && <CultivatorHud player={player} />}
           <div className="topbar-actions">
             <div className="time-badge"><CalendarDays size={16} /><span>第 {state.turn} 回合</span><b /><strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong></div>
             <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>{showcase ? <X size={16} /> : <Eye size={16} />}{showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}</button>
@@ -102,27 +105,10 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           </div>
         </header>
 
-        <main className="game-grid">
-          {!legacySurface && <aside className="left-rail">
-            <Panel title="修士名帖" icon={<UserRound size={18} />} meta={player.location}>
-              <div className="name-card"><span>{player.name.slice(0, 1)}</span><div><h3>{player.name}</h3><p>道号 · {player.dao_name}</p></div></div>
-              <div className="identity-tags"><span><small>境界</small>{player.realm}</span><span><small>宗门</small>{player.sect}</span><GameTooltip label="灵石是修仙界通行货币，可在坊市购买丹药、法器与材料。"><span tabIndex={0}><small>灵石</small>{player.spirit_stones}</span></GameTooltip></div>
-              <p className="life-label">{player.gender} · {player.age}岁（寿元 {player.lifespan}）</p>
-            </Panel>
-            <Panel title="道途根基" icon={<Shield size={18} />} meta={player.condition}>
-              <div className="progress-stack">
-                <ProgressStat label="气血" value={player.health} max={player.health_max} tone="health" help="气血归零会重伤或陨落，可通过丹药与休养恢复。" />
-                <ProgressStat label="灵力" value={player.spirit} max={player.spirit_max} tone="spirit" help="施展法术会消耗灵力，修炼和休息可以恢复。" />
-                <ProgressStat label="修为" value={player.cultivation} max={player.cultivation_required} tone="cultivation" help="修为达到当前上限后，可以尝试突破境界。" />
-              </div>
-              <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span>{activeLegacy.name && <GameTooltip label={activeLegacy.effect || '来自上一世的轮回传承。'}><span tabIndex={0}><RotateCcw size={14} />{activeLegacy.name}</span></GameTooltip>}</div>
-              <RecoveryCodex recovery={snapshot.recovery} busy={busy} readOnly={showcase} onAction={onAction} />
-            </Panel>
-            <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
-          </aside>}
-
+        <main className="game-grid immersive-grid">
           <section className="main-stage">
-            <div className="stage-heading"><div><span>当前所在</span><h2>{player.location}</h2></div><span className="era-badge"><CloudSun size={15} />{state.world_era}</span></div>
+            {!legacySurface && <ImmersiveScene state={state} presentation={presentation} calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`} />}
+            {legacySurface && <div className="stage-heading"><div><span>本世已终</span><h2>{player.name} · 仙途评传</h2></div></div>}
             {!legacySurface && <>
               <AuctionHouse auction={snapshot.auction} stones={player.spirit_stones} busy={busy} readOnly={showcase} onAction={onAction} />
               {!['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase) && <StoryChronicle story={snapshot.story} busy={busy} readOnly={showcase} onAction={onAction} />}
@@ -147,16 +133,40 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
             {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} onAction={onAction} />}
           </section>
-
-          {!legacySurface && <aside className="right-rail">
-            <Relations snapshot={snapshot} onAction={onAction} />
-            <HistoryPanel snapshot={snapshot} />
-            <Panel title="九州风声" icon={<CloudSun size={18} />} meta={state.world_era} className="balanced-panel world-panel">
-              <div><span aria-hidden="true">闻</span><p>{state.last_world_event || '灵气潮汐尚在暗中酝酿，九州表面仍显平静。'}</p></div>
-            </Panel>
-          </aside>}
+          <AnimatePresence>
+            {!legacySurface && codexOpen && <motion.aside className="immersive-codex" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: .2 }} aria-label="洞天侧记">
+              <header><div><span>随身卷册</span><h2>洞天侧记</h2></div><button type="button" onClick={closeCodex} aria-label="关闭洞天侧记"><X size={19} /></button></header>
+              <div className="immersive-codex-grid">
+                <section className="codex-column">
+                  <Panel title="修士名帖" icon={<UserRound size={18} />} meta={player.location}>
+                    <div className="name-card"><span>{player.name.slice(0, 1)}</span><div><h3>{player.name}</h3><p>道号 · {player.dao_name}</p></div></div>
+                    <div className="identity-tags"><span><small>境界</small>{player.realm}</span><span><small>宗门</small>{player.sect}</span><GameTooltip label="灵石是修仙界通行货币，可在坊市购买丹药、法器与材料。"><span tabIndex={0}><small>灵石</small>{player.spirit_stones}</span></GameTooltip></div>
+                    <p className="life-label">{player.gender} · {player.age}岁（寿元 {player.lifespan}）</p>
+                  </Panel>
+                  <Panel title="道途根基" icon={<Shield size={18} />} meta={player.condition}>
+                    <div className="progress-stack">
+                      <ProgressStat label="气血" value={player.health} max={player.health_max} tone="health" help="气血归零会重伤或陨落，可通过丹药与休养恢复。" />
+                      <ProgressStat label="灵力" value={player.spirit} max={player.spirit_max} tone="spirit" help="施展法术会消耗灵力，修炼和休息可以恢复。" />
+                      <ProgressStat label="修为" value={player.cultivation} max={player.cultivation_required} tone="cultivation" help="修为达到当前上限后，可以尝试突破境界。" />
+                    </div>
+                    <div className="root-row"><span><Leaf size={14} />{player.spiritual_root}</span><span><Sparkles size={14} />{player.constitution}</span>{activeLegacy.name && <GameTooltip label={activeLegacy.effect || '来自上一世的轮回传承。'}><span tabIndex={0}><RotateCcw size={14} />{activeLegacy.name}</span></GameTooltip>}</div>
+                    <RecoveryCodex recovery={snapshot.recovery} busy={busy} readOnly={showcase} onAction={onAction} />
+                  </Panel>
+                  <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onAction} />
+                </section>
+                <section className="codex-column">
+                  <Relations snapshot={snapshot} onAction={onAction} />
+                  <HistoryPanel snapshot={snapshot} />
+                  <Panel title="九州风声" icon={<CloudSun size={18} />} meta={state.world_era} className="balanced-panel world-panel">
+                    <div><span aria-hidden="true">闻</span><p>{state.last_world_event || '灵气潮汐尚在暗中酝酿，九州表面仍显平静。'}</p></div>
+                  </Panel>
+                </section>
+              </div>
+            </motion.aside>}
+          </AnimatePresence>
         </main>
-        <footer className="game-footer">本地运行 · 存档保存在你的电脑中 · 数值由规则引擎真实结算 · 正式版 v1.0.0</footer>
+        {!legacySurface && <WorldNavigation activeAction={presentation.action} disabled={busy || showcase} codexOpen={codexOpen} onNavigate={onAction} onToggleCodex={toggleCodex} />}
+        <footer className="game-footer">V2 沉浸式界面 · 阶段一开发中 · 规则与存档沿用正式版 v1.0.0</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
