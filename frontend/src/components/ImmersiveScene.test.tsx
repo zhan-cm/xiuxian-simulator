@@ -85,6 +85,33 @@ describe('immersive game shell', () => {
     expect(act).not.toHaveBeenCalled()
   })
 
+  it('presents exploration as a themed system surface with legible danger and locked routes', () => {
+    const map = { ...presentation, blocks: [{ type: 'locations', title: '东洲探索地图', legend: '危险越高，历练与危机越多。', items: [
+      { name: '青岳山麓', danger: 12, danger_label: '低危', requirement_label: '炼气境', description: '林风清润，适合初入道途者试炼。', accessible: true, action: '探索 青岳山麓', tone: 'safe' },
+      { name: '古战场外围', danger: 38, danger_label: '绝境', requirement_label: '筑基境', description: '残阵与煞气终年不散。', accessible: false, locked_reason: '需要达到筑基境才可进入', tone: 'danger' },
+    ] }] } as Presentation
+    render(<EventPanel presentation={map} immersive onAction={() => undefined} />)
+    expect(screen.getByText('东洲探索地图').closest('.event-panel')).toHaveAttribute('data-surface', 'locations')
+    expect(screen.getByText('山河可赴')).toBeVisible()
+    expect(screen.getByLabelText('危险等级 4 / 4')).toBeVisible()
+    expect(screen.getByRole('button', { name: /需要达到筑基境才可进入/ })).toBeDisabled()
+  })
+
+  it('turns the market into a filterable shelf with explicit buy and sell states', () => {
+    const act = vi.fn()
+    const market = { ...presentation, blocks: [{ type: 'market', title: '青岳坊市', currency: 20, items: [
+      { name: '聚气丹', category: '丹药', owned: 0, affordable: true, buy: 12, sell: 6, buy_action: '购买 聚气丹', sell_action: '出售 聚气丹' },
+      { name: '青灵草', category: '材料', owned: 2, affordable: false, buy: 30, sell: 9, buy_action: '购买 青灵草', sell_action: '出售 青灵草' },
+    ] }] } as Presentation
+    render(<EventPanel presentation={market} immersive onAction={act} />)
+    fireEvent.click(screen.getByRole('button', { name: '丹药' }))
+    expect(screen.getByText('聚气丹')).toBeVisible()
+    expect(screen.queryByText('青灵草')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /买入.*12/ }))
+    expect(act).toHaveBeenCalledWith('购买 聚气丹')
+    expect(screen.getByRole('button', { name: /卖出.*6/ })).toBeDisabled()
+  })
+
   it('matches cultivation to the cave even when the current location contains a region name', () => {
     render(<ImmersiveScene state={state} presentation={presentation} calendarLabel="冬十二月" />)
     expect(screen.getByRole('region', { name: '当前场景：东洲青岳' })).toHaveAttribute('data-scene', 'cave')

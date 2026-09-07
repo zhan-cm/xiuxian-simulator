@@ -1,9 +1,21 @@
 import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { CaveSnapshot, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock } from '../api/types'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
+
+function SystemBlockHeader({ mark, eyebrow, title, description, meta, icon }: { mark: string; eyebrow: string; title: string; description?: unknown; meta?: string; icon: ReactNode }) {
+  return (
+    <header className="system-block-header">
+      <span className="system-block-mark" aria-hidden="true">{mark}</span>
+      <div className="system-block-copy"><small>{eyebrow}</small><strong>{title}</strong>{text(description) && <p>{text(description)}</p>}</div>
+      {meta && <em>{meta}</em>}
+      <i aria-hidden="true">{icon}</i>
+    </header>
+  )
+}
 
 function FactsBlock({ block }: { block: PresentationBlock }) {
   return (
@@ -89,20 +101,23 @@ function NpcNetworkBlock({ network, readOnly, onAction }: { network: NpcNetworkS
 }
 
 function LocationsBlock({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
+  const count = block.items?.length || 0
   return (
     <section className="semantic-block location-block">
-      <header><Compass size={16} /><strong>{block.title || '探索地图'}</strong><small>{block.legend}</small></header>
+      <SystemBlockHeader mark="游" eyebrow="山河可赴" title={block.title || '探索地图'} description={block.legend || '择一处地标动身，风险与机缘皆由规则真实结算。'} meta={`${count} 处地标`} icon={<Compass size={21} />} />
       <div className="location-grid">
         {(block.items || []).map((item, index) => {
           const accessible = item.accessible !== false
           const action = text(item.action, `探索 ${text(item.name)}`)
+          const danger = Number(item.danger || 0)
+          const dangerLevel = danger <= 15 ? 1 : danger <= 25 ? 2 : danger <= 35 ? 3 : 4
           return (
             <article className="location-card" data-tone={text(item.tone, 'safe')} key={`${text(item.name)}-${index}`}>
-              <header><div><MapPin size={16} /><strong>{text(item.name, '未名之地')}</strong></div><span>{text(item.danger_label, '未知')} · {text(item.danger, '?')}</span></header>
+              <header><div><MapPin size={17} /><strong>{text(item.name, '未名之地')}</strong></div><div className="location-danger" title={`危险度 ${text(item.danger, '未知')}：数值越高，遭遇强敌与危机的可能越大`}><span>{text(item.danger_label, '未知')} · {text(item.danger, '?')}</span><i aria-label={`危险等级 ${dangerLevel} / 4`}>{[1, 2, 3, 4].map((level) => <b data-filled={level <= dangerLevel || undefined} key={level} />)}</i></div></header>
               <small>准入：{text(item.requirement_label || item.requirement, '炼气境')}</small>
               <p>{text(item.description || item.help, '前路未明，需亲自踏勘。')}</p>
               <button type="button" disabled={!accessible} title={accessible ? '立即前往探索' : text(item.locked_reason, '当前无法进入')} onClick={() => onAction(action)}>
-                {accessible ? '前往探索' : text(item.locked_reason, '尚未解锁')}
+                <span>{accessible ? '前往探索' : text(item.locked_reason, '尚未解锁')}</span>{accessible ? <ArrowRight size={14} /> : <LockKeyhole size={14} />}
               </button>
             </article>
           )
@@ -113,9 +128,10 @@ function LocationsBlock({ block, onAction }: { block: PresentationBlock; onActio
 }
 
 function RegionsBlock({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
+  const count = block.items?.length || 0
   return (
     <section className="semantic-block region-block">
-      <header><Route size={16} /><strong>{block.title || '九州舆图'}</strong><small>{block.legend}</small></header>
+      <SystemBlockHeader mark="州" eyebrow="云路万里" title={block.title || '九州舆图'} description={block.legend || '各域物产、声望与行程不同，启程前请细察路途。'} meta={`${count} 方地域`} icon={<Route size={21} />} />
       <div className="region-grid">
         {(block.items || []).map((item, index) => {
           const current = item.current === true
@@ -166,7 +182,7 @@ function MarketBlock({ block, onAction }: { block: PresentationBlock; onAction: 
   const shown = useMemo(() => category === '全部' ? items : items.filter((item) => item.category === category), [category, items])
   return (
     <section className="semantic-block market-block">
-      <header><ShoppingBag size={16} /><strong>{block.title || '坊市货架'}</strong><small><Coins size={13} />持有 {text(block.currency, '0')} 灵石</small></header>
+      <SystemBlockHeader mark="市" eyebrow="青岳商路" title={block.title || '坊市货架'} description="辨行情、择灵物，每一次买卖都会真实计入行囊与商路账目。" meta={`持有 ${text(block.currency, '0')} 灵石`} icon={<ShoppingBag size={21} />} />
       <div className="market-context"><span><small>本地特产</small>{text(block.specialties, '行情平稳')}</span><span><small>热门求购</small>{text(block.demands, '暂无异动')}</span><span><small>地方声望</small>{text(block.standing, '初来乍到 · +0')}</span><span data-profit={Number(block.trade_profit || 0) >= 0 ? 'gain' : 'loss'}><small>商路累计</small>{Number(block.trade_profit || 0) >= 0 ? '+' : ''}{text(block.trade_profit, '0')} 灵石</span></div>
       <nav className="market-tabs" aria-label="货架分类">
         {categories.map((name) => <button type="button" data-active={category === name || undefined} onClick={() => setCategory(name)} key={name}>{name}</button>)}
@@ -176,10 +192,10 @@ function MarketBlock({ block, onAction }: { block: PresentationBlock; onAction: 
           const owned = Number(item.owned || 0)
           const affordable = item.affordable !== false
           return (
-            <article className="market-item" key={text(item.name)}>
+            <article className="market-item" data-category={text(item.category, '其他')} key={text(item.name)}>
               <span className="item-glyph">{text(item.name, '物').slice(0, 1)}</span>
               <div className="market-copy"><strong>{text(item.name, '未鉴定物品')}</strong><small>{text(item.category, '修仙杂物')} · 持有 {owned}</small></div>
-              <div className="market-prices"><button type="button" disabled={!affordable} title={affordable ? '买入一件' : '灵石不足'} onClick={() => onAction(text(item.buy_action))}>买 <b>{text(item.buy)}</b></button><button type="button" disabled={owned <= 0} title={owned > 0 ? '卖出一件' : '当前未持有'} onClick={() => onAction(text(item.sell_action))}>卖 <b>{text(item.sell)}</b></button></div>
+              <div className="market-prices"><button type="button" disabled={!affordable} title={affordable ? '买入一件' : '灵石不足'} onClick={() => onAction(text(item.buy_action))}><small>买入</small><b><Coins size={11} />{text(item.buy)}</b></button><button type="button" disabled={owned <= 0} title={owned > 0 ? '卖出一件' : '当前未持有'} onClick={() => onAction(text(item.sell_action))}><small>卖出</small><b><Coins size={11} />{text(item.sell)}</b></button></div>
             </article>
           )
         })}
@@ -192,7 +208,7 @@ function FacilitiesBlock({ block, cave, onAction }: { block: PresentationBlock; 
   const energyPercent = cave ? Math.max(0, Math.min(100, Math.round(cave.spirit_energy / Math.max(1, cave.spirit_energy_cap) * 100))) : 0
   return (
     <section className="semantic-block facility-block">
-      <header><Landmark size={16} /><strong>{cave?.name || block.title || '洞府设施'}</strong><small>灵气 {cave?.aura || text(block.aura, '普通')} · 灵田 {text(block.crops, '无作物')}</small></header>
+      <SystemBlockHeader mark="府" eyebrow="一方洞天" title={cave?.name || block.title || '洞府设施'} description={`灵气 ${cave?.aura || text(block.aura, '普通')} · 灵田 ${text(block.crops, '无作物')}`} meta={cave ? `${cave.active_jobs} / ${cave.capacity} 工坊运转` : '洞府营造'} icon={<Landmark size={21} />} />
       {cave && <>
         <div className="cave-overview">
           <article className="cave-energy"><span><Sparkles size={17} /></span><div><small>洞府灵蕴</small><strong>{cave.spirit_energy} <i>/ {cave.spirit_energy_cap}</i></strong><div><b style={{ width: `${energyPercent}%` }} /></div></div><em>每月 +{cave.monthly_generation}</em></article>
@@ -236,7 +252,7 @@ function FacilitiesBlock({ block, cave, onAction }: { block: PresentationBlock; 
 function RecipesBlock({ block, onAction }: { block: PresentationBlock; onAction: (action: string) => void }) {
   return (
     <section className="semantic-block recipe-block">
-      <header><FlaskConical size={16} /><strong>{block.title || '已知配方'}</strong><small>投入材料后将真实判定成败</small></header>
+      <SystemBlockHeader mark="艺" eyebrow="炉火百炼" title={block.title || '已知配方'} description="材料、成功率与产物均由规则引擎结算，开炉前可先查验资粮。" meta={`${block.items?.length || 0} 道配方`} icon={<FlaskConical size={21} />} />
       <div className="recipe-grid">
         {(block.items || []).map((item) => {
           const available = item.available === true
@@ -252,9 +268,9 @@ function SectsBlock({ block, onAction }: { block: PresentationBlock; onAction: (
   const mottos: Record<string, string> = { 青云宗: '清正持剑，守望东洲', 丹霞谷: '丹火养生，济世求真', 玄剑门: '以战磨剑，锋芒证道' }
   return (
     <section className="semantic-block sect-block">
-      <header><Landmark size={16} /><strong>{block.title || '可选宗门'}</strong><small>入门试炼会推进一个月，也可能失败</small></header>
+      <SystemBlockHeader mark="宗" eyebrow="山门择路" title={block.title || '可选宗门'} description="道统各异，门规不同；入门试炼会推进一个月，也可能失败。" meta={`${block.items?.length || 0} 座山门`} icon={<Landmark size={21} />} />
       <div className="sect-grid">
-        {(block.items || []).map((item, index) => <article className="sect-card" key={text(item.name)} data-index={index}><span>{text(item.name, '宗').slice(0, 1)}</span><div><strong>{text(item.name)}</strong><small>{mottos[text(item.name)] || text(item.description)}</small><p>{text(item.description)}</p></div><button type="button" onClick={() => onAction(text(item.action))}>申请试炼</button></article>)}
+        {(block.items || []).map((item, index) => <article className="sect-card" key={text(item.name)} data-index={index}><span>{text(item.name, '宗').slice(0, 1)}</span><div><strong>{text(item.name)}</strong><small>{mottos[text(item.name)] || text(item.description)}</small><p>{text(item.description)}</p></div><button type="button" onClick={() => onAction(text(item.action))}><span>申请试炼</span><ArrowRight size={14} /></button></article>)}
       </div>
     </section>
   )
@@ -293,10 +309,11 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, readOnly 
   const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
   const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
   const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || presentation.has_details
+  const surfaceType = (presentation.blocks || []).find((block) => ['locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
   const act = (action: string) => { if (!readOnly) onAction(action) }
   if (immersive && !hasSecondaryContent) return null
   return (
-    <article className="event-panel" data-tone={presentation.tone || 'story'} data-immersive={immersive || undefined}>
+    <article className="event-panel" data-tone={presentation.tone || 'story'} data-immersive={immersive || undefined} data-surface={surfaceType}>
       <div className="event-ornament" aria-hidden="true" />
       {!immersive && <header className="event-heading">
         <span className="event-seal">{presentation.seal || '道'}</span>
