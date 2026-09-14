@@ -49,4 +49,40 @@ describe('action drafts', () => {
     fireEvent.click(breakthrough)
     expect(act).toHaveBeenCalledExactlyOnceWith('突破')
   })
+
+  it('allows one-click execution of selectable actions across categories without manual typing', () => {
+    const act = vi.fn()
+    render(<ActionDock busy={false} canQuickAct canDraft onAction={act} />)
+
+    // Default category is 潜修 (cultivation)
+    fireEvent.click(screen.getByRole('button', { name: '闭关三月' }))
+    expect(act).toHaveBeenCalledWith('闭关3月')
+
+    // Switch to 历练 (adventure)
+    fireEvent.click(screen.getByRole('tab', { name: '历练' }))
+    fireEvent.click(screen.getByRole('button', { name: '探索山麓' }))
+    expect(act).toHaveBeenCalledWith('探索 青岳山麓')
+
+    // Switch to 生财 (economy)
+    fireEvent.click(screen.getByRole('tab', { name: '生财' }))
+    fireEvent.click(screen.getByRole('button', { name: '前往坊市' }))
+    expect(act).toHaveBeenCalledWith('坊市')
+
+    // Switch to 红尘 (social)
+    fireEvent.click(screen.getByRole('tab', { name: '红尘' }))
+    fireEvent.click(screen.getByRole('button', { name: '仙门重地' }))
+    expect(act).toHaveBeenCalledWith('宗门')
+
+    expect(act).toHaveBeenCalledTimes(4)
+  })
+
+  it('disables selectable action cards when quick action is not permitted', () => {
+    const act = vi.fn()
+    render(<ActionDock busy={false} canQuickAct={false} canDraft onAction={act} />)
+    const cultivateBtn = screen.getByRole('button', { name: '吐纳修炼' })
+    expect(cultivateBtn).toBeDisabled()
+    fireEvent.click(cultivateBtn)
+    expect(act).not.toHaveBeenCalled()
+  })
 })
+

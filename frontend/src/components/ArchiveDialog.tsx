@@ -115,11 +115,13 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open
             })}</div> : <div className="empty-save"><ScrollText size={25} /><p>还没有已保存的卷宗。</p></div>}
           </section>
           <section className="save-restart-area">
-            <div>
-              <span><RotateCcw size={16} /></span>
-              <div>
-                <h3>再入轮回 · 重开新局</h3>
-                <p>若想舍去此世重塑命格，可开启全新修仙旅途，重新经历凡尘与道骨定契。</p>
+            <div className="save-restart-row">
+              <div className="restart-info-col">
+                <span className="restart-icon-wrap"><RotateCcw size={18} /></span>
+                <div className="restart-text-col">
+                  <h3>再入轮回 · 重开新局</h3>
+                  <p>舍去此世肉身命盘，重新经历凡尘定格与灵根道骨测定。</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -137,6 +139,7 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open
               </button>
             </div>
           </section>
+          <div className="dialog-bottom-spacer" aria-hidden="true" />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
