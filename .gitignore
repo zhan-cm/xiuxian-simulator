@@ -10,3 +10,6 @@ data/saves/*.json
 data/saves/*.bak
 !data/saves/.gitkeep
 data/logs/
+data/*.log
+data/.app_profile/
+data/.edge_profile/

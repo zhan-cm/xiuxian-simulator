@@ -52,7 +52,7 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
 
     game = WebApplication(engine, root)
     app = FastAPI(
-        title="问道长生本地接口",
+        title="永恒之道本地接口",
         version=__version__,
         docs_url="/api/docs",
         redoc_url=None,
@@ -154,7 +154,7 @@ def run_modern_server(
 ) -> None:
     app = create_modern_app(engine, root)
     url = f"http://{host}:{port}/"
-    print(f"问道长生 V{__version__} 游戏界面已启动：{url}")
+    print(f"永恒之道（原《问道长生》）V{__version__} 游戏界面已启动：{url}")
     print("关闭此窗口即可停止游戏服务。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

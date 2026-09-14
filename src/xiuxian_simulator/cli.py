@@ -41,9 +41,11 @@ def build_engine(root: Path | None = None) -> GameEngine:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="《问道长生》本地修仙模拟器")
-    parser.add_argument("--modern-web", action="store_true", help="启动《问道长生》正式版游戏界面")
-    parser.add_argument("--port", type=int, default=8765, help="网页界面端口，默认 8765")
+    parser = argparse.ArgumentParser(description="《永恒之道》（原《问道长生》）本地修仙模拟器")
+    parser.add_argument("--modern-web", action="store_true", help="启动《永恒之道》正式版游戏界面")
+    parser.add_argument("--desktop", action="store_true", help="以独立桌面应用视窗启动《永恒之道》（无浏览器边框）")
+    parser.add_argument("--app", action="store_true", help="以独立桌面应用视窗启动《永恒之道》（等同于 --desktop）")
+    parser.add_argument("--port", type=int, default=8765, help="界面端口，默认 8765")
     parser.add_argument("--no-open-browser", action="store_true", help="启动网页服务但不自动打开浏览器")
     parser.add_argument("--check", action="store_true", help="检查本地运行环境后退出")
     args = parser.parse_args()
@@ -56,6 +58,18 @@ def main() -> None:
     except Exception as exc:
         print(f"启动失败：{exc}", file=sys.stderr)
         raise SystemExit(1) from exc
+
+    if args.desktop or args.app:
+        if not 1 <= args.port <= 65535:
+            parser.error("端口必须在 1～65535 之间")
+        from .desktop import run_desktop_app
+
+        run_desktop_app(
+            engine,
+            find_project_root(),
+            port=args.port,
+        )
+        return
 
     if args.modern_web:
         if not 1 <= args.port <= 65535:
@@ -70,7 +84,7 @@ def main() -> None:
         )
         return
 
-    print("问道长生正式版 v1.0.0")
+    print("永恒之道（原《问道长生》）正式版 v1.0.0")
     print(engine.rules.summary)
     print(f"当前叙事器：{engine.narrator.name}")
     print("输入“开始游戏”进入九州仙途；输入“退出”结束。")

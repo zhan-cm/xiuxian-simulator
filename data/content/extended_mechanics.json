@@ -1,0 +1,196 @@
+{
+  "version": "2.0.0",
+  "description": "《问道长生》扩展玩法机制与结构化数值配置",
+  "element_reactions": [
+    {
+      "name": "烈焰爆燃",
+      "elements": ["木", "火"],
+      "description": "火借木势，瞬间引发烈焰剧烈爆轰",
+      "damage_multiplier": 1.8,
+      "dot_turns": 3,
+      "dot_damage_ratio": 0.25,
+      "break_stance": false
+    },
+    {
+      "name": "感电狂涌",
+      "elements": ["水", "雷"],
+      "description": "水液导雷，破甲狂轰并强制打断正在蓄势的绝技",
+      "damage_multiplier": 1.5,
+      "dot_turns": 2,
+      "interrupt_skill": true,
+      "penetration": 0.5
+    },
+    {
+      "name": "庚金坚壁",
+      "elements": ["土", "金"],
+      "description": "厚土融金，凝聚反伤琉璃护体罡甲",
+      "damage_multiplier": 1.0,
+      "shield_ratio": 0.3,
+      "reflect_ratio": 0.3,
+      "turns": 2
+    },
+    {
+      "name": "寒狱冰封",
+      "elements": ["水", "冰"],
+      "description": "极阴凝霜，大幅降低敌手遁速并有概率冰封目标一回合",
+      "damage_multiplier": 1.3,
+      "freeze_chance": 0.5,
+      "slow_ratio": 0.6,
+      "turns": 2
+    },
+    {
+      "name": "混沌湮灭",
+      "elements": ["阴", "阳"],
+      "description": "阴阳归一，破除一切常规护盾并造成无法减免的真实道伤",
+      "damage_multiplier": 2.2,
+      "ignore_defense": true,
+      "penetration": 1.0
+    }
+  ],
+  "extended_origins": [
+    {
+      "id": "reincarnated_immortal",
+      "name": "转世谪仙",
+      "rarity": "天命",
+      "description": "真灵宿慧未泯，参悟功法与破境速度+40%，但天劫威能提升100%，常引前世宿敌窥探",
+      "modifiers": {
+        "comprehension": 4,
+        "fortune": 2,
+        "tribulation_danger": 2.0,
+        "cultivation_speed_mult": 1.4
+      }
+    },
+    {
+      "id": "royal_abandoned",
+      "name": "皇室弃子",
+      "rarity": "天命",
+      "description": "身负大夏纯正潜龙血脉，可调动大夏暗卫，免除龙气禁法压制，但幼年遭皇室内廷缉杀",
+      "modifiers": {
+        "status_influence": 50,
+        "spirit_stones": 500,
+        "dragon_qi_immune": true
+      }
+    },
+    {
+      "id": "lone_star",
+      "name": "天煞孤星",
+      "rarity": "因果",
+      "description": "自身仙缘爆棚（绝境奇遇暴增），但凡结伴同游或结为道侣者，遭遇死劫概率提高50%",
+      "modifiers": {
+        "fortune": 6,
+        "companion_danger": 1.5
+      }
+    },
+    {
+      "id": "demon_vessel",
+      "name": "魔尊伴生",
+      "rarity": "天命",
+      "description": "随身古玉寄居上古魔尊残魂，前期提供神识指点与功法顿悟，化神心境虚弱时将引发夺舍战",
+      "modifiers": {
+        "spirit_sense": 5,
+        "dao_heart": -2,
+        "possession_risk": true
+      }
+    },
+    {
+      "id": "ancient_blood",
+      "name": "长生妖裔",
+      "rarity": "稀有",
+      "description": "身负上古灵木或大妖寿元血脉，寿元上限为常人三倍，气血自愈极强，但纳气速率减半",
+      "modifiers": {
+        "lifespan_multiplier": 3.0,
+        "regeneration": 2.0,
+        "cultivation_speed_mult": 0.5
+      }
+    }
+  ],
+  "great_xia_dynasty": {
+    "capital": "天启皇都",
+    "dragon_vein_suppression": {
+      "qi_refining": 0.7,
+      "foundation_building": 0.5,
+      "golden_core": 0.3,
+      "nascent_soul": 0.15
+    },
+    "court_positions": [
+      {
+        "title": "监天司巡按",
+        "min_realm": "筑基",
+        "incense_power": 20,
+        "salary_stones": 100,
+        "karma_binding": "低"
+      },
+      {
+        "title": "大夏供奉殿奉炉使",
+        "min_realm": "金丹",
+        "incense_power": 60,
+        "salary_stones": 500,
+        "karma_binding": "中"
+      },
+      {
+        "title": "护国真人 / 一朝国师",
+        "min_realm": "元婴",
+        "incense_power": 180,
+        "salary_stones": 2500,
+        "karma_binding": "死生相随",
+        "perk": "心魔劫概率降低80%，大夏气运衰竭时受天谴反噬"
+      }
+    ]
+  },
+  "golden_core_grades": {
+    "upper": {
+      "grades": [1, 2, 3],
+      "name": "天道混元金丹",
+      "anomalies": ["紫气东来三千里", "九霄剑影朝天阙", "血日悬空万鬼伏", "阴阳双生混沌莲"],
+      "bonus": "灵力上限翻倍，领悟专属天命神通，元婴化形必成"
+    },
+    "middle": {
+      "grades": [4, 5, 6],
+      "name": "地脉煞气金丹",
+      "anomalies": ["地涌灵泉", "百兽低鸣"],
+      "bonus": "根基扎实，元婴几率四成"
+    },
+    "lower": {
+      "grades": [7, 8, 9],
+      "name": "凡俗人道金丹",
+      "anomalies": ["无甚异象"],
+      "bonus": "寿元增至五百，化婴渺茫"
+    }
+  },
+  "build_archetypes": [
+    {
+      "name": "纯阳一剑流",
+      "focus": "剑修 / 暴击 / 穿甲",
+      "mechanic": "叠加剑意层数，5层释放一剑破万法"
+    },
+    {
+      "name": "万象符阵流",
+      "focus": "百巧 / 地利 / 连环爆发",
+      "mechanic": "预设阵盘压制，单回合倾泻多张符箓"
+    },
+    {
+      "name": "血煞修罗流",
+      "focus": "魔功 / 卖血 / 嗜血回复",
+      "mechanic": "气血代灵力，血量越低伤害越高，击杀回血"
+    },
+    {
+      "name": "琉璃功德金身",
+      "focus": "禅宗 / 反伤 / 业力震荡",
+      "mechanic": "受击时攻击者承受同等业力反噬与真伤"
+    },
+    {
+      "name": "九幽御兽蛊毒",
+      "focus": "异人 / 毒伤 / 战宠肉盾",
+      "mechanic": "战宠前排拉仇恨，暗下百毒几何倍数爆发"
+    }
+  ],
+  "former_life_tomb": {
+    "trigger": "角色上一世陨落或坐化时自动在九州某域建立遗冢坐标",
+    "features": [
+      "前世独创名帖遗迹牌坊",
+      "前世亲手温养的本命法宝封印",
+      "前世绝笔手书，记录昔年遗憾与故人恩仇",
+      "新角色相认后无伤破除禁制，继承本命法宝"
+    ]
+  }
+}

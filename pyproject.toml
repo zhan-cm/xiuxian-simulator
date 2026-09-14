@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "xiuxian-simulator"
 version = "1.0.0"
-description = "《问道长生》规则驱动的本地修仙文字模拟器正式版"
+description = "《永恒之道》（原《问道长生》）规则驱动的本地修仙文字模拟器正式版"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

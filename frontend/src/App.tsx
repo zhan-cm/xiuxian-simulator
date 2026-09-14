@@ -116,7 +116,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
     <TooltipProvider>
       <div className="game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
         <header className="topbar immersive-topbar">
-          <div className="brand"><span>高自由修仙文字模拟</span><h1>问道长生</h1><p>凡尘一念，万法由心</p></div>
+          <div className="brand"><span>高自由修仙文字模拟</span><h1>永恒之道</h1><p>凡尘一念，万法由心</p></div>
           {!legacySurface && <CultivatorHud player={player} />}
           <div className="topbar-actions">
             <div className="time-badge"><CalendarDays size={16} /><span>第 {state.turn} 回合</span><b /><strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong></div>
@@ -177,7 +177,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             />}
         </main>
         {!legacySurface && <WorldNavigation activeAction={presentation.action} disabled={busy || showcase || !canUseQuickActions} disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'} codexOpen={codexOpen} codexButtonRef={codexTrigger} hasUpdates={Boolean(hasUpdates)} onNavigate={onAction} onToggleCodex={toggleCodex} />}
-        <footer className="game-footer">问道长生 · 本地运行 · 进度保存在你的电脑中</footer>
+        <footer className="game-footer">永恒之道 · 本地运行 · 进度保存在你的电脑中</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
