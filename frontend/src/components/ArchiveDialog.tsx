@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { CalendarDays, FileDown, FolderOpen, Save, ScrollText, Upload, X } from 'lucide-react'
+import { CalendarDays, FileDown, FolderOpen, RotateCcw, Save, ScrollText, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { fetchSaveExport, importSave } from '../api/client'
 import type { Snapshot } from '../api/types'
@@ -10,13 +10,15 @@ interface ArchiveDialogProps {
   onAction: (action: string) => void
   onChanged: () => Promise<unknown> | void
   onNotice: (message: string) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const value = (item: Record<string, unknown>, key: string, fallback = '—') => String(item[key] ?? fallback)
 
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
-export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice }: ArchiveDialogProps) {
+export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open, onOpenChange }: ArchiveDialogProps) {
   const [name, setName] = useState('autosave')
   const [confirming, setConfirming] = useState('')
   const [transferring, setTransferring] = useState('')
@@ -82,7 +84,13 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice }: Ar
     }
   }
   return (
-    <Dialog.Root onOpenChange={() => setConfirming('')}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        setConfirming('')
+        onOpenChange?.(next)
+      }}
+    >
       <Dialog.Trigger asChild><button className="archive-trigger" type="button"><Save size={16} />洞天卷宗</button></Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
@@ -105,6 +113,29 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice }: Ar
               const exporting = transferring === `export:${saveName}`
               return <article key={saveName}><span>{value(item, 'player_name', '无名修士').slice(0, 1)}</span><div><strong>{saveName}</strong><p>{value(item, 'player_name', '无名修士')} · {value(item, 'realm', '凡人')}</p><small><CalendarDays size={11} />天玄历 {value(item, 'calendar_year', '387')} 年 {value(item, 'month', '1')} 月 · 第 {value(item, 'turn', '0')} 回合</small></div><div className="save-entry-actions"><button type="button" title="导出为带校验值的便携卷宗" disabled={busy || Boolean(transferring)} onClick={() => void download(saveName)}><FileDown size={14} />{exporting ? '导出中…' : '导出'}</button><button type="button" data-confirm={selected || undefined} disabled={busy || Boolean(transferring)} onClick={() => load(saveName)}><FolderOpen size={14} />{selected ? '再次点击确认' : '读取'}</button></div></article>
             })}</div> : <div className="empty-save"><ScrollText size={25} /><p>还没有已保存的卷宗。</p></div>}
+          </section>
+          <section className="save-restart-area">
+            <div>
+              <span><RotateCcw size={16} /></span>
+              <div>
+                <h3>再入轮回 · 重开新局</h3>
+                <p>若想舍去此世重塑命格，可开启全新修仙旅途，重新经历凡尘与道骨定契。</p>
+              </div>
+              <button
+                type="button"
+                className="restart-game-btn"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm('确定要放弃当前进度，重开新局并重新创角吗？建议先在上方保存当前进度。')) {
+                    onAction('重开新局')
+                    onOpenChange?.(false)
+                  }
+                }}
+              >
+                <RotateCcw size={14} />
+                <span>重开新局</span>
+              </button>
+            </div>
           </section>
         </Dialog.Content>
       </Dialog.Portal>

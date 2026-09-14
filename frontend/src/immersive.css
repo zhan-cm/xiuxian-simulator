@@ -3344,3 +3344,1224 @@ body {
   }
 }
 
+
+
+/* ==========================================================================
+   全新【仙途启程 · 游戏序幕】(StartGamePortal) 样式
+   ========================================================================== */
+
+.start-game-portal {
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  margin: 25px auto 40px;
+  padding: 40px 36px 32px;
+  border-radius: 24px;
+  background: radial-gradient(circle at 50% 10%, #ffffff 0%, #faf6ec 65%, #f4eee0 100%);
+  border: 1.5px solid rgba(162, 122, 54, 0.28);
+  box-shadow: 0 20px 60px rgba(45, 65, 55, 0.09), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-align: center;
+}
+
+.start-game-portal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #3d7963, #c59743, #a93b2a, #c59743, #3d7963);
+}
+
+.portal-backdrop-mist {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse at center, rgba(197, 151, 67, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.portal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.portal-seal-crest {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #fff7e6, #edd59f);
+  border: 2px solid #b88a38;
+  color: #925f16;
+  box-shadow: 0 6px 16px rgba(184, 138, 56, 0.25);
+  margin-bottom: 6px;
+}
+
+.portal-era-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(61, 121, 99, 0.1);
+  color: #2b6351;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.portal-title {
+  margin: 4px 0 0;
+  font-family: "STKaiti", "KaiTi", "Songti SC", serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: #1a382c;
+  letter-spacing: 6px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.portal-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6a7c73;
+  letter-spacing: 2px;
+}
+
+/* 序言卷轴 */
+.portal-lore-scroll {
+  max-width: 680px;
+  margin: 0 auto 30px;
+  padding: 18px 24px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed rgba(162, 122, 54, 0.3);
+  text-align: justify;
+  line-height: 1.8;
+  font-size: 13.5px;
+  color: #43594f;
+}
+
+.portal-lore-scroll p {
+  margin: 0 0 8px;
+}
+.portal-lore-scroll p:last-child {
+  margin: 0;
+}
+
+.portal-lore-scroll .lore-accent {
+  font-style: italic;
+  color: #8c6020;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+
+/* 行动卡片群 */
+.portal-action-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 580px;
+  margin: 0 auto 28px;
+}
+
+.portal-btn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1.5px solid;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.portal-btn .btn-seal {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.portal-btn .btn-text strong {
+  display: block;
+  font-size: 16px;
+  font-family: "STKaiti", "KaiTi", serif;
+  margin-bottom: 2px;
+}
+
+.portal-btn .btn-text small {
+  display: block;
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
+.portal-btn .btn-arrow {
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+}
+.portal-btn:hover .btn-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+/* 主行动 1：自定创角 */
+.primary-start-btn {
+  background: linear-gradient(135deg, #fdf8eb 0%, #f6e8ca 100%);
+  border-color: #c49947;
+  color: #63430f;
+  box-shadow: 0 8px 24px rgba(184, 138, 56, 0.2);
+}
+.primary-start-btn .btn-seal {
+  background: #c49947;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(184, 138, 56, 0.35);
+}
+.primary-start-btn:hover {
+  background: linear-gradient(135deg, #fffcf5 0%, #faecd0 100%);
+  border-color: #b8862f;
+  box-shadow: 0 12px 30px rgba(184, 138, 56, 0.28);
+}
+
+/* 主行动 2：快速开局 */
+.quick-start-btn {
+  background: linear-gradient(135deg, #f2f8f4 0%, #e3f0e8 100%);
+  border-color: #559c7f;
+  color: #1c523e;
+}
+.quick-start-btn .btn-seal {
+  background: #468c70;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(70, 140, 112, 0.3);
+}
+.quick-start-btn:hover {
+  background: linear-gradient(135deg, #f7fcf8 0%, #eaf5ee 100%);
+  border-color: #3b7e63;
+}
+.fast-tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(70, 140, 112, 0.15);
+  color: #24634c;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* 存档次级操作 */
+.portal-archive-action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.portal-archive-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(85, 115, 100, 0.2);
+  color: #476155;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.portal-archive-btn:hover {
+  background: #fff;
+  border-color: #467963;
+  color: #234d3c;
+}
+.portal-archive-btn em {
+  font-style: normal;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e3eee8;
+  color: #2e6651;
+  font-size: 11px;
+}
+
+.latest-save-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #7b643d;
+  cursor: pointer;
+}
+.latest-save-chip:hover {
+  text-decoration: underline;
+}
+
+/* 页脚标语 */
+.portal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(162, 122, 54, 0.2);
+  color: #73887e;
+  font-size: 12px;
+}
+
+.footer-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+/* ==========================================================================
+   全新【创角大殿堂】(CharacterCreatorPortal) 样式
+   ========================================================================== */
+
+.character-creator-portal {
+  width: 100%;
+  max-width: 1320px;
+  margin: 15px auto 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 顶部阶段条 */
+.creator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #faf7f0 100%);
+  border: 1.5px solid rgba(162, 122, 54, 0.22);
+  box-shadow: 0 6px 18px rgba(35, 55, 45, 0.05);
+}
+
+.creator-steps-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.step-badge span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-weight: 700;
+}
+
+.step-badge strong {
+  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+
+.step-badge small {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.step-badge.active {
+  background: linear-gradient(135deg, #fbf2db, #f3dfba);
+  border-color: #c79743;
+  color: #63430f;
+  box-shadow: 0 3px 10px rgba(184, 138, 56, 0.18);
+}
+.step-badge.active span {
+  background: #c79743;
+  color: #fff;
+}
+
+.step-badge.passed {
+  background: #eef5f0;
+  color: #356b56;
+}
+.step-badge.passed span {
+  background: #478970;
+  color: #fff;
+}
+
+.step-badge.pending {
+  color: #929e97;
+}
+.step-badge.pending span {
+  background: #dee5e0;
+  color: #7b8a82;
+}
+
+.step-arrow {
+  color: #a4b3aa;
+}
+
+.creator-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.creator-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid;
+  cursor: pointer;
+  font-size: 12.5px;
+  transition: all 0.16s ease;
+}
+
+.dice-btn {
+  background: #fdfaf2;
+  border-color: #d1ab64;
+  color: #7b581a;
+}
+.dice-btn:hover {
+  background: #f7edcf;
+}
+
+.default-btn {
+  background: linear-gradient(135deg, #eef5f0, #e1efe6);
+  border-color: #559e81;
+  color: #215943;
+  font-weight: 600;
+}
+.default-btn:hover {
+  background: linear-gradient(135deg, #f4faf6, #e7f5ec);
+}
+
+/* 主体两栏布局 */
+.creator-body-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* 左侧配置面板 */
+.creator-config-pane {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1.5px solid rgba(162, 122, 54, 0.22);
+  padding: 26px 28px;
+  box-shadow: 0 10px 30px rgba(35, 55, 45, 0.06);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 表单组合 */
+.form-group-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 16px;
+  align-items: end;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-field label,
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #234335;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.form-field label small,
+.form-group label small {
+  font-size: 11px;
+  color: #758a80;
+  font-weight: normal;
+  font-family: inherit;
+}
+
+.input-with-action {
+  display: flex;
+  gap: 6px;
+}
+
+.input-with-action input,
+.appearance-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(70, 105, 90, 0.25);
+  background: #fbfbf7;
+  font-size: 13.5px;
+  color: #1e362c;
+  outline: none;
+  transition: border-color 0.16s ease;
+}
+.input-with-action input:focus,
+.appearance-input:focus {
+  border-color: #3b7f64;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 127, 100, 0.12);
+}
+
+.field-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #fdf4df;
+  border: 1px solid #cfaa63;
+  color: #7c5717;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.field-inline-btn:hover {
+  background: #faeac2;
+}
+
+.segmented-control {
+  display: flex;
+  border-radius: 9px;
+  background: #f0f4f1;
+  padding: 3px;
+  gap: 3px;
+}
+.segmented-control button {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #556c61;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.segmented-control button.active {
+  background: #fff;
+  color: #1d4d3a;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.age-slider {
+  width: 100%;
+  accent-color: #3a7a61;
+}
+.age-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8c9e95;
+}
+
+/* 相貌等级 */
+.appearance-level-chips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.appearance-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f4f6f1;
+  border: 1px solid rgba(70, 105, 90, 0.18);
+  color: #4b6357;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.appearance-chip.active {
+  background: #3b7b62;
+  border-color: #3b7b62;
+  color: #fff;
+}
+
+/* 卡片网格（出身 & 道途） */
+.background-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.daopath-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.creator-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(70, 105, 90, 0.16);
+  background: #fafaf5;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.creator-card:hover {
+  background: #f4f7f2;
+  border-color: rgba(59, 123, 98, 0.35);
+  transform: translateY(-1px);
+}
+.creator-card.selected {
+  background: linear-gradient(145deg, #fefbf4, #f7ecd5);
+  border-color: #c79743;
+  box-shadow: 0 4px 14px rgba(199, 151, 67, 0.18);
+}
+
+.creator-card .card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.creator-card .card-top strong {
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #213d30;
+}
+.creator-card.selected .card-top strong {
+  color: #6a440a;
+}
+.creator-card .check-icon {
+  margin-left: auto;
+  color: #c79743;
+}
+
+.creator-card .card-bonus {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8c5d18;
+}
+
+.creator-card .card-desc {
+  margin: 0;
+  font-size: 11px;
+  color: #687971;
+  line-height: 1.45;
+}
+
+.dao-name-seal {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(199, 151, 67, 0.2);
+  color: #724c13;
+  margin-left: auto;
+}
+
+/* 步骤底部栏 */
+.creator-step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(162, 122, 54, 0.25);
+}
+
+.footer-tip {
+  font-size: 12px;
+  color: #798a82;
+  font-style: italic;
+}
+
+.submit-step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c79743, #ad7c2b);
+  border: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(173, 124, 43, 0.3);
+  transition: all 0.18s ease;
+}
+.submit-step-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d3a451, #b88634);
+  box-shadow: 0 8px 22px rgba(173, 124, 43, 0.38);
+}
+.submit-step-btn:disabled {
+  background: #ccd4cf;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.enter-world-btn {
+  background: linear-gradient(135deg, #2d6b53, #1f503e);
+  box-shadow: 0 6px 18px rgba(45, 107, 83, 0.3);
+}
+.enter-world-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #377d62, #265d49);
+  box-shadow: 0 8px 22px rgba(45, 107, 83, 0.38);
+}
+
+.back-step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #f2f5f2;
+  border: 1px solid rgba(70, 105, 90, 0.2);
+  color: #4b6357;
+  font-size: 13px;
+  cursor: pointer;
+}
+.back-step-btn:hover {
+  background: #e6ece7;
+  color: #244637;
+}
+
+/* ================== 第二面（道骨仙胎）样式 ================== */
+
+/* 灵根分类 */
+.root-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.root-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6a7c73;
+  width: 140px;
+  flex-shrink: 0;
+}
+.cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.root-chip {
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #f7f6f0;
+  border: 1px solid rgba(162, 122, 54, 0.2);
+  color: #594c34;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.root-chip.active {
+  background: #ba8a38;
+  border-color: #ba8a38;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(186, 138, 56, 0.25);
+}
+
+/* 特殊体质卡片 */
+.constitution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.const-card {
+  gap: 4px;
+}
+.const-tag {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(59, 123, 98, 0.15);
+  color: #27664e;
+  margin-left: auto;
+}
+
+/* 六维分配区 */
+.attrs-header,
+.talents-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.attrs-status-tag,
+.talent-cost-tag {
+  font-size: 12px;
+  font-weight: 600;
+}
+.tag-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #287a55;
+  background: #e8f5ed;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.tag-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #af3e24;
+  background: #fdedea;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.attr-presets-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f8f6ee;
+  border: 1px dashed rgba(162, 122, 54, 0.25);
+  margin-bottom: 14px;
+}
+.preset-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7b6238;
+}
+.preset-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid rgba(162, 122, 54, 0.25);
+  color: #554425;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.preset-btn:hover {
+  background: #f5eedb;
+  border-color: #b8862f;
+}
+
+.attrs-allocator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.attr-alloc-item {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fbfbf8;
+  border: 1px solid rgba(70, 105, 90, 0.14);
+}
+
+.alloc-meta strong {
+  display: block;
+  font-size: 14px;
+  color: #1e3a2e;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.alloc-meta small {
+  display: block;
+  font-size: 10px;
+  color: #7a8c83;
+}
+
+.alloc-bar-container {
+  height: 8px;
+  border-radius: 999px;
+  background: #e8eee9;
+  overflow: hidden;
+}
+.alloc-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #468c70, #c79743);
+  transition: width 0.15s ease;
+}
+
+.alloc-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(70, 105, 90, 0.25);
+  background: #fff;
+  color: #2b5946;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+.step-btn:hover:not(:disabled) {
+  background: #3b7b62;
+  color: #fff;
+  border-color: #3b7b62;
+}
+.step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.attr-val-display {
+  width: 24px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #19382b;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 天赋卡片 */
+.talents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.talent-chip-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(70, 105, 90, 0.18);
+  background: #fafaf6;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.talent-chip-card:hover {
+  background: #f4f8f4;
+  border-color: rgba(59, 123, 98, 0.4);
+}
+.talent-chip-card.selected {
+  background: linear-gradient(145deg, #f6fcf8, #e8f5ec);
+  border-color: #388065;
+  box-shadow: 0 3px 10px rgba(56, 128, 101, 0.15);
+}
+.talent-chip-card.negative {
+  background: #fdfaf8;
+  border-color: rgba(184, 80, 50, 0.25);
+}
+.talent-chip-card.negative.selected {
+  background: linear-gradient(145deg, #fffbf9, #fbeee8);
+  border-color: #be482c;
+  box-shadow: 0 3px 10px rgba(190, 72, 44, 0.15);
+}
+
+.t-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.t-head strong {
+  font-size: 13.5px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #213c30;
+}
+.t-cost-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(162, 122, 54, 0.15);
+  color: #7b581e;
+  margin-left: auto;
+}
+.negative .t-cost-badge {
+  background: rgba(190, 72, 44, 0.15);
+  color: #a43820;
+}
+.t-check {
+  color: #2f795d;
+}
+.t-desc {
+  margin: 0;
+  font-size: 11px;
+  color: #6a7b73;
+  line-height: 1.4;
+}
+
+/* 右侧命盘定契实时长卷预览 */
+.creator-preview-scroll {
+  position: sticky;
+  top: 20px;
+}
+
+.scroll-paper-body {
+  padding: 24px 20px;
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 0%, #ffffff 0%, #faf6eb 60%, #f4ecda 100%);
+  border: 2px solid rgba(162, 122, 54, 0.35);
+  box-shadow: 0 12px 36px rgba(45, 65, 55, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.scroll-top-seal {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.scroll-top-seal .seal-char {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #a93b2a;
+  color: #fff;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-weight: 700;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(169, 59, 42, 0.35);
+}
+.scroll-top-seal h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #264336;
+  letter-spacing: 2px;
+}
+.scroll-top-seal small {
+  font-size: 11px;
+  color: #8c764e;
+  letter-spacing: 1px;
+}
+
+.preview-character-header {
+  text-align: center;
+}
+.p-name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.p-name-row h2 {
+  margin: 0;
+  font-size: 24px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #1a382c;
+  letter-spacing: 2px;
+}
+.p-dao-name {
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(199, 151, 67, 0.2);
+  color: #7b5317;
+  font-weight: 600;
+}
+.p-sub-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6a7c73;
+}
+
+.preview-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(162, 122, 54, 0.3), transparent);
+}
+
+.preview-section h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #7b6238;
+}
+
+.preview-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.p-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f2eee3;
+  color: #4b5d53;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.p-badge.gold {
+  background: #fceecf;
+  color: #835613;
+}
+.p-badge.jade {
+  background: #e3f2e8;
+  color: #215c44;
+}
+
+.p-bonus-text {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #8c6020;
+}
+
+.preview-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.preview-stats-grid div {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(70, 105, 90, 0.12);
+  text-align: center;
+}
+.preview-stats-grid span {
+  display: block;
+  font-size: 10.5px;
+  color: #72857b;
+}
+.preview-stats-grid strong {
+  display: block;
+  font-size: 14px;
+  color: #1e3c2f;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-talents-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.t-pill {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(59, 123, 98, 0.12);
+  color: #27624b;
+  font-size: 11px;
+  font-weight: 500;
+}
+.t-pill.neg {
+  background: rgba(190, 72, 44, 0.12);
+  color: #9e361e;
+}
+
+.scroll-bottom-calligraphy {
+  margin-top: 6px;
+  text-align: center;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 11.5px;
+  color: #867149;
+  font-style: italic;
+}
+.scroll-bottom-calligraphy p {
+  margin: 0;
+}
+
+/* ==========================================================================
+   存档弹窗：【再入轮回 · 重开新局】区域样式
+   ========================================================================== */
+
+.save-restart-area {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fdfbf7 0%, #fbf3e6 100%);
+  border: 1.5px dashed rgba(190, 72, 44, 0.3);
+}
+
+.save-restart-area > div {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.save-restart-area span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fbeee8;
+  color: #b5452a;
+}
+
+.save-restart-area h3 {
+  margin: 0;
+  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #8a301a;
+}
+
+.save-restart-area p {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: #796655;
+}
+
+.restart-game-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #b5452a;
+  border: none;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.restart-game-btn:hover:not(:disabled) {
+  background: #a0381f;
+  transform: translateY(-1px);
+}

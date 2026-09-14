@@ -27,6 +27,8 @@ import { BreakthroughAltar } from './components/BreakthroughAltar'
 import { CenterStageChronicle } from './components/CenterStageChronicle'
 import { CultivationGuideDialog } from './components/CultivationGuide'
 import { RealmsLadderDialog } from './components/RealmsLadderDialog'
+import { StartGamePortal } from './components/StartGamePortal'
+import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -111,6 +113,12 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [viewBreakthrough, setViewBreakthrough] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [realmsLadderOpen, setRealmsLadderOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+
+  const isStartPhase = state.phase === 'new'
+  const isCreationPhase = ['character_creation_basic', 'character_creation_traits'].includes(state.phase)
+  const isIntroOrCreation = isStartPhase || isCreationPhase
+
   const isMajorBreakthrough = state.phase === 'major_breakthrough_choice' || state.phase === 'destiny_choice' || decision?.eyebrow === '破境路线' || decision?.eyebrow === '逆天改命'
   const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough || presentation.action === '突破'
   const handleNavigate = (action: string) => {
@@ -144,9 +152,9 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           <div className="xianxia-calendar-bar">
             <div className="time-badge">
               <CalendarDays size={16} />
-              <span>第 {state.turn} 回合</span>
+              <span>{isStartPhase ? '序章启程' : isCreationPhase ? '凝练道骨' : `第 ${state.turn} 回合`}</span>
               <b />
-              <strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong>
+              <strong>{isStartPhase ? '九州天地初开' : isCreationPhase ? '定契立命' : `天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`}</strong>
             </div>
             <div className="world-era-tag" title={state.last_world_event || '天地灵机运转'}>
               <CloudSun size={14} />
@@ -159,34 +167,63 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
               {showcase ? <X size={16} /> : <Eye size={16} />}
               {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
             </button>
-            <button
-              className="archive-trigger ladder-topbar-trigger"
-              type="button"
-              onClick={() => setRealmsLadderOpen(true)}
-              title="仙道十重天：展示所有境界，低境界在下，高境界在上"
-            >
-              <Mountain size={16} />
-              <span>通天仙阶</span>
-            </button>
-            <button
-              className="archive-trigger guide-topbar-trigger"
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              title="仙途指津：如果想要怎么，你可以去哪里干什么"
-            >
-              <Compass size={16} />
-              <span>仙途指津</span>
-            </button>
-            {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} onChanged={onArchiveChanged} onNotice={onNotice} />}
-            <CharacterSheet player={player} />
+            {!isIntroOrCreation && (
+              <>
+                <button
+                  className="archive-trigger ladder-topbar-trigger"
+                  type="button"
+                  onClick={() => setRealmsLadderOpen(true)}
+                  title="仙道十重天：展示所有境界，低境界在下，高境界在上"
+                >
+                  <Mountain size={16} />
+                  <span>通天仙阶</span>
+                </button>
+                <button
+                  className="archive-trigger guide-topbar-trigger"
+                  type="button"
+                  onClick={() => setGuideOpen(true)}
+                  title="仙途指津：如果想要怎么，你可以去哪里干什么"
+                >
+                  <Compass size={16} />
+                  <span>仙途指津</span>
+                </button>
+              </>
+            )}
+            {!showcase && (
+              <ArchiveDialog
+                saves={snapshot.save_summaries}
+                busy={busy}
+                open={archiveOpen}
+                onOpenChange={setArchiveOpen}
+                onAction={onAction}
+                onChanged={onArchiveChanged}
+                onNotice={onNotice}
+              />
+            )}
+            {!isIntroOrCreation && <CharacterSheet player={player} />}
           </div>
         </header>
 
-        <main className="game-grid immersive-grid xianxia-game-grid">
-          {/* 左栏：修士命台 */}
-          {!legacySurface && (
-            <aside className="xianxia-cultivator-rail" aria-label="修士命台">
-              <CultivatorRail
+        {isStartPhase ? (
+          <StartGamePortal
+            busy={busy}
+            saveSummaries={snapshot.save_summaries}
+            onAction={onAction}
+            onOpenArchive={() => setArchiveOpen(true)}
+          />
+        ) : isCreationPhase ? (
+          <CharacterCreatorPortal
+            phase={state.phase}
+            busy={busy}
+            draft={state.character_draft}
+            onAction={onAction}
+          />
+        ) : (
+          <main className="game-grid immersive-grid xianxia-game-grid">
+            {/* 左栏：修士命台 */}
+            {!legacySurface && (
+              <aside className="xianxia-cultivator-rail" aria-label="修士命台">
+                <CultivatorRail
                 snapshot={snapshot}
                 busy={busy}
                 readOnly={showcase}
@@ -370,6 +407,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             />
           )}
         </main>
+      )}
         <footer className="game-footer">永恒之道 · 高自由单机文字修仙 · 凡尘一念，万法由心</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
         <CultivationGuideDialog

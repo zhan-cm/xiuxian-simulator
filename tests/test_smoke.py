@@ -653,6 +653,25 @@ class SimulatorSmokeTests(unittest.TestCase):
             )
             self.assertIn("正好使用 5 点", result)
 
+    def test_character_creation_step_back_and_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            self.assertEqual(engine.state.phase, "character_creation_basic")
+            engine.process("姓名=林渡；性别=女；年龄=18；相貌=清秀；出身=1；道途=1")
+            self.assertEqual(engine.state.phase, "character_creation_traits")
+            # 测试在第二面输入返回上一步
+            res = engine.process("返回上一步")
+            self.assertEqual(engine.state.phase, "character_creation_basic")
+            self.assertIn("已返回创角第一面", res)
+            # 重新确认默认创角并进入游玩
+            engine.process("确认默认创角")
+            self.assertEqual(engine.state.phase, "playing")
+            # 在游玩中执行重开新局
+            restart_res = engine.process("重开新局")
+            self.assertEqual(engine.state.phase, "character_creation_basic")
+            self.assertIn("轮回重启", restart_res)
+
     def test_v01_save_payload_migrates_with_new_defaults(self) -> None:
         payload = {
             "version": "0.1.0",

@@ -124,11 +124,23 @@ class GameEngine:
         if self.state.phase == "beast_taming":
             return self._beast_taming(action)
 
+        if action in {"重开新局", "开启新轮回", "重新创角"}:
+            return self._restart_game()
+
         if self.state.phase == "new":
             return "世界尚未开启。请先输入“开始游戏”。"
         if self.state.phase in {"character_creation", "character_creation_basic"}:
             return self._handle_basic_creation(action)
         if self.state.phase == "character_creation_traits":
+            if action in {"重选第一面", "返回上一步", "返回基本资料"}:
+                self.state.phase = "character_creation_basic"
+                return "已返回创角第一面，请重新核定基础信息。\n\n" + (
+                    "【创角大面板 · 第一面】\n"
+                    "基础：姓名、性别、年龄、相貌、出身、道途"
+                )
+            if action.startswith("姓名=") or action.startswith("姓名："):
+                self.state.phase = "character_creation_basic"
+                return self._handle_basic_creation(action)
             return self._handle_trait_creation(action)
         if self.state.phase == "ended":
             return "此世已终。输入“开始游戏”可创建新的轮回。"
@@ -338,6 +350,26 @@ class GameEngine:
             return self._prepare_combat(action, "切磋")
 
         return self._free_action(action)
+
+    def _restart_game(self) -> str:
+        self.state = GameState(
+            phase="character_creation_basic",
+            turn=1,
+            rule_sha256=self.rules.sha256,
+            life_number=self.state.life_number,
+            past_lives=deepcopy(self.state.past_lives),
+            active_legacy=self.state.active_legacy,
+        )
+        self.state.remember("重开新局，九州仙途再度开启，等待创角")
+        self._autosave()
+        return (
+            "天玄历 387 年 · 春\n\n"
+            "轮回重启，前尘如梦散尽。九州仙途再度开启，等待重新立下命格。\n\n"
+            "【创角大面板 · 第一面】\n"
+            "基础：姓名、性别、年龄、相貌\n"
+            "出身：山野遗孤／修仙世家／凡人皇族／商贾之家／宗门弃徒等\n"
+            "道途：问道飞升／逍遥长生／快意恩仇／守护所爱／问鼎天下／随心所欲"
+        )
 
     def _start_game(self) -> str:
         previous = self.state
