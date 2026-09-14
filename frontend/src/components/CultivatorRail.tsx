@@ -12,6 +12,7 @@ interface CultivatorRailProps {
   canQuickAct: boolean
   onAction: (action: string) => void
   onOpenCodex: () => void
+  onOpenBreakthrough?: () => void
 }
 
 export function CultivatorRail({
@@ -21,6 +22,7 @@ export function CultivatorRail({
   canQuickAct,
   onAction,
   onOpenCodex,
+  onOpenBreakthrough,
 }: CultivatorRailProps) {
   const { state } = snapshot
   const { player } = state
@@ -75,7 +77,10 @@ export function CultivatorRail({
             type="button"
             className="rail-breakthrough-btn"
             disabled={!canQuickAct || busy || readOnly}
-            onClick={() => onAction('突破')}
+            onClick={() => {
+              onOpenBreakthrough?.()
+              onAction('突破')
+            }}
           >
             叩问突破境界
           </button>

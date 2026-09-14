@@ -23,6 +23,8 @@ import { RecoveryCodex } from './components/RecoveryCodex'
 import { LegacyChronicle } from './components/LegacyChronicle'
 import { ImmersiveScene, SocialActionBar, WorldNavigation } from './components/ImmersiveScene'
 import { CultivatorRail } from './components/CultivatorRail'
+import { BreakthroughAltar } from './components/BreakthroughAltar'
+import { CenterStageChronicle } from './components/CenterStageChronicle'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -104,6 +106,18 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
     return []
   })()
   const encounterNpc = findEncounterNpc(snapshot.npc_profiles, presentation)
+  const [viewBreakthrough, setViewBreakthrough] = useState(false)
+  const isMajorBreakthrough = state.phase === 'major_breakthrough_choice' || state.phase === 'destiny_choice' || decision?.eyebrow === '破境路线' || decision?.eyebrow === '逆天改命'
+  const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough || presentation.action === '突破'
+  const handleNavigate = (action: string) => {
+    if (action === '突破') {
+      setViewBreakthrough(true)
+      if (canUseQuickActions) onAction('突破')
+    } else {
+      setViewBreakthrough(false)
+      onAction(action)
+    }
+  }
   const onCodexAction = (value: string) => {
     if (busy || showcase || !canUseQuickActions) return
     closeCodex()
@@ -157,6 +171,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 canQuickAct={canUseQuickActions}
                 onAction={onAction}
                 onOpenCodex={toggleCodex}
+                onOpenBreakthrough={() => setViewBreakthrough(true)}
               />
             </aside>
           )}
@@ -181,32 +196,59 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             )}
             {!legacySurface && (
               <>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`${state.turn}-${presentation.title}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.24 }}
-                  >
-                    <EventPanel
-                      presentation={presentation}
-                      cave={snapshot.cave}
-                      npcLives={snapshot.npc_lives}
-                      npcNetwork={snapshot.npc_network}
-                      sectMembership={snapshot.sect_membership}
-                      readOnly={showcase || busy}
-                      immersive
+                {isBreakthroughActive ? (
+                  <BreakthroughAltar
+                    snapshot={snapshot}
+                    busy={busy}
+                    readOnly={showcase}
+                    onAction={onAction}
+                    onClose={() => setViewBreakthrough(false)}
+                  />
+                ) : (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`${state.turn}-${presentation.title}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.24 }}
+                      >
+                        <EventPanel
+                          presentation={presentation}
+                          cave={snapshot.cave}
+                          npcLives={snapshot.npc_lives}
+                          npcNetwork={snapshot.npc_network}
+                          sectMembership={snapshot.sect_membership}
+                          readOnly={showcase || busy}
+                          immersive
+                          onAction={onAction}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {/* 当没有特定事件块时，填充道途长卷与世象全景，彻底消除中栏空白 */}
+                    {(!presentation.blocks || presentation.blocks.length === 0) && (
+                      <CenterStageChronicle
+                        snapshot={snapshot}
+                        busy={busy}
+                        readOnly={showcase}
+                        onAction={onAction}
+                        onOpenBreakthrough={() => {
+                          setViewBreakthrough(true)
+                          if (canUseQuickActions) onAction('突破')
+                        }}
+                      />
+                    )}
+
+                    <SocialActionBar
+                      npc={encounterNpc}
+                      inventory={snapshot.inventory}
+                      disabled={busy || showcase || !canUseQuickActions}
                       onAction={onAction}
                     />
-                  </motion.div>
-                </AnimatePresence>
-                <SocialActionBar
-                  npc={encounterNpc}
-                  inventory={snapshot.inventory}
-                  disabled={busy || showcase || !canUseQuickActions}
-                  onAction={onAction}
-                />
+                  </>
+                )}
               </>
             )}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
@@ -257,7 +299,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                   codexOpen={codexOpen}
                   codexButtonRef={codexTrigger}
                   hasUpdates={Boolean(hasUpdates)}
-                  onNavigate={onAction}
+                  onNavigate={handleNavigate}
                   onToggleCodex={toggleCodex}
                 />
               </div>

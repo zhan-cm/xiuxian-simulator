@@ -1714,11 +1714,709 @@ body {
   font-size: 10px !important;
 }
 
+/* 6. 大境界天关突破圣台 (BreakthroughAltar) */
+.breakthrough-altar {
+  border: 1.5px solid rgba(186, 148, 75, 0.45);
+  border-radius: 18px;
+  background: linear-gradient(165deg, rgba(255, 255, 252, 0.98), rgba(249, 245, 233, 0.96));
+  box-shadow: 0 12px 36px rgba(35, 60, 48, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.breakthrough-altar::before {
+  content: "破";
+  position: absolute;
+  right: -10px;
+  top: -25px;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 130px;
+  color: rgba(186, 148, 75, 0.05);
+  pointer-events: none;
+}
+
+.altar-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.35);
+  padding-bottom: 14px;
+  position: relative;
+}
+.altar-crown-seal {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ba8d3c, #8c6020);
+  color: #fffaf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(186, 141, 60, 0.3);
+}
+.altar-hero-text {
+  flex: 1;
+}
+.altar-hero-text small {
+  display: inline-block;
+  font-size: 11px;
+  color: #926b21;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+.altar-hero-text h2 {
+  font-size: 22px;
+  margin: 0 0 4px;
+  color: #173b2f;
+  font-family: "STKaiti", "KaiTi", serif;
+  letter-spacing: 0.04em;
+}
+.altar-hero-text p {
+  font-size: 12.5px;
+  color: #5c7468;
+  margin: 0;
+  line-height: 1.6;
+}
+.altar-close-btn {
+  background: transparent;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b8e84;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.altar-close-btn:hover {
+  background: rgba(186, 148, 75, 0.15);
+  color: #1c3b2e;
+  border-color: #ba8d3c;
+}
+
+/* 境界晋升天梯桥 */
+.altar-realm-transition {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 252, 242, 0.85);
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  border-radius: 14px;
+  padding: 14px 20px;
+}
+.realm-node {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.realm-node.current {
+  text-align: left;
+}
+.realm-node.target {
+  text-align: right;
+}
+.realm-node-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  width: fit-content;
+}
+.realm-node.current .realm-node-badge {
+  background: rgba(54, 120, 95, 0.12);
+  color: #2b6351;
+}
+.realm-node.target .realm-node-badge {
+  background: rgba(186, 141, 60, 0.18);
+  color: #8c6020;
+  margin-left: auto;
+}
+.realm-node strong {
+  font-size: 18px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+}
+.realm-node small {
+  font-size: 11.5px;
+  color: #6d8478;
+}
+.realm-bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #ba8d3c;
+  font-size: 11px;
+  font-weight: 600;
+}
+.realm-bridge .bridge-line {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 破境三道比较卡片 */
+.altar-routes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.routes-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.routes-header h3 {
+  font-size: 16px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #1c3b2e;
+  margin: 0;
+}
+.routes-header span {
+  font-size: 11.5px;
+  color: #7b8e84;
+}
+
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.route-card {
+  border-radius: 14px;
+  border: 1.5px solid rgba(186, 148, 75, 0.35);
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(35, 60, 48, 0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 10px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.route-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(35, 60, 48, 0.1);
+}
+
+.route-card.human-route {
+  border-top: 4px solid #6b8277;
+}
+.route-card.earth-route {
+  border-top: 4px solid #36785f;
+}
+.route-card.heaven-route {
+  border-top: 4px solid #ba8d3c;
+  background: linear-gradient(160deg, #ffffff, #fdfbf3);
+  box-shadow: 0 6px 20px rgba(186, 141, 60, 0.12);
+}
+
+.route-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.route-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.route-card-title-row strong {
+  font-size: 15px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #1c3b2e;
+}
+.route-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.human-route .route-badge {
+  background: rgba(107, 130, 119, 0.12);
+  color: #485c53;
+}
+.earth-route .route-badge {
+  background: rgba(54, 120, 95, 0.12);
+  color: #2b6351;
+}
+.heaven-route .route-badge {
+  background: rgba(186, 141, 60, 0.2);
+  color: #8c6020;
+}
+.route-card-header em {
+  font-style: normal;
+  font-size: 11px;
+  color: #7b8e84;
+}
+
+.route-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(249, 246, 237, 0.8);
+  font-size: 11px;
+}
+.spec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #5d7569;
+}
+.spec-row strong {
+  color: #1c3b2e;
+}
+
+.route-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #637a6e;
+}
+.req-item[data-fulfilled="true"] {
+  color: #2b6351;
+}
+.req-item[data-fulfilled="false"] {
+  color: #b83c34;
+}
+
+.route-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: #3b6654;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(186, 148, 75, 0.25);
+}
+.route-perks span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-action-btn {
+  margin-top: 6px;
+  padding: 9px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.human-route .route-action-btn {
+  background: #eef2ef;
+  color: #3f554b;
+  border-color: #cbd8d1;
+}
+.human-route .route-action-btn:hover:not(:disabled) {
+  background: #3f554b;
+  color: #ffffff;
+}
+.earth-route .route-action-btn {
+  background: linear-gradient(135deg, #36785f, #285a47);
+  color: #fff9f0;
+  box-shadow: 0 4px 12px rgba(54, 120, 95, 0.2);
+}
+.earth-route .route-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #408c6f, #2f6953);
+  transform: translateY(-1px);
+}
+.heaven-route .route-action-btn {
+  background: linear-gradient(135deg, #ba8d3c, #9c6c18);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(186, 141, 60, 0.25);
+}
+.heaven-route .route-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #cc9e4b, #af7a20);
+  transform: translateY(-1px);
+}
+.route-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* 逆天改命先天气运抽选界面 (Destiny Altar) */
+.destiny-altar {
+  border-color: #ba8d3c;
+  background: linear-gradient(160deg, #fffcf5, #f8f1de);
+}
+.destiny-hero .altar-crown-seal {
+  background: linear-gradient(135deg, #ba8d3c, #a06e18);
+  animation: sealGlow 2.5s infinite alternate ease-in-out;
+}
+@keyframes sealGlow {
+  0% { box-shadow: 0 0 10px rgba(186, 141, 60, 0.2); }
+  100% { box-shadow: 0 0 24px rgba(186, 141, 60, 0.5); }
+}
+
+.destiny-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.destiny-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(186, 148, 75, 0.5);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(186, 141, 60, 0.12);
+  transition: all 0.25s ease;
+  position: relative;
+}
+.destiny-card:hover {
+  transform: translateY(-3px);
+  border-color: #ba8d3c;
+  box-shadow: 0 10px 28px rgba(186, 141, 60, 0.22);
+}
+.destiny-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.destiny-order-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c6020;
+  background: rgba(186, 141, 60, 0.15);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.destiny-card h3 {
+  font-size: 17px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin: 0;
+}
+.destiny-card p {
+  font-size: 12px;
+  color: #5c7468;
+  line-height: 1.65;
+  margin: 0;
+  flex: 1;
+}
+.destiny-select-btn {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ba8d3c;
+  background: linear-gradient(135deg, #ba8d3c, #946416);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.destiny-select-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #cc9e4b, #a3721d);
+  transform: translateY(-1px);
+}
+
+.altar-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(186, 141, 60, 0.08);
+  border: 1px solid rgba(186, 141, 60, 0.25);
+  font-size: 12px;
+  color: #85611f;
+}
+.altar-status-banner div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.altar-status-banner button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 141, 60, 0.4);
+  background: #ffffff;
+  color: #85611f;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+/* 7. 中栏仙途长卷与全景 (CenterStageChronicle) - 彻底消除空白 */
+.center-chronicle-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chronicle-card {
+  border: 1.5px solid rgba(186, 148, 75, 0.32);
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(255, 255, 252, 0.96), rgba(250, 247, 237, 0.93));
+  box-shadow: 0 8px 24px rgba(35, 60, 48, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  padding: 16px 18px;
+}
+
+/* 道途阶梯卡 */
+.dao-ladder-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dao-ladder-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+.ladder-stage-current,
+.ladder-stage-next {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ladder-stage-current {
+  text-align: left;
+}
+.ladder-stage-next {
+  text-align: right;
+}
+.ladder-stage-current small,
+.ladder-stage-next small {
+  font-size: 10px;
+  color: #7b8e84;
+}
+.ladder-stage-current strong {
+  font-size: 15px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+}
+.ladder-stage-next strong {
+  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #ba8d3c;
+}
+
+.ladder-progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ladder-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.ladder-labels span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #5c7468;
+}
+.ladder-labels strong {
+  color: #173b2f;
+}
+.ladder-bar {
+  height: 9px;
+  background: rgba(35, 60, 48, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+}
+.ladder-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #36785f, #ba8d3c);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.dao-ladder-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(186, 148, 75, 0.25);
+  font-size: 11.5px;
+}
+.speed-tag {
+  color: #6d8478;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.breakthrough-ready-cta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ba8d3c;
+  font-weight: 600;
+}
+.breakthrough-ready-cta button {
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid #ba8d3c;
+  background: linear-gradient(135deg, #ba8d3c, #946416);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 3px 10px rgba(186, 141, 60, 0.2);
+  transition: all 0.2s ease;
+}
+.breakthrough-ready-cta button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #cc9e4b, #a3721d);
+  transform: translateY(-1px);
+}
+
+/* 世象全景与地方机缘 */
+.world-panorama-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.panorama-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panorama-header h3 {
+  font-size: 14.5px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.panorama-header span {
+  font-size: 11px;
+  color: #8c6f37;
+  font-weight: 500;
+}
+.panorama-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.panorama-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 252, 244, 0.85);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+}
+.panorama-item small {
+  font-size: 10px;
+  color: #7b8e84;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.panorama-item strong {
+  font-size: 12.5px;
+  color: #1c3b2e;
+}
+.panorama-item p {
+  font-size: 11px;
+  color: #5c7468;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 修行履历足迹 */
+.footprints-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.footprints-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footprints-header h3 {
+  font-size: 13.5px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.footprints-header small {
+  font-size: 10.5px;
+  color: #7b8e84;
+}
+.footprints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.footprint-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 252, 242, 0.7);
+  font-size: 11.5px;
+  color: #3b5247;
+  line-height: 1.5;
+}
+.footprint-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(54, 120, 95, 0.12);
+  color: #2b6351;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 /* 响应式适配 */
 @media (max-width: 1200px) {
   .xianxia-game-grid {
     grid-template-columns: 260px minmax(0, 1fr) 300px !important;
     gap: 12px !important;
+  }
+  .routes-grid,
+  .destiny-cards-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1732,6 +2430,9 @@ body {
     position: static !important;
     max-height: none !important;
     width: 100% !important;
+  }
+  .panorama-grid {
+    grid-template-columns: 1fr;
   }
 }
 

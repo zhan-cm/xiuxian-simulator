@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { CalendarDays, CloudSun, Compass, Gift, Home, Landmark, Map, Menu, MessageCircleMore, Mountain, ScrollText, Sparkles, Swords, UsersRound, X } from 'lucide-react'
+import { CalendarDays, CloudSun, Compass, Flame, Gift, Home, Landmark, Map, Menu, MessageCircleMore, Mountain, ScrollText, Sparkles, Swords, UsersRound, X } from 'lucide-react'
 import { useMemo, useState, type RefObject } from 'react'
 import type { GameState, InventorySnapshot, NpcProfile, PlayerState, Presentation } from '../api/types'
 import { findEncounterNpc } from '../sceneLogic'
@@ -150,6 +150,7 @@ const destinations = [
   { label: '洞府', action: '洞府', icon: Home },
   { label: '九州', action: '地图', icon: Map },
   { label: '坊市', action: '坊市', icon: Landmark },
+  { label: '突破', action: '突破', icon: Flame },
   { label: '人物', action: '情缘', icon: UsersRound },
   { label: '宗门', action: '宗门', icon: Mountain },
   { label: '修行', action: '功法', icon: Sparkles },
