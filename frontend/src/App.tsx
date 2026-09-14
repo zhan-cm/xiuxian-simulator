@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -26,6 +26,7 @@ import { CultivatorRail } from './components/CultivatorRail'
 import { BreakthroughAltar } from './components/BreakthroughAltar'
 import { CenterStageChronicle } from './components/CenterStageChronicle'
 import { CultivationGuideDialog } from './components/CultivationGuide'
+import { RealmsLadderDialog } from './components/RealmsLadderDialog'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -109,6 +110,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const encounterNpc = findEncounterNpc(snapshot.npc_profiles, presentation)
   const [viewBreakthrough, setViewBreakthrough] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [realmsLadderOpen, setRealmsLadderOpen] = useState(false)
   const isMajorBreakthrough = state.phase === 'major_breakthrough_choice' || state.phase === 'destiny_choice' || decision?.eyebrow === '破境路线' || decision?.eyebrow === '逆天改命'
   const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough || presentation.action === '突破'
   const handleNavigate = (action: string) => {
@@ -158,6 +160,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
               {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
             </button>
             <button
+              className="archive-trigger ladder-topbar-trigger"
+              type="button"
+              onClick={() => setRealmsLadderOpen(true)}
+              title="仙道十重天：展示所有境界，低境界在下，高境界在上"
+            >
+              <Mountain size={16} />
+              <span>通天仙阶</span>
+            </button>
+            <button
               className="archive-trigger guide-topbar-trigger"
               type="button"
               onClick={() => setGuideOpen(true)}
@@ -183,6 +194,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 onAction={onAction}
                 onOpenCodex={toggleCodex}
                 onOpenBreakthrough={() => setViewBreakthrough(true)}
+                onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
               />
             </aside>
           )}
@@ -250,6 +262,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           if (canUseQuickActions) onAction('突破')
                         }}
                         onOpenGuide={() => setGuideOpen(true)}
+                        onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
                       />
                     )}
 
@@ -365,6 +378,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           onNavigate={handleNavigate}
           player={player}
           state={state}
+        />
+        <RealmsLadderDialog
+          open={realmsLadderOpen}
+          onOpenChange={setRealmsLadderOpen}
+          player={player}
+          onGoBreakthrough={() => {
+            setViewBreakthrough(true)
+            if (canUseQuickActions) onAction('突破')
+          }}
         />
       </div>
     </TooltipProvider>

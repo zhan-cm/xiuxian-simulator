@@ -1,4 +1,4 @@
-import { BedDouble, Calendar, ChevronRight, Coins, Leaf, MapPin, Package, RotateCcw, Shield, Sparkles, UserRound } from 'lucide-react'
+import { BedDouble, Calendar, ChevronRight, Coins, Leaf, MapPin, Mountain, Package, RotateCcw, Shield, Sparkles, UserRound } from 'lucide-react'
 import type { Snapshot } from '../api/types'
 import { CharacterSheet } from './CharacterSheet'
 import { CultivatorHud } from './ImmersiveScene'
@@ -13,6 +13,7 @@ interface CultivatorRailProps {
   onAction: (action: string) => void
   onOpenCodex: () => void
   onOpenBreakthrough?: () => void
+  onOpenRealmsLadder?: () => void
 }
 
 export function CultivatorRail({
@@ -23,6 +24,7 @@ export function CultivatorRail({
   onAction,
   onOpenCodex,
   onOpenBreakthrough,
+  onOpenRealmsLadder,
 }: CultivatorRailProps) {
   const { state } = snapshot
   const { player } = state
@@ -44,10 +46,23 @@ export function CultivatorRail({
         </div>
       </div>
 
-      {/* 核心道身与三大道基 (使用 CultivatorHud 保障测试兼容与视觉一致) */}
+      {/* 核心道身与三大道基 */}
       <div className="rail-card rail-hud-card">
         <CultivatorHud player={player} />
       </div>
+
+      {/* 境界通天图直达入口 */}
+      {onOpenRealmsLadder && (
+        <button
+          type="button"
+          className="rail-ladder-trigger"
+          onClick={onOpenRealmsLadder}
+          title="查看仙道十重天通天境界图（低境界在下，高境界在上）"
+        >
+          <span><Mountain size={13} />境界通天仙阶</span>
+          <ChevronRight size={13} />
+        </button>
+      )}
 
       {/* 寿元天年与仙途岁月 */}
       <div className="rail-card rail-lifespan-card">

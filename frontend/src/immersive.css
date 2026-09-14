@@ -2810,6 +2810,502 @@ body {
   font-size: 13px;
 }
 
+/* 9. 仙道十重天 · 境界通天图 (Realms Ascension Ladder) */
+
+/* 快捷入口按钮 */
+.ladder-topbar-trigger {
+  border-color: rgba(54, 120, 95, 0.4) !important;
+  color: #2b6351 !important;
+  background: rgba(247, 252, 248, 0.85) !important;
+}
+.ladder-topbar-trigger:hover {
+  background: #edf7f1 !important;
+  border-color: #36785f !important;
+  color: #173b2f !important;
+}
+
+.rail-ladder-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(54, 120, 95, 0.35);
+  background: linear-gradient(135deg, rgba(255, 255, 252, 0.95), rgba(244, 250, 246, 0.9));
+  color: #2b6351;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rail-ladder-trigger span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rail-ladder-trigger:hover {
+  border-color: #36785f;
+  background: #eef7f2;
+  color: #173b2f;
+  transform: translateY(-1px);
+}
+
+.dao-ladder-view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(54, 120, 95, 0.4);
+  background: rgba(255, 255, 252, 0.9);
+  color: #2b6351;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dao-ladder-view-all-btn:hover {
+  border-color: #36785f;
+  background: #ebf5ee;
+  color: #16382b;
+}
+
+/* 境界通天图弹窗画布 */
+.realms-ladder-dialog {
+  max-width: 960px !important;
+  width: 94vw !important;
+  max-height: 90vh !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px !important;
+  background: linear-gradient(165deg, #fdfbf5 0%, #f7f3e6 100%) !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.45) !important;
+  box-shadow: 0 16px 48px rgba(35, 60, 48, 0.15) !important;
+}
+
+.ladder-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.35);
+}
+.ladder-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ladder-crest {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #36785f, #1c3b2e);
+  color: #fffaf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(35, 75, 60, 0.25);
+  flex-shrink: 0;
+}
+.ladder-header-title p {
+  font-size: 11px;
+  color: #926b21;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+.ladder-header-title h2 {
+  font-size: 20px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin: 0 0 2px;
+}
+.ladder-header-title small {
+  font-size: 11.5px;
+  color: #637a6e;
+}
+
+.ladder-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.locate-current-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  background: #ffffff;
+  color: #8c6020;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.locate-current-btn:hover {
+  border-color: #ba8d3c;
+  background: #fbf5e6;
+  transform: translateY(-1px);
+}
+
+/* 仙阶主滚动视口 */
+.ladder-scroll-viewport {
+  overflow-y: auto;
+  max-height: 68vh;
+  padding: 10px 14px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+/* 顶部与底部气象横额 */
+.ladder-sky-aura-top,
+.ladder-sky-aura-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.ladder-sky-aura-top {
+  background: linear-gradient(90deg, rgba(186, 141, 60, 0.12), rgba(186, 141, 60, 0.25), rgba(186, 141, 60, 0.12));
+  color: #8c6020;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  box-shadow: 0 4px 16px rgba(186, 141, 60, 0.08);
+}
+.ladder-sky-aura-bottom {
+  background: linear-gradient(90deg, rgba(54, 120, 95, 0.08), rgba(54, 120, 95, 0.18), rgba(54, 120, 95, 0.08));
+  color: #2b6351;
+  border: 1px solid rgba(54, 120, 95, 0.25);
+}
+
+/* 通天灵脉脊柱中轴 */
+.ladder-spine-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+.celestial-meridian {
+  position: absolute;
+  left: 45px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: linear-gradient(180deg, #ba8d3c 0%, #36785f 50%, #8c9e94 100%);
+  border-radius: 999px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* 单个境界大卡片 */
+.realm-step-card {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 18px;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+/* 左侧阶位印章节点 */
+.step-node-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.step-seal {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  border: 2px solid rgba(186, 148, 75, 0.4);
+  background: linear-gradient(145deg, #ffffff, #faf6ee);
+  box-shadow: 0 6px 18px rgba(35, 60, 48, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+.step-numeral {
+  font-size: 11px;
+  color: #8c6020;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.step-realm-name {
+  font-size: 19px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin-top: -1px;
+}
+
+.step-indicator-tag span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.tag-current {
+  background: linear-gradient(135deg, #ba8d3c, #946416);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(186, 141, 60, 0.3);
+  animation: pulseGlow 2s infinite alternate ease-in-out;
+}
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 6px rgba(186, 141, 60, 0.3); }
+  100% { box-shadow: 0 0 16px rgba(186, 141, 60, 0.7); }
+}
+.tag-passed {
+  background: rgba(54, 120, 95, 0.12);
+  color: #2b6351;
+  border: 1px solid rgba(54, 120, 95, 0.25);
+}
+.tag-future {
+  background: rgba(100, 115, 108, 0.1);
+  color: #7b8e84;
+}
+
+/* 右侧内容卷轴卡片 */
+.step-content-card {
+  border: 1.5px solid rgba(186, 148, 75, 0.32);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(35, 60, 48, 0.05);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.realm-step-card:hover .step-content-card {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(35, 60, 48, 0.1);
+  border-color: rgba(186, 148, 75, 0.55);
+}
+
+/* 当前境界专属高亮 */
+.realm-step-card[data-status="current"] .step-seal {
+  border-color: #ba8d3c;
+  background: linear-gradient(145deg, #fef8eb, #f4e8cf);
+  box-shadow: 0 8px 24px rgba(186, 141, 60, 0.3);
+  transform: scale(1.05);
+}
+.realm-step-card[data-status="current"] .step-content-card {
+  border: 2px solid #ba8d3c;
+  background: linear-gradient(165deg, #ffffff, #fdfbf3);
+  box-shadow: 0 10px 32px rgba(186, 141, 60, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+/* 已经历过的境界（道基已固） */
+.realm-step-card[data-status="passed"] .step-content-card {
+  opacity: 0.88;
+  background: rgba(255, 255, 252, 0.92);
+}
+
+/* 未达到境界（前路天关） */
+.realm-step-card[data-status="future"] .step-seal {
+  opacity: 0.82;
+}
+
+/* 卷轴头部 */
+.step-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.25);
+  padding-bottom: 8px;
+}
+.step-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.step-title {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.step-title span {
+  font-size: 17px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  font-weight: 700;
+}
+.step-title small {
+  font-size: 13px;
+  color: #8c6020;
+  font-weight: 600;
+}
+.step-quote {
+  margin: 0;
+  font-size: 11.5px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #5c7468;
+  font-style: italic;
+}
+.step-lifespan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(54, 120, 95, 0.1);
+  color: #2b6351;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.step-lifespan-badge strong {
+  color: #173b2f;
+}
+
+/* 质变核心要义 */
+.step-essence {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.essence-label {
+  font-weight: 700;
+  color: #8c6020;
+  flex-shrink: 0;
+}
+.step-essence p {
+  margin: 0;
+  color: #3f554b;
+}
+
+/* 特征小标签 */
+.step-features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.feat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(249, 246, 237, 0.9);
+  border: 1px solid rgba(186, 148, 75, 0.2);
+  font-size: 11px;
+  color: #4b6357;
+}
+.feat-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #36785f;
+}
+
+/* 底部条件与劫数 */
+.step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(186, 148, 75, 0.2);
+  font-size: 11px;
+}
+.step-requirement {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #8c6020;
+}
+.step-requirement strong {
+  color: #5c3f10;
+}
+.step-tribulation {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7b8e84;
+}
+.step-tribulation small {
+  color: #52665c;
+  font-size: 11px;
+}
+
+/* 当前境界一键叩关栏 */
+.current-realm-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(186, 141, 60, 0.12);
+  border: 1px solid rgba(186, 141, 60, 0.35);
+}
+.current-status-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #8c6020;
+}
+.current-status-copy strong {
+  color: #173b2f;
+}
+.current-status-copy b {
+  color: #b33b2c;
+}
+.ladder-breakthrough-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid #ba8d3c;
+  background: linear-gradient(135deg, #ba8d3c, #946416);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(186, 141, 60, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.ladder-breakthrough-btn:hover {
+  background: linear-gradient(135deg, #cc9e4b, #a3721d);
+  transform: translateY(-1px);
+}
+
+/* 登仙境界至尊特效 */
+.realm-step-card[data-tone="immortal"] .step-content-card {
+  background: linear-gradient(160deg, #ffffff 0%, #fffcf2 100%);
+  border-color: #ba8d3c;
+  box-shadow: 0 8px 28px rgba(186, 141, 60, 0.16);
+}
+.realm-step-card[data-tone="immortal"] .step-seal {
+  border-color: #ba8d3c;
+  background: linear-gradient(145deg, #fffcf5, #f5e4bd);
+}
+
 /* 响应式适配 */
 @media (max-width: 1200px) {
   .xianxia-game-grid {
@@ -2838,6 +3334,13 @@ body {
   }
   .guide-card {
     grid-template-columns: 1fr;
+  }
+  .realm-step-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .celestial-meridian {
+    display: none;
   }
 }
 

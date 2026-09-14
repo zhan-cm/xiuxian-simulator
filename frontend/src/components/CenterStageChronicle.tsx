@@ -1,4 +1,4 @@
-import { CloudSun, Flame, MapPin, ScrollText, Sparkles, TrendingUp } from 'lucide-react'
+import { CloudSun, Flame, MapPin, Mountain, ScrollText, Sparkles, TrendingUp } from 'lucide-react'
 import type { Snapshot } from '../api/types'
 import { CultivationGuideCard } from './CultivationGuide'
 
@@ -12,6 +12,7 @@ interface CenterStageChronicleProps {
   onAction: (action: string) => void
   onOpenBreakthrough: () => void
   onOpenGuide: () => void
+  onOpenRealmsLadder?: () => void
 }
 
 export function CenterStageChronicle({
@@ -21,6 +22,7 @@ export function CenterStageChronicle({
   onAction,
   onOpenBreakthrough,
   onOpenGuide,
+  onOpenRealmsLadder,
 }: CenterStageChronicleProps) {
   const { state } = snapshot
   const { player } = state
@@ -77,6 +79,17 @@ export function CenterStageChronicle({
               : `吐纳炼气以充盈丹田，尚需 ${player.cultivation_required - player.cultivation} 点修为即可叩关。`}
           </span>
           <div className="breakthrough-ready-cta">
+            {onOpenRealmsLadder && (
+              <button
+                type="button"
+                className="dao-ladder-view-all-btn"
+                onClick={onOpenRealmsLadder}
+                title="展示仙道十重天境界，低境界在下，高境界在上"
+              >
+                <Mountain size={13} />
+                <span>通天境界图</span>
+              </button>
+            )}
             <button
               type="button"
               disabled={busy || readOnly}
