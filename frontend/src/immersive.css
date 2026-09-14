@@ -2408,6 +2408,408 @@ body {
   flex-shrink: 0;
 }
 
+/* 8. 仙途指津 · 行止向导 (Cultivation Guide System) */
+
+/* 顶部栏快捷触发按钮 */
+.guide-topbar-trigger {
+  border-color: rgba(186, 148, 75, 0.4) !important;
+  color: #8c6020 !important;
+  background: rgba(255, 252, 242, 0.85) !important;
+}
+.guide-topbar-trigger:hover {
+  background: #fbf3dc !important;
+  border-color: #ba8d3c !important;
+  color: #5c3f10 !important;
+}
+
+/* 中栏长卷内置：紧凑型仙途指津卡片 */
+.cultivation-guide-card {
+  border: 1.5px solid rgba(186, 148, 75, 0.38) !important;
+  background: linear-gradient(160deg, rgba(255, 255, 252, 0.98), rgba(252, 248, 238, 0.95)) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cultivation-guide-card .guide-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.3);
+}
+.cultivation-guide-card .guide-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #173b2f;
+}
+.cultivation-guide-card .guide-card-title strong {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 15px;
+}
+.cultivation-guide-card .guide-card-title small {
+  font-size: 11px;
+  color: #7b8e84;
+}
+.open-full-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: #ffffff;
+  color: #8c6020;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.open-full-guide-btn:hover {
+  border-color: #ba8d3c;
+  background: #fbf5e6;
+}
+
+.guide-card-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-compact-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 252, 244, 0.85);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  transition: all 0.2s ease;
+}
+.guide-compact-item:hover {
+  border-color: rgba(186, 148, 75, 0.5);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(35, 60, 48, 0.05);
+}
+.guide-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+.compact-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-want {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(186, 141, 60, 0.18);
+  color: #8c6020;
+  font-weight: 700;
+}
+.compact-title-row strong {
+  font-size: 13px;
+  color: #173b2f;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.guide-item-body p {
+  font-size: 11.5px;
+  color: #5c7468;
+  margin: 0;
+  line-height: 1.5;
+}
+.guide-item-body em {
+  font-style: normal;
+  font-weight: 600;
+  color: #2b6351;
+}
+.compact-jump-btn {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid #36785f;
+  background: linear-gradient(135deg, #36785f, #245744);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.compact-jump-btn:hover {
+  background: linear-gradient(135deg, #408c6f, #2f6953);
+  transform: translateY(-1px);
+}
+
+/* 仙途指津全览弹窗 (Cultivation Guide Dialog) */
+.cultivation-guide-dialog {
+  max-width: 900px !important;
+  width: 92vw !important;
+  max-height: 88vh !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px !important;
+}
+.guide-dialog-header {
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.35);
+  padding-bottom: 12px;
+}
+.guide-dialog-header p {
+  font-size: 11px;
+  color: #926b21;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+.guide-dialog-header h2 {
+  font-size: 20px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  margin: 0 0 4px;
+}
+.guide-dialog-header small {
+  font-size: 12px;
+  color: #6a8276;
+}
+
+/* 当前急务指引智能提示栏 */
+.guide-smart-alert {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(186, 141, 60, 0.08);
+  border: 1px solid rgba(186, 141, 60, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-smart-alert .alert-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8c6020;
+  font-size: 12px;
+  font-weight: 700;
+}
+.smart-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.smart-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(186, 141, 60, 0.35);
+  background: #ffffff;
+  color: #173b2f;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.smart-chip:hover {
+  background: #fcf6e8;
+  border-color: #ba8d3c;
+  transform: translateY(-1px);
+}
+.smart-chip strong {
+  color: #2b6351;
+}
+
+/* 控制栏：分类按钮与搜索框 */
+.guide-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.guide-categories-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.guide-cat-btn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  background: rgba(255, 252, 244, 0.8);
+  color: #5c7468;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.guide-cat-btn:hover {
+  background: #ffffff;
+  color: #173b2f;
+  border-color: #ba8d3c;
+}
+.guide-cat-btn[data-active="true"] {
+  background: linear-gradient(135deg, #36785f, #235442);
+  color: #ffffff;
+  border-color: #235442;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(54, 120, 95, 0.2);
+}
+
+.guide-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: #ffffff;
+  min-width: 280px;
+}
+.guide-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: #173b2f;
+  width: 100%;
+}
+.guide-search-box button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #7b8e84;
+  padding: 0;
+  display: flex;
+}
+
+/* 列表展示区 */
+.guide-cards-scroll {
+  overflow-y: auto;
+  max-height: 54vh;
+  padding-right: 4px;
+}
+.guide-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.guide-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid rgba(186, 148, 75, 0.3);
+  box-shadow: 0 3px 12px rgba(35, 60, 48, 0.04);
+  transition: all 0.2s ease;
+}
+.guide-card:hover {
+  transform: translateY(-1px);
+  border-color: #ba8d3c;
+  box-shadow: 0 6px 20px rgba(35, 60, 48, 0.08);
+}
+.guide-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fdf6e6, #f3e6c8);
+  color: #8c6020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+}
+.guide-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.guide-row-want,
+.guide-row-loc,
+.guide-row-act {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+.guide-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.want-badge {
+  background: rgba(186, 141, 60, 0.16);
+  color: #8c6020;
+}
+.loc-badge {
+  background: rgba(54, 120, 95, 0.14);
+  color: #2b6351;
+}
+.act-badge {
+  background: rgba(44, 64, 53, 0.1);
+  color: #2c4035;
+}
+
+.guide-row-want strong {
+  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+}
+.guide-row-loc strong {
+  font-size: 12.5px;
+  color: #2b6351;
+}
+.guide-row-act p {
+  margin: 0;
+  color: #5c7468;
+  line-height: 1.55;
+  font-size: 11.5px;
+}
+.guide-jump-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ba8d3c;
+  background: linear-gradient(135deg, #ba8d3c, #946416);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(186, 141, 60, 0.2);
+  transition: all 0.2s ease;
+}
+.guide-jump-btn:hover {
+  background: linear-gradient(135deg, #cc9e4b, #a3721d);
+  transform: translateY(-1px);
+}
+
+.guide-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #8c9e94;
+  gap: 10px;
+}
+.guide-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
 /* 响应式适配 */
 @media (max-width: 1200px) {
   .xianxia-game-grid {
@@ -2432,6 +2834,9 @@ body {
     width: 100% !important;
   }
   .panorama-grid {
+    grid-template-columns: 1fr;
+  }
+  .guide-card {
     grid-template-columns: 1fr;
   }
 }

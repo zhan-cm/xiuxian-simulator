@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -25,6 +25,7 @@ import { ImmersiveScene, SocialActionBar, WorldNavigation } from './components/I
 import { CultivatorRail } from './components/CultivatorRail'
 import { BreakthroughAltar } from './components/BreakthroughAltar'
 import { CenterStageChronicle } from './components/CenterStageChronicle'
+import { CultivationGuideDialog } from './components/CultivationGuide'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -107,6 +108,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   })()
   const encounterNpc = findEncounterNpc(snapshot.npc_profiles, presentation)
   const [viewBreakthrough, setViewBreakthrough] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const isMajorBreakthrough = state.phase === 'major_breakthrough_choice' || state.phase === 'destiny_choice' || decision?.eyebrow === '破境路线' || decision?.eyebrow === '逆天改命'
   const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough || presentation.action === '突破'
   const handleNavigate = (action: string) => {
@@ -154,6 +156,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
             <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>
               {showcase ? <X size={16} /> : <Eye size={16} />}
               {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
+            </button>
+            <button
+              className="archive-trigger guide-topbar-trigger"
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              title="仙途指津：如果想要怎么，你可以去哪里干什么"
+            >
+              <Compass size={16} />
+              <span>仙途指津</span>
             </button>
             {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} onChanged={onArchiveChanged} onNotice={onNotice} />}
             <CharacterSheet player={player} />
@@ -238,6 +249,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           setViewBreakthrough(true)
                           if (canUseQuickActions) onAction('突破')
                         }}
+                        onOpenGuide={() => setGuideOpen(true)}
                       />
                     )}
 
@@ -347,6 +359,13 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
         </main>
         <footer className="game-footer">永恒之道 · 高自由单机文字修仙 · 凡尘一念，万法由心</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
+        <CultivationGuideDialog
+          open={guideOpen}
+          onOpenChange={setGuideOpen}
+          onNavigate={handleNavigate}
+          player={player}
+          state={state}
+        />
       </div>
     </TooltipProvider>
   )

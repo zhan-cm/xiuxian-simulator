@@ -1,5 +1,6 @@
 import { CloudSun, Flame, MapPin, ScrollText, Sparkles, TrendingUp } from 'lucide-react'
 import type { Snapshot } from '../api/types'
+import { CultivationGuideCard } from './CultivationGuide'
 
 const REALM_NAMES = ['炼气', '筑基', '结晶', '金丹', '具灵', '元婴', '化神', '悟道', '羽化', '登仙']
 const STAGE_NAMES = ['初期', '中期', '后期', '圆满']
@@ -10,6 +11,7 @@ interface CenterStageChronicleProps {
   readOnly: boolean
   onAction: (action: string) => void
   onOpenBreakthrough: () => void
+  onOpenGuide: () => void
 }
 
 export function CenterStageChronicle({
@@ -18,6 +20,7 @@ export function CenterStageChronicle({
   readOnly,
   onAction,
   onOpenBreakthrough,
+  onOpenGuide,
 }: CenterStageChronicleProps) {
   const { state } = snapshot
   const { player } = state
@@ -86,7 +89,14 @@ export function CenterStageChronicle({
         </div>
       </section>
 
-      {/* 2. 九州风云与天地大势 (World Panorama) */}
+      {/* 2. 仙途指津 · 行止向导 (如果想要……你可以去哪里干什么) */}
+      <CultivationGuideCard
+        snapshot={snapshot}
+        onNavigate={onAction}
+        onOpenFullGuide={onOpenGuide}
+      />
+
+      {/* 3. 九州风云与天地大势 (World Panorama) */}
       <section className="chronicle-card world-panorama-card">
         <div className="panorama-header">
           <h3>
