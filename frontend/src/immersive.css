@@ -835,3 +835,903 @@ body {
   .world-navigation button, .cultivator-hud-stats i b { transition: none; }
   .immersive-scene[data-scene="travel"] .scene-mountain-far { animation: none; }
 }
+
+/* ========================================================================== */
+/* 《永恒之道》全新三栏融合古卷式独立修仙游戏视窗 (Triple-Column Viewport Cockpit) */
+/* ========================================================================== */
+
+/* 1. 主外壳与顶部气象栏 */
+.xianxia-game-shell {
+  width: min(1560px, calc(100% - 28px));
+  max-width: 1560px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 10px 0 24px;
+}
+
+.xianxia-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 10px 20px;
+  border: 1.5px solid rgba(186, 148, 75, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 250, 0.94), rgba(247, 243, 230, 0.9));
+  box-shadow: 0 8px 24px rgba(35, 60, 48, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+}
+
+.xianxia-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.xianxia-brand span {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #9c7838;
+  font-weight: 600;
+}
+.xianxia-brand h1 {
+  margin: 0;
+  font-size: 26px;
+  font-family: "STKaiti", "KaiTi", "Noto Serif SC", serif;
+  letter-spacing: 0.14em;
+  color: #173f30;
+  text-shadow: 0 1px 2px rgba(23, 63, 48, 0.1);
+}
+.xianxia-brand p {
+  display: block !important;
+  margin: 0;
+  font-size: 11px;
+  color: #5c7468;
+  letter-spacing: 0.06em;
+}
+
+.xianxia-calendar-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.xianxia-calendar-bar .time-badge {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: rgba(255, 252, 242, 0.85);
+  color: #2b5745;
+  box-shadow: 0 2px 8px rgba(40, 70, 55, 0.05);
+}
+.xianxia-calendar-bar .time-badge span {
+  font-size: 12px;
+  color: #8c6a28;
+  font-weight: 600;
+}
+.xianxia-calendar-bar .time-badge b {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ba8d3c;
+}
+.xianxia-calendar-bar .time-badge strong {
+  font-size: 13px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #1c3b2e;
+}
+.xianxia-calendar-bar .world-era-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(54, 105, 82, 0.25);
+  background: rgba(238, 245, 239, 0.85);
+  color: #275d49;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.xianxia-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.xianxia-topbar-actions .showcase-trigger,
+.xianxia-topbar-actions button {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: linear-gradient(145deg, #fdfaf3, #f5ecd8);
+  color: #3b5f4f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.xianxia-topbar-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #ba8d3c;
+  box-shadow: 0 4px 12px rgba(186, 141, 60, 0.18);
+  color: #173b2f;
+}
+
+/* 2. 三栏视窗栅格架构 */
+.xianxia-game-grid {
+  display: grid !important;
+  grid-template-columns: 290px minmax(0, 1fr) 340px !important;
+  gap: 16px !important;
+  align-items: start !important;
+  padding: 14px 0 20px !important;
+}
+
+/* 3. 左栏：修士命台 */
+.xianxia-cultivator-rail {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 255, 252, 0.94), rgba(248, 244, 233, 0.9));
+  border: 1.5px solid rgba(186, 148, 75, 0.35);
+  box-shadow: 0 12px 32px rgba(35, 60, 48, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cultivator-rail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rail-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.3);
+}
+.rail-seal-mark {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #b83c34, #942b24);
+  color: #fff8eb;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 17px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(184, 60, 52, 0.25);
+}
+.rail-section-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #173b2f;
+  letter-spacing: 0.08em;
+}
+.rail-section-header small {
+  display: block;
+  font-size: 10px;
+  color: #8c6f3b;
+}
+
+.rail-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(186, 148, 75, 0.22);
+  background: rgba(252, 250, 242, 0.75);
+  box-shadow: 0 2px 8px rgba(35, 60, 48, 0.03);
+}
+
+/* 左栏中的 CultivatorHud 重塑 */
+.rail-hud-card {
+  padding: 12px 10px;
+}
+.rail-hud-card .cultivator-hud {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  gap: 10px !important;
+}
+.rail-hud-card .cultivator-hud > span {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 26px !important;
+  margin: 0 auto !important;
+  border: 2px solid rgba(212, 178, 102, 0.7) !important;
+  box-shadow: 0 4px 14px rgba(30, 75, 60, 0.25) !important;
+}
+.rail-hud-card .cultivator-hud-name {
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+.rail-hud-card .cultivator-hud-name small {
+  color: #987a42 !important;
+  font-size: 11px !important;
+}
+.rail-hud-card .cultivator-hud-name strong {
+  font-size: 20px !important;
+  color: #173b2f !important;
+}
+.rail-hud-card .cultivator-hud-name em {
+  font-size: 12px !important;
+  padding: 2px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(59, 116, 96, 0.12) !important;
+  color: #2b6351 !important;
+  border: 1px solid rgba(59, 116, 96, 0.25) !important;
+  font-weight: 600 !important;
+}
+.rail-hud-card .cultivator-hud-stats {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+  border-top: 1px dashed rgba(54, 89, 73, 0.18) !important;
+  padding-top: 10px !important;
+}
+.rail-hud-card .cultivator-hud-stats small {
+  font-size: 11px !important;
+  color: #486256 !important;
+}
+.rail-hud-card .cultivator-hud-stats small b {
+  font-size: 11.5px !important;
+  color: #1a3c2e !important;
+}
+.rail-hud-card .cultivator-hud-stats i {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(58, 86, 72, 0.12) !important;
+}
+
+/* 寿元天年卡片 */
+.rail-lifespan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rail-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rail-card-row span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #5c7468;
+}
+.rail-card-row strong {
+  font-size: 13px;
+  color: #1c3b2e;
+}
+.rail-card-row strong small {
+  font-size: 11px;
+  color: #8c734b;
+}
+.rail-progress-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(54, 89, 73, 0.12);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(27, 43, 35, 0.15);
+}
+.rail-progress-fill.lifespan-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #43826b, #b38b3c);
+  transition: width 0.35s ease;
+}
+.rail-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: #798c82;
+}
+.rail-card-meta em {
+  font-style: normal;
+  color: #9c7329;
+  font-weight: 600;
+}
+
+/* 突破圆满高亮条 */
+.rail-breakthrough-banner {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(184, 60, 48, 0.4) !important;
+  background: linear-gradient(145deg, #fff3f0, #fae5df) !important;
+  box-shadow: 0 4px 14px rgba(184, 60, 48, 0.12) !important;
+}
+.rail-breakthrough-banner header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b83c34;
+  margin-bottom: 4px;
+}
+.rail-breakthrough-banner header strong {
+  font-size: 13px;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.rail-breakthrough-banner p {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #7a3e35;
+  line-height: 1.45;
+}
+.rail-breakthrough-btn {
+  width: 100%;
+  padding: 6px 12px;
+  border: 1px solid #b83c34;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #b83c34, #df5b4e);
+  color: #fff8eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(184, 60, 52, 0.25);
+  transition: all 0.2s ease;
+}
+.rail-breakthrough-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 60, 52, 0.35);
+}
+
+/* 灵根、道体与遗泽 */
+.rail-traits-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.trait-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(54, 98, 76, 0.18);
+  background: rgba(245, 249, 244, 0.85);
+}
+.trait-tag small {
+  display: block;
+  font-size: 9.5px;
+  color: #7a8f84;
+}
+.trait-tag strong {
+  display: block;
+  font-size: 11.5px;
+  color: #1c3b2e;
+}
+.trait-tag.legacy-tag {
+  grid-column: 1 / -1;
+  background: rgba(254, 250, 240, 0.9);
+  border-color: rgba(186, 148, 75, 0.35);
+}
+.trait-tag.legacy-tag strong {
+  color: #947230;
+}
+
+/* 资粮与物品 */
+.rail-wealth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wealth-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.wealth-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  background: rgba(255, 252, 244, 0.85);
+}
+.wealth-badge small {
+  display: block;
+  font-size: 9.5px;
+  color: #8c754b;
+}
+.wealth-badge strong {
+  display: block;
+  font-size: 12px;
+  color: #173b2f;
+}
+.rail-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.rail-quick-actions button {
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(54, 98, 76, 0.25);
+  background: rgba(240, 247, 241, 0.85);
+  color: #275644;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.rail-quick-actions button:hover:not(:disabled) {
+  border-color: #387c62;
+  background: #e3ede3;
+}
+
+/* 驻足之地与调养状态 */
+.rail-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+.status-row span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #5c7468;
+}
+.status-row strong {
+  color: #1c3b2e;
+}
+.status-row em {
+  font-style: normal;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(59, 116, 96, 0.12);
+  color: #2b6351;
+}
+.status-row em[data-status*="伤"] {
+  background: rgba(184, 60, 48, 0.12);
+  color: #b83c34;
+}
+.recovery-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(184, 60, 48, 0.08);
+  border: 1px solid rgba(184, 60, 48, 0.2);
+  color: #a4382e;
+  font-size: 10.5px;
+}
+.recovery-alert button {
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(184, 60, 48, 0.4);
+  background: #fff;
+  color: #b83c34;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.rail-codex-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(186, 148, 75, 0.45);
+  background: rgba(254, 252, 245, 0.9);
+  color: #8c6a28;
+  font-size: 11.5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.rail-codex-shortcut span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rail-codex-shortcut:hover {
+  border-color: #ba8d3c;
+  background: #fdf6e6;
+  color: #5c4210;
+}
+
+/* 4. 中栏：天道纪事主卷轴 */
+.xianxia-stage-center {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 紧凑精致的气象云山 Horizon */
+.xianxia-stage-center .immersive-scene {
+  min-height: 190px !important;
+  max-height: 220px;
+  padding: 42px 20px 16px !important;
+  margin-bottom: 0 !important;
+  border-radius: 18px !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.38) !important;
+  box-shadow: 0 10px 28px rgba(35, 60, 48, 0.08) !important;
+}
+.xianxia-stage-center .immersive-scene .scene-portrait,
+.xianxia-stage-center .immersive-scene .scene-npc-portrait {
+  width: 72px !important;
+  height: 108px !important;
+  font-size: 26px !important;
+  border-radius: 36px 36px 14px 14px !important;
+}
+.xianxia-stage-center .immersive-scene .scene-location {
+  left: 14px !important;
+  top: 12px !important;
+  padding: 4px 10px !important;
+  font-size: 11.5px !important;
+}
+.xianxia-stage-center .immersive-scene .scene-location strong {
+  font-size: 14px !important;
+}
+.xianxia-stage-center .immersive-scene .scene-narrative {
+  padding: 12px 18px 12px !important;
+  border-radius: 14px !important;
+}
+.xianxia-stage-center .immersive-scene .scene-narrative h2 {
+  font-size: 20px !important;
+  margin: 3px 0 6px !important;
+}
+.xianxia-stage-center .immersive-scene .scene-narrative p {
+  font-size: 13.5px !important;
+  line-height: 1.8 !important;
+}
+
+/* 正卷叙事古籍排版：字号舒适、对比清晰、绝非灰色小字 */
+.xianxia-stage-center .event-panel {
+  margin-top: 0 !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.32) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(165deg, rgba(255, 255, 252, 0.96), rgba(250, 247, 237, 0.94)) !important;
+  box-shadow: 0 10px 28px rgba(35, 60, 48, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
+  padding: 18px 20px !important;
+}
+
+.xianxia-stage-center .event-copy.scene-continuation,
+.immersive-grid .event-panel[data-immersive="true"] .scene-continuation {
+  border-bottom: 1px dashed rgba(186, 148, 75, 0.3) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.xianxia-stage-center .event-copy.scene-continuation p,
+.immersive-grid .event-panel[data-immersive="true"] .scene-continuation p {
+  color: #1c3026 !important;
+  font-size: 14.5px !important;
+  line-height: 1.95 !important;
+  letter-spacing: 0.03em !important;
+  text-indent: 2em;
+  margin: 0 0 8px !important;
+  font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif !important;
+}
+
+.xianxia-stage-center .change-row,
+.immersive-grid .event-panel[data-immersive="true"] .change-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.xianxia-stage-center .change-row span,
+.immersive-grid .event-panel[data-immersive="true"] .change-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: rgba(255, 252, 242, 0.9);
+  box-shadow: 0 2px 6px rgba(40, 70, 55, 0.05);
+  font-size: 11.5px;
+}
+.xianxia-stage-center .change-row small,
+.immersive-grid .event-panel[data-immersive="true"] .change-row small {
+  color: #8c6f37;
+  font-weight: 600;
+}
+.xianxia-stage-center .change-row strong,
+.immersive-grid .event-panel[data-immersive="true"] .change-row strong {
+  color: #173b2f;
+  font-weight: 700;
+}
+
+/* 5. 右栏：心念机枢与司南 */
+.xianxia-action-rail {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 传法玉牌 (此刻抉择) */
+.xianxia-action-rail .decision-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 12px !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.45) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, rgba(255, 255, 252, 0.96), rgba(249, 245, 233, 0.93)) !important;
+  box-shadow: 0 10px 30px rgba(35, 60, 48, 0.08) !important;
+}
+.xianxia-action-rail .decision-panel::after {
+  content: "择";
+  position: absolute;
+  right: -6px;
+  top: -20px;
+  color: rgba(186, 148, 75, 0.06);
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 90px;
+  pointer-events: none;
+}
+.xianxia-action-rail .decision-heading {
+  padding-bottom: 10px;
+}
+.xianxia-action-rail .decision-heading h3 {
+  font-size: 16px;
+  color: #173b2f;
+  font-family: "STKaiti", "KaiTi", serif;
+  margin: 2px 0 3px;
+}
+.xianxia-action-rail .decision-heading p {
+  font-size: 11px;
+  color: #687e73;
+}
+.xianxia-action-rail .decision-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.xianxia-action-rail .decision-choice {
+  min-height: auto !important;
+  padding: 10px 12px !important;
+  border-radius: 11px !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.35) !important;
+  background: linear-gradient(145deg, #ffffff, #faf6ee) !important;
+  box-shadow: 0 4px 12px rgba(35, 65, 50, 0.05) !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.xianxia-action-rail .decision-choice:hover:not(:disabled) {
+  border-color: #ba8d3c !important;
+  background: linear-gradient(145deg, #fdf8eb, #f4eddc) !important;
+  box-shadow: 0 6px 18px rgba(186, 141, 60, 0.18) !important;
+  transform: translateY(-2px);
+}
+.xianxia-action-rail .choice-seal {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 15px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #fbf2de, #ebd5ab) !important;
+  color: #8c6020 !important;
+  border: 1px solid rgba(186, 148, 75, 0.5) !important;
+}
+.xianxia-action-rail .choice-copy > strong {
+  font-size: 13px !important;
+  color: #173b2f !important;
+}
+.xianxia-action-rail .choice-copy > small {
+  font-size: 10px !important;
+  color: #9c7329 !important;
+}
+.xianxia-action-rail .choice-copy > p {
+  font-size: 10.5px !important;
+  color: #587064 !important;
+  margin-top: 3px !important;
+}
+
+/* 行动台 (ActionDock) 在右栏中的精炼呈现 */
+.xianxia-action-rail .action-dock {
+  margin-bottom: 0 !important;
+  padding: 14px 12px !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.32) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, rgba(255, 255, 252, 0.94), rgba(249, 246, 237, 0.92)) !important;
+  box-shadow: 0 10px 28px rgba(35, 60, 48, 0.07) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.xianxia-action-rail .quick-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.xianxia-action-rail .quick-action-row > span {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: #8c6f37;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.xianxia-action-rail .quick-action-row .context-action {
+  grid-column: 1 / -1;
+}
+.xianxia-action-rail .quick-action-row button {
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(54, 98, 76, 0.22);
+  background: linear-gradient(145deg, #fbfcf8, #edf4eb);
+  color: #265543;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.xianxia-action-rail .quick-action-row button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #387c62;
+  box-shadow: 0 4px 12px rgba(45, 90, 70, 0.12);
+}
+
+.xianxia-action-rail .draft-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.xianxia-action-rail .draft-row span {
+  font-size: 11px;
+  color: #8c6f37;
+  font-weight: 600;
+}
+.xianxia-action-rail .draft-row button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  background: rgba(254, 252, 245, 0.85);
+  color: #556c60;
+  font-size: 10.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.xianxia-action-rail .draft-row button:hover:not(:disabled) {
+  border-color: #ba8d3c;
+  color: #173b2f;
+  background: #fdf7eb;
+}
+.xianxia-action-rail .draft-row small {
+  font-size: 9.5px;
+  color: #909d96;
+}
+
+.xianxia-action-rail .action-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.xianxia-action-rail .action-input-row textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  background: rgba(255, 255, 252, 0.9);
+  color: #1c3b2e;
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+.xianxia-action-rail .action-input-row button {
+  width: 100%;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid #36785f;
+  background: linear-gradient(135deg, #36785f, #235442);
+  color: #fff8eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(35, 75, 60, 0.2);
+  transition: all 0.2s ease;
+}
+.xianxia-action-rail .action-input-row button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(35, 75, 60, 0.3);
+}
+
+/* 山海司南导航集成于右栏底部 */
+.xianxia-rail-nav {
+  width: 100%;
+}
+.xianxia-rail-nav .world-navigation {
+  position: static !important;
+  transform: none !important;
+  width: 100% !important;
+  min-height: auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 5px !important;
+  padding: 8px !important;
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(186, 148, 75, 0.35) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 252, 0.95), rgba(247, 244, 233, 0.92)) !important;
+  box-shadow: 0 6px 20px rgba(35, 60, 48, 0.06) !important;
+}
+.xianxia-rail-nav .world-navigation-mark {
+  width: 100% !important;
+  height: 42px !important;
+  grid-column: 1 / -1;
+  font-size: 13px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.xianxia-rail-nav .world-navigation button {
+  min-height: 44px !important;
+  padding: 4px 2px !important;
+  border-radius: 8px !important;
+}
+.xianxia-rail-nav .world-navigation button span {
+  font-size: 10px !important;
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+  .xianxia-game-grid {
+    grid-template-columns: 260px minmax(0, 1fr) 300px !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .xianxia-game-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .xianxia-cultivator-rail,
+  .xianxia-action-rail {
+    position: static !important;
+    max-height: none !important;
+    width: 100% !important;
+  }
+}
+

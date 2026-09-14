@@ -21,7 +21,8 @@ import { loadShowcaseReview } from './showcaseReview'
 import { PathwaysCodex } from './components/PathwaysCodex'
 import { RecoveryCodex } from './components/RecoveryCodex'
 import { LegacyChronicle } from './components/LegacyChronicle'
-import { CultivatorHud, ImmersiveScene, SocialActionBar, WorldNavigation } from './components/ImmersiveScene'
+import { ImmersiveScene, SocialActionBar, WorldNavigation } from './components/ImmersiveScene'
+import { CultivatorRail } from './components/CultivatorRail'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -114,37 +115,162 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const activeLegacy = snapshot.legacy.active_legacy
   return (
     <TooltipProvider>
-      <div className="game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
-        <header className="topbar immersive-topbar">
-          <div className="brand"><span>高自由修仙文字模拟</span><h1>永恒之道</h1><p>凡尘一念，万法由心</p></div>
-          {!legacySurface && <CultivatorHud player={player} />}
-          <div className="topbar-actions">
-            <div className="time-badge"><CalendarDays size={16} /><span>第 {state.turn} 回合</span><b /><strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong></div>
-            <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>{showcase ? <X size={16} /> : <Eye size={16} />}{showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}</button>
+      <div className="game-shell xianxia-game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
+        <header className="topbar immersive-topbar xianxia-topbar">
+          <div className="brand xianxia-brand">
+            <span>高自由修仙文字模拟</span>
+            <h1>永恒之道</h1>
+            <p>凡尘一念 · 万法由心</p>
+          </div>
+
+          <div className="xianxia-calendar-bar">
+            <div className="time-badge">
+              <CalendarDays size={16} />
+              <span>第 {state.turn} 回合</span>
+              <b />
+              <strong>天玄历 {state.calendar_year} 年 · {monthNames[state.month - 1] || `${state.month}月`}</strong>
+            </div>
+            <div className="world-era-tag" title={state.last_world_event || '天地灵机运转'}>
+              <CloudSun size={14} />
+              <span>{state.world_era}</span>
+            </div>
+          </div>
+
+          <div className="topbar-actions xianxia-topbar-actions">
+            <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>
+              {showcase ? <X size={16} /> : <Eye size={16} />}
+              {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
+            </button>
             {!showcase && <ArchiveDialog saves={snapshot.save_summaries} busy={busy} onAction={onAction} onChanged={onArchiveChanged} onNotice={onNotice} />}
             <CharacterSheet player={player} />
           </div>
         </header>
 
-        <main className="game-grid immersive-grid">
-          <section className="main-stage">
-            {!legacySurface && <ImmersiveScene state={state} presentation={presentation} npcProfiles={snapshot.npc_profiles} calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`} />}
-            {legacySurface && <div className="stage-heading"><div><span>本世已终</span><h2>{player.name} · 仙途评传</h2></div></div>}
-            {!legacySurface && <>
-              <AnimatePresence mode="wait">
-                <motion.div key={`${state.turn}-${presentation.title}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.24 }}>
-                  <EventPanel presentation={presentation} cave={snapshot.cave} npcLives={snapshot.npc_lives} npcNetwork={snapshot.npc_network} sectMembership={snapshot.sect_membership} readOnly={showcase || busy} immersive onAction={onAction} />
-                </motion.div>
-              </AnimatePresence>
-              <SocialActionBar npc={encounterNpc} inventory={snapshot.inventory} disabled={busy || showcase || !canUseQuickActions} onAction={onAction} />
-              {travelSurface && <TravelDecisionPanel decision={decision} travel={snapshot.travel} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
-              {!networkSurface && !travelSurface && <DecisionPanel decision={decision} activeAction={activeAction} busy={busy} readOnly={showcase} onChoose={onAction} />}
-            </>}
+        <main className="game-grid immersive-grid xianxia-game-grid">
+          {/* 左栏：修士命台 */}
+          {!legacySurface && (
+            <aside className="xianxia-cultivator-rail" aria-label="修士命台">
+              <CultivatorRail
+                snapshot={snapshot}
+                busy={busy}
+                readOnly={showcase}
+                canQuickAct={canUseQuickActions}
+                onAction={onAction}
+                onOpenCodex={toggleCodex}
+              />
+            </aside>
+          )}
+
+          {/* 中栏：天道纪事主卷轴 */}
+          <section className="main-stage xianxia-stage-center" aria-label="天道纪事主卷轴">
+            {!legacySurface && (
+              <ImmersiveScene
+                state={state}
+                presentation={presentation}
+                npcProfiles={snapshot.npc_profiles}
+                calendarLabel={`天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`}
+              />
+            )}
+            {legacySurface && (
+              <div className="stage-heading">
+                <div>
+                  <span>本世已终</span>
+                  <h2>{player.name} · 仙途评传</h2>
+                </div>
+              </div>
+            )}
+            {!legacySurface && (
+              <>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${state.turn}-${presentation.title}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.24 }}
+                  >
+                    <EventPanel
+                      presentation={presentation}
+                      cave={snapshot.cave}
+                      npcLives={snapshot.npc_lives}
+                      npcNetwork={snapshot.npc_network}
+                      sectMembership={snapshot.sect_membership}
+                      readOnly={showcase || busy}
+                      immersive
+                      onAction={onAction}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+                <SocialActionBar
+                  npc={encounterNpc}
+                  inventory={snapshot.inventory}
+                  disabled={busy || showcase || !canUseQuickActions}
+                  onAction={onAction}
+                />
+              </>
+            )}
             {legacySurface && <LegacyChronicle legacy={snapshot.legacy} busy={busy} readOnly={showcase} onAction={onAction} />}
             {error && <p className="action-error"><CircleAlert size={16} />{error}</p>}
-            {!legacySurface && <ActionDock busy={busy} canQuickAct={canUseQuickActions} canDraft={canDraft} readOnly={showcase} recovery={snapshot.recovery} contextActions={contextActions} onAction={onAction} />}
           </section>
-            {!legacySurface && <CodexDrawer open={codexOpen} onClose={closeCodex} returnFocusRef={codexTrigger} hasUpdates={Boolean(hasUpdates)}
+
+          {/* 右栏：心念机枢与司南 */}
+          {!legacySurface && (
+            <aside className="xianxia-action-rail" aria-label="心念机枢与司南">
+              {/* 传法玉牌：此刻抉择置顶 */}
+              {travelSurface && (
+                <TravelDecisionPanel
+                  decision={decision}
+                  travel={snapshot.travel}
+                  activeAction={activeAction}
+                  busy={busy}
+                  readOnly={showcase}
+                  onChoose={onAction}
+                />
+              )}
+              {!networkSurface && !travelSurface && (
+                <DecisionPanel
+                  decision={decision}
+                  activeAction={activeAction}
+                  busy={busy}
+                  readOnly={showcase}
+                  onChoose={onAction}
+                />
+              )}
+
+              {/* 周天运化与心念推演 */}
+              <ActionDock
+                busy={busy}
+                canQuickAct={canUseQuickActions}
+                canDraft={canDraft}
+                readOnly={showcase}
+                recovery={snapshot.recovery}
+                contextActions={contextActions}
+                onAction={onAction}
+              />
+
+              {/* 山海司南：全局世界导航 */}
+              <div className="xianxia-rail-nav">
+                <WorldNavigation
+                  activeAction={presentation.action}
+                  disabled={busy || showcase || !canUseQuickActions}
+                  disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'}
+                  codexOpen={codexOpen}
+                  codexButtonRef={codexTrigger}
+                  hasUpdates={Boolean(hasUpdates)}
+                  onNavigate={onAction}
+                  onToggleCodex={toggleCodex}
+                />
+              </div>
+            </aside>
+          )}
+
+          {/* 洞天卷宗侧记抽屉 */}
+          {!legacySurface && (
+            <CodexDrawer
+              open={codexOpen}
+              onClose={closeCodex}
+              returnFocusRef={codexTrigger}
+              hasUpdates={Boolean(hasUpdates)}
               character={
                 <section className="codex-column">
                   <Panel title="修士名帖" icon={<UserRound size={18} />} meta={player.location}>
@@ -174,10 +300,10 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                   </Panel>
                 </section>
               }
-            />}
+            />
+          )}
         </main>
-        {!legacySurface && <WorldNavigation activeAction={presentation.action} disabled={busy || showcase || !canUseQuickActions} disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'} codexOpen={codexOpen} codexButtonRef={codexTrigger} hasUpdates={Boolean(hasUpdates)} onNavigate={onAction} onToggleCodex={toggleCodex} />}
-        <footer className="game-footer">永恒之道 · 本地运行 · 进度保存在你的电脑中</footer>
+        <footer className="game-footer">永恒之道 · 高自由单机文字修仙 · 凡尘一念，万法由心</footer>
         <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
       </div>
     </TooltipProvider>
