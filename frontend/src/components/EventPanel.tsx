@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
+import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -317,6 +318,101 @@ const facilityDescriptions: Record<string, string> = {
   禁制: '护住洞府门户与工坊资粮，为高阶经营预留安稳根基。',
 }
 
+const facilitySubtitles: Record<string, string> = {
+  静室: '云崖悟道',
+  丹房: '玄火药鼎',
+  器坊: '重铁淬刃',
+  灵田: '青玉沃壤',
+  聚灵阵: '八卦凝气',
+  禁制: '护山玄阙',
+}
+
+function FacilityEntityIcon({ name }: { name: string }) {
+  if (name.includes('丹房') || name.includes('炼丹')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M10 21C7 21 5 24 6 27c1 3 4 4 4 4 M38 21c3 0 5 3 4 6-1 3-4 4-4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M11 22c0 9 5.5 16 13 16s13-7 13-16c0-2-1.2-3-3.2-3H14.2c-2 0-3.2 1-3.2 3z" fill="currentColor" fillOpacity="0.22" stroke="currentColor" strokeWidth="2.2" />
+        <path d="M15 37l-3 7 M33 37l3 7 M24 38v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+        <path d="M14 19h20c-1-5-4.5-8-10-8s-9 3-10 8z" fill="currentColor" fillOpacity="0.32" stroke="currentColor" strokeWidth="2.2" />
+        <circle cx="24" cy="8.5" r="2.5" fill="currentColor" />
+        <path d="M24 25c-2.2 3.2-1 6 0 7 1-1 3.2-3 1-6-1 1-1.2 2-1 2s-.8-1.2 0-3z" fill="#f59e0b" />
+        <path d="M20 5.5c0-2 2-3 4-4 M28 5.5c0-2-1.5-3-3-4" stroke="#e0a96d" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />
+      </svg>
+    )
+  }
+  if (name.includes('灵田') || name.includes('药圃') || name.includes('百草')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 38c11 3 25 3 36 0 M9 31c9 2.5 21 2.5 30 0 M12 25c7 2 17 2 24 0" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M24 29v-9c-4.5-1-6.5-5.5-3-8.5 4.5-2.2 10 1.2 10 4.5 0 3.2-3.5 4.5-7 4" fill="#34d399" fillOpacity="0.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16 29v-6.5c-2.2-2.2-4.5-1-5.5 1 2.2 2.2 4.5 1 5.5 1z" fill="#10b981" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M32 29v-6.5c2.2-2.2 4.5-1 5.5 1-2.2 2.2-4.5 1-5.5 1z" fill="#10b981" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="28" cy="11" r="1.5" fill="#67e8f9" />
+        <circle cx="14.5" cy="18.5" r="1.2" fill="#67e8f9" />
+        <circle cx="34.5" cy="19" r="1.2" fill="#67e8f9" />
+      </svg>
+    )
+  }
+  if (name.includes('器坊') || name.includes('炼器') || name.includes('铸剑')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M10 27h28c0 0 2 0 3 2s-1 3-3 4l-4 3H14l-4-3c-2-1-3-2-3-4s3-2 3-2z" fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="2.2" />
+        <path d="M17 36l-2 7h18l-2-7" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M10 27c-3 0-5.5-2-5.5-4s3-3 6.5-3h4v7h-5z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M21 7l5 5-2.5 2.5-5-5z M25 11l9 9 M31.5 17.5l4 4" stroke="#fbbf24" strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="21" cy="21" r="1.5" fill="#f59e0b" />
+        <circle cx="28" cy="23" r="1.2" fill="#ef4444" />
+        <circle cx="15.5" cy="17.5" r="1.2" fill="#fbbf24" />
+      </svg>
+    )
+  }
+  if (name.includes('静室') || name.includes('修持') || name.includes('闭关')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 19c5.5-2.2 11.5-5 17-5s11.5 2.8 17 5c-3-1-6.5-1-8.5-3-2-2.8-5-4-8.5-4s-6.5 1.2-8.5 4c-2 2-5.5 2-8.5 3z" fill="currentColor" fillOpacity="0.32" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+        <path d="M24 7v4 M22.5 7h3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M15 19v15 M33 19v15 M21 21v13 M27 21v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M11 34h26l3 4H8l3-4z" fill="currentColor" fillOpacity="0.22" stroke="currentColor" strokeWidth="2" />
+        <path d="M7 42c6-2 12-1 17 1 6 2 12 1 17-1" stroke="#93c5fd" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="3 3" />
+        <ellipse cx="24" cy="31.5" rx="4" ry="1.5" fill="#60a5fa" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    )
+  }
+  if (name.includes('聚灵') || name.includes('灵阵') || name.includes('阵法')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 3" />
+        <circle cx="24" cy="24" r="13" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.75" />
+        <circle cx="24" cy="24" r="8" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M24 16a4 4 0 0 1 0 8 4 4 0 0 0 0 8" fill="none" stroke="#38bdf8" strokeWidth="1.8" />
+        <circle cx="24" cy="20" r="1.4" fill="#38bdf8" />
+        <circle cx="24" cy="28" r="1.4" fill="currentColor" />
+        <path d="M24 3v3 M24 42v3 M3 24h3 M42 24h3 M9 9l2.5 2.5 M36.5 36.5l2.5 2.5 M9 39l2.5-2.5 M36.5 11.5l2.5-2.5" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  if (name.includes('禁制') || name.includes('结界') || name.includes('护山')) {
+    return (
+      <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M10 40V18h4v22 M34 40V18h4v22" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
+        <path d="M7 18h34l-3-4H10l-3 4z" fill="currentColor" fillOpacity="0.32" stroke="currentColor" strokeWidth="2.2" />
+        <path d="M12 14h24l-2-3H14l-2 3z" fill="currentColor" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M24 20l7 7-7 7-7-7z" fill="#a78bfa" fillOpacity="0.2" stroke="#c084fc" strokeWidth="1.8" strokeDasharray="3 2" />
+        <path d="M24 22v10 M19 27h10" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="24" cy="27" r="2" fill="#c084fc" />
+      </svg>
+    )
+  }
+  return (
+    <svg className="facility-entity-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 38V20l12-8 12 8v18H12z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
+      <path d="M20 38V26h8v12" stroke="currentColor" strokeWidth="2" />
+      <circle cx="24" cy="18" r="3" fill="currentColor" />
+    </svg>
+  )
+}
+
 function FacilitiesBlock({ block, cave, readOnly, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
   const energyPercent = cave ? Math.max(0, Math.min(100, Math.round(cave.spirit_energy / Math.max(1, cave.spirit_energy_cap) * 100))) : 0
   const facilities = useMemo(() => block.items || [], [block.items])
@@ -327,12 +423,47 @@ function FacilitiesBlock({ block, cave, readOnly, onAction }: { block: Presentat
       <SystemBlockHeader mark="府" eyebrow="一方洞天" title={cave?.name || block.title || '洞府设施'} description={`灵气 ${cave?.aura || text(block.aura, '普通')} · 灵田 ${text(block.crops, '无作物')}`} meta={cave ? `${cave.active_jobs} / ${cave.capacity} 工坊运转` : '洞府营造'} icon={<Landmark size={21} />} />
       {selectedFacility && <div className="cave-scene-stage">
         <div className="cave-landscape" aria-label="洞府设施分布">
-          <div className="cave-landscape-mist" aria-hidden="true" /><div className="cave-landscape-ridge" aria-hidden="true" />
-          {facilities.map((item, index) => { const name = text(item.name); const level = Number(item.level || 0); return <button type="button" data-spot={name} data-index={index} data-selected={selectedFacility === item || undefined} aria-pressed={selectedFacility === item} onClick={() => setSelectedFacilityName(name)} key={name}><span>{name.slice(0, 1)}</span><strong>{name}</strong><small>{level ? `${level} 级` : '待营造'}</small></button> })}
-          <p>点击洞府热点查看设施详情</p>
+          <img src={caveLandscapeBg} className="cave-landscape-bg" alt="仙家洞府胜境" aria-hidden="true" />
+          <div className="cave-landscape-overlay" aria-hidden="true" />
+          <div className="cave-landscape-mist" aria-hidden="true" />
+          {facilities.map((item, index) => {
+            const name = text(item.name)
+            const level = Number(item.level || 0)
+            const subtitle = facilitySubtitles[name] || '仙家洞天'
+            return (
+              <button
+                type="button"
+                className="cave-landmark-node"
+                data-spot={name}
+                data-index={index}
+                data-selected={selectedFacility === item || undefined}
+                aria-pressed={selectedFacility === item}
+                onClick={() => setSelectedFacilityName(name)}
+                key={name}
+              >
+                <span className="cave-landmark-emblem" aria-hidden="true">
+                  <FacilityEntityIcon name={name} />
+                </span>
+                <span className="cave-landmark-meta">
+                  <span className="cave-landmark-row">
+                    <strong>{name}</strong>
+                    <small>{level ? `${level} 级` : '待营造'}</small>
+                  </span>
+                  <em className="cave-landmark-sub">{subtitle}</em>
+                </span>
+              </button>
+            )
+          })}
+          <p className="cave-landscape-hint">点击洞府实体建筑查看设施营建与工坊玄机</p>
         </div>
         <aside className="cave-hotspot-inspector">
-          <header><span>{text(selectedFacility.name, '府').slice(0, 1)}</span><div><small>当前设施</small><h3>{text(selectedFacility.name)}</h3></div><em>{Number(selectedFacility.level || 0) ? `${text(selectedFacility.level)} 级` : '尚未营造'}</em></header>
+          <header>
+            <span className="cave-inspector-emblem" aria-hidden="true">
+              <FacilityEntityIcon name={text(selectedFacility.name)} />
+            </span>
+            <div><small>当前设施</small><h3>{text(selectedFacility.name)}</h3></div>
+            <em>{Number(selectedFacility.level || 0) ? `${text(selectedFacility.level)} 级` : '尚未营造'}</em>
+          </header>
           <p>{text(selectedFacility.description, facilityDescriptions[text(selectedFacility.name)] || `${text(selectedFacility.name)}承载着洞府的一项核心能力。`)}</p>
           <dl><div><dt>当前层级</dt><dd>{text(selectedFacility.level, '0')} / 3</dd></div><div><dt>升级灵石</dt><dd>{text(selectedFacility.cost_stones, '—')}</dd></div><div><dt>所需材料</dt><dd>{selectedFacility.materials && typeof selectedFacility.materials === 'object' ? Object.entries(selectedFacility.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') || '无需材料' : '无需材料'}</dd></div></dl>
           <button type="button" disabled={readOnly || selectedFacility.affordable !== true} title={readOnly ? '成果巡览仅供查看' : selectedFacility.affordable === true ? '升级会推进一个月' : text(selectedFacility.disabled_reason)} onClick={() => onAction(text(selectedFacility.action))}>{Number(selectedFacility.level || 0) >= 3 ? '已达最高层级' : selectedFacility.affordable === true ? `营造至 ${Number(selectedFacility.level || 0) + 1} 级` : text(selectedFacility.disabled_reason, '资粮不足')}</button>

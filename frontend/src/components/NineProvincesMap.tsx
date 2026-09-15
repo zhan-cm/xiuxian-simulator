@@ -145,18 +145,17 @@ export const OUTER_SEALED_PROVINCES: Record<string, RegionAtlasItem> = {
 
 /**
  * 神州九宫九域 2D 几何版图定义 (1000 x 800 viewBox)
- * 行一（北向）：雷州(西北乾) 北原(正北坎) 幽州(东北艮)
- * 行二（中向）：西漠(正西兑) 中州(中宫天阙) 东洲(正东震)
- * 行三（南向）：云州(西南坤) 南疆(正南离) 瀛洲(东南巽)
+ * 遵循天然山川水系（通天古江、天脊山脉、流沙古界、云梦大泽、沧海群岛）天然地界划分，
+ * 彻底消除「＃」字井字正交网格，实现犬牙交错的大陆板块与名山大川格局。
  */
 const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   北原: {
     key: '北原',
-    path: 'M 350,60 C 400,30 450,15 500,15 C 550,15 600,30 650,60 C 655,120 655,190 645,260 C 600,270 550,275 500,275 C 450,275 400,270 355,260 C 345,190 345,120 350,60 Z',
+    path: 'M 310,60 C 375,25 440,15 500,15 C 560,15 625,25 690,60 C 720,110 710,180 670,235 C 600,255 530,240 470,250 C 410,245 350,255 330,235 C 290,180 280,110 310,60 Z',
     sealX: 486,
-    sealY: 75,
+    sealY: 70,
     labelX: 500,
-    labelY: 128,
+    labelY: 125,
     badgeChar: '北',
     terrainTitle: '极北寒渊 · 万载玄冰',
     terrainType: '暴雪冰川 · 幽冥极光',
@@ -165,7 +164,7 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   雷州: {
     key: '雷州',
-    path: 'M 25,60 C 60,30 140,20 220,20 C 270,20 320,35 350,60 C 345,120 345,190 355,260 C 280,265 200,260 130,250 C 70,240 30,190 20,130 C 18,100 20,80 25,60 Z',
+    path: 'M 25,60 C 70,25 150,20 230,20 C 275,25 295,45 310,60 C 280,110 290,180 330,235 C 270,245 200,240 140,245 C 80,245 35,190 20,130 C 15,100 20,80 25,60 Z',
     sealX: 166,
     sealY: 75,
     labelX: 180,
@@ -178,7 +177,7 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   幽州: {
     key: '幽州',
-    path: 'M 650,60 C 680,35 730,20 780,20 C 860,20 940,30 975,60 C 980,80 982,100 980,130 C 970,190 930,240 870,250 C 800,260 720,265 645,260 C 655,190 655,120 650,60 Z',
+    path: 'M 690,60 C 705,45 725,25 770,20 C 850,20 930,25 975,60 C 985,100 970,170 940,225 C 870,245 800,240 740,245 C 700,245 680,240 670,235 C 710,180 720,110 690,60 Z',
     sealX: 806,
     sealY: 75,
     labelX: 820,
@@ -191,11 +190,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   西漠: {
     key: '西漠',
-    path: 'M 25,270 C 70,260 140,260 210,265 C 280,270 330,275 355,285 C 365,355 365,435 355,515 C 325,525 270,530 200,535 C 130,540 60,535 25,515 C 15,445 15,350 25,270 Z',
+    path: 'M 25,265 C 75,255 140,255 210,260 C 270,265 315,255 335,265 C 365,335 375,415 355,495 C 315,505 270,515 200,520 C 130,520 60,515 20,490 C 15,420 15,340 25,265 Z',
     sealX: 166,
-    sealY: 340,
+    sealY: 335,
     labelX: 180,
-    labelY: 395,
+    labelY: 390,
     badgeChar: '西',
     terrainTitle: '西垂流沙 · 瀚海鸣沙',
     terrainType: '大漠古道 · 佛窟遗迹',
@@ -204,11 +203,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   中州: {
     key: '中州',
-    path: 'M 355,285 C 400,275 450,270 500,270 C 550,270 600,275 645,285 C 655,355 655,435 645,515 C 600,525 550,530 500,530 C 450,530 400,525 355,515 C 345,435 345,355 355,285 Z',
+    path: 'M 335,265 C 375,255 425,250 500,255 C 575,250 625,255 665,265 C 685,335 675,415 655,495 C 615,510 565,515 500,510 C 435,515 385,510 355,495 C 375,415 365,335 335,265 Z',
     sealX: 486,
-    sealY: 340,
+    sealY: 335,
     labelX: 500,
-    labelY: 395,
+    labelY: 390,
     badgeChar: '中',
     terrainTitle: '中土天阙 · 仙宫浮云',
     terrainType: '昆仑天柱 · 浮空金阙',
@@ -217,11 +216,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   东洲: {
     key: '东洲',
-    path: 'M 645,285 C 670,275 720,270 790,265 C 860,260 930,260 975,270 C 985,350 985,445 975,515 C 940,535 870,540 800,535 C 730,530 675,525 645,515 C 655,435 655,355 645,285 Z',
+    path: 'M 665,265 C 705,255 775,255 835,260 C 895,265 940,255 975,265 C 985,340 985,425 975,490 C 935,515 865,520 800,520 C 730,515 685,505 655,495 C 675,415 685,335 665,265 Z',
     sealX: 806,
-    sealY: 340,
+    sealY: 335,
     labelX: 820,
-    labelY: 395,
+    labelY: 390,
     badgeChar: '东',
     terrainTitle: '东海青岳 · 碧峰叠翠',
     terrainType: '千峰秀水 · 仙雾流泉',
@@ -230,11 +229,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   云州: {
     key: '云州',
-    path: 'M 25,535 C 70,545 140,550 210,545 C 280,540 330,535 355,540 C 355,610 350,680 340,745 C 280,765 210,775 140,775 C 80,775 40,755 25,720 C 15,670 15,600 25,535 Z',
+    path: 'M 20,515 C 65,525 130,525 200,525 C 270,520 320,510 350,520 C 355,595 345,670 330,735 C 270,760 200,775 140,775 C 80,775 40,750 25,715 C 15,660 15,590 20,515 Z',
     sealX: 166,
-    sealY: 605,
+    sealY: 595,
     labelX: 180,
-    labelY: 660,
+    labelY: 650,
     badgeChar: '云',
     terrainTitle: '云梦古泽 · 迷障幻蜃',
     terrainType: '太虚蜃气 · 浮生幻境',
@@ -243,11 +242,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   南疆: {
     key: '南疆',
-    path: 'M 355,540 C 400,535 450,530 500,530 C 550,530 600,535 645,540 C 645,610 640,680 635,745 C 590,765 550,775 500,775 C 450,775 410,765 340,745 C 350,680 355,610 355,540 Z',
+    path: 'M 350,520 C 385,510 435,515 500,510 C 565,515 615,510 650,520 C 655,595 645,670 635,735 C 585,760 545,775 500,775 C 455,775 415,760 365,735 C 345,670 355,595 350,520 Z',
     sealX: 486,
-    sealY: 605,
+    sealY: 595,
     labelX: 500,
-    labelY: 660,
+    labelY: 650,
     badgeChar: '南',
     terrainTitle: '南荒赤炎 · 十万大山',
     terrainType: '地火熔脉 · 妖氛凶谷',
@@ -256,11 +255,11 @@ const PROVINCE_GEOMETRIES: Record<string, ProvinceGeom> = {
   },
   瀛洲: {
     key: '瀛洲',
-    path: 'M 645,540 C 670,535 720,540 790,545 C 860,550 930,545 975,535 C 985,600 985,670 975,720 C 960,755 920,775 860,775 C 790,775 720,765 660,745 C 640,680 645,610 645,540 Z',
+    path: 'M 650,520 C 685,510 735,520 800,525 C 870,525 935,525 980,515 C 985,590 985,660 975,715 C 960,750 920,775 860,775 C 800,775 730,760 670,735 C 645,670 655,595 650,520 Z',
     sealX: 806,
-    sealY: 605,
+    sealY: 595,
     labelX: 820,
-    labelY: 660,
+    labelY: 650,
     badgeChar: '瀛',
     terrainTitle: '沧海瀛洲 · 蓬莱仙阁',
     terrainType: '东海仙山 · 乘鸾踏浪',
@@ -368,25 +367,108 @@ export function NineProvincesMap({
         {/* 古卷边缘暗角 */}
         <rect x="0" y="0" width="1000" height="800" fill="url(#mapVignette)" pointerEvents="none" />
 
-        {/* 跨域灵脉古道 (连通神州九宫) */}
-        <g className="travel-routes-layer" opacity="0.65" pointerEvents="none">
-          {/* 核心五域灵脉古道 */}
-          <path d="M 500,400 Q 660,390 820,400" fill="none" stroke="#754e22" strokeWidth="2.5" strokeDasharray="6 5" />
-          <path d="M 500,400 Q 340,390 180,400" fill="none" stroke="#754e22" strokeWidth="2.5" strokeDasharray="6 5" />
-          <path d="M 500,400 Q 490,260 500,140" fill="none" stroke="#754e22" strokeWidth="2.5" strokeDasharray="6 5" />
-          <path d="M 500,400 Q 510,540 500,660" fill="none" stroke="#754e22" strokeWidth="2.5" strokeDasharray="6 5" />
-          <path d="M 820,400 Q 720,570 500,660" fill="none" stroke="#754e22" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
-          <path d="M 180,400 Q 280,230 500,140" fill="none" stroke="#754e22" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
+        {/* 天然山川大水系与地界脉络（彻底消除 ＃ 字井字网格，以大江与龙脉为天然地界） */}
+        <g className="natural-boundaries-layer" pointerEvents="none">
+          {/* 通天古江大水系（天水自然界）：自西北雪岭曲折绕昆仑入东海 */}
+          <path
+            d="M 310,60 C 330,130 310,190 335,265 C 380,250 440,245 500,255 C 570,245 630,250 665,265 C 685,340 670,420 655,495 C 680,515 760,515 800,520 C 870,525 930,515 980,510"
+            fill="none"
+            stroke="rgba(38, 92, 110, 0.42)"
+            strokeWidth="16"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 310,60 C 330,130 310,190 335,265 C 380,250 440,245 500,255 C 570,245 630,250 665,265 C 685,340 670,420 655,495 C 680,515 760,515 800,520 C 870,525 930,515 980,510"
+            fill="none"
+            stroke="rgba(72, 148, 172, 0.65)"
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 310,60 C 330,130 310,190 335,265 C 380,250 440,245 500,255 C 570,245 630,250 665,265 C 685,340 670,420 655,495 C 680,515 760,515 800,520 C 870,525 930,515 980,510"
+            fill="none"
+            stroke="#daf1f6"
+            strokeWidth="1.8"
+            strokeDasharray="14 10"
+            strokeLinecap="round"
+            opacity="0.85"
+          />
 
-          {/* 四极太古禁断古道 (虚线阵法连线) */}
-          <path d="M 180,140 Q 340,110 500,140" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 180,140 L 180,400" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 820,140 Q 660,110 500,140" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 820,140 L 820,400" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 180,660 L 180,400" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 180,660 Q 340,690 500,660" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 820,660 L 820,400" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
-          <path d="M 820,660 Q 660,690 500,660" fill="none" stroke="#8c6a38" strokeWidth="1.8" strokeDasharray="3 4" opacity="0.45" />
+          {/* 南向沧溟水系分支（汇入云梦与南海） */}
+          <path
+            d="M 655,495 C 640,560 650,630 650,735"
+            fill="none"
+            stroke="rgba(38, 92, 110, 0.38)"
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 655,495 C 640,560 650,630 650,735"
+            fill="none"
+            stroke="rgba(72, 148, 172, 0.58)"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
+
+          {/* 天脊祖龙山脉褶皱（北原南界 & 西南群山） */}
+          <path
+            d="M 60,255 C 160,245 250,250 335,265"
+            fill="none"
+            stroke="rgba(105, 75, 42, 0.4)"
+            strokeWidth="4"
+            strokeDasharray="4 6"
+          />
+          <path
+            d="M 665,265 C 750,250 850,245 950,255"
+            fill="none"
+            stroke="rgba(105, 75, 42, 0.4)"
+            strokeWidth="4"
+            strokeDasharray="4 6"
+          />
+          <path
+            d="M 335,265 C 360,340 375,410 350,520"
+            fill="none"
+            stroke="rgba(145, 110, 55, 0.4)"
+            strokeWidth="3.5"
+            strokeDasharray="6 4"
+          />
+          <path
+            d="M 350,520 C 430,510 570,510 655,495"
+            fill="none"
+            stroke="rgba(130, 60, 40, 0.4)"
+            strokeWidth="4"
+            strokeDasharray="5 5"
+          />
+
+          {/* 天然地界铭刻题字（水系名与天险名） */}
+          <g fontFamily="KaiTi, STKaiti, serif" fontSize="10" fill="#6d5334" opacity="0.75">
+            <text x="500" y="248" textAnchor="middle" letterSpacing="0.25em">≈ 通 天 大 江 ≈</text>
+            <text x="670" y="420" textAnchor="middle" letterSpacing="0.2em" writingMode="vertical-rl">≈ 沧 溟 龙 峡 ≈</text>
+            <text x="345" y="415" textAnchor="middle" letterSpacing="0.2em" writingMode="vertical-rl">▲ 昆 仑 西 岭 ▲</text>
+            <text x="500" y="525" textAnchor="middle" letterSpacing="0.25em">▲ 十 万 祖 山 ▲</text>
+            <text x="660" y="650" textAnchor="middle" letterSpacing="0.2em" writingMode="vertical-rl">≈ 蓬 莱 灵 堑 ≈</text>
+          </g>
+        </g>
+
+        {/* 跨域灵脉古道 (沿山势水系蜿蜒流转，绝无任何 ＃ 井字死板直线) */}
+        <g className="travel-routes-layer" opacity="0.68" pointerEvents="none">
+          {/* 中州核心四方蜿蜒灵脉 */}
+          <path d="M 500,390 C 580,355 720,360 820,390" fill="none" stroke="#8b5e28" strokeWidth="2.2" strokeDasharray="5 5" />
+          <path d="M 500,390 C 420,355 280,360 180,390" fill="none" stroke="#8b5e28" strokeWidth="2.2" strokeDasharray="5 5" />
+          <path d="M 500,390 C 465,300 535,215 500,125" fill="none" stroke="#8b5e28" strokeWidth="2.2" strokeDasharray="5 5" />
+          <path d="M 500,390 C 535,480 465,565 500,650" fill="none" stroke="#8b5e28" strokeWidth="2.2" strokeDasharray="5 5" />
+
+          {/* 外域山关斜贯古道 */}
+          <path d="M 180,128 C 240,195 320,310 180,390" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 820,128 C 760,195 680,310 820,390" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 180,390 C 240,470 320,580 180,650" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 820,390 C 760,470 680,580 820,650" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 180,128 C 300,90 410,105 500,125" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 820,128 C 700,90 590,105 500,125" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 180,650 C 300,685 410,670 500,650" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
+          <path d="M 820,650 C 700,685 590,670 500,650" fill="none" stroke="#966d3b" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.5" />
         </g>
 
         {/* 2. 九大州独立实体板块（可单独悬浮、整体隆起、带真实水墨古意） */}
