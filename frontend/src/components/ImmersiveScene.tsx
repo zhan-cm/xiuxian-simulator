@@ -1,8 +1,9 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { CalendarDays, CloudSun, Compass, Flame, Gift, Home, Landmark, Map, Menu, MessageCircleMore, Mountain, ScrollText, Sparkles, Swords, UsersRound, X } from 'lucide-react'
 import { useMemo, useState, type RefObject } from 'react'
-import type { GameState, InventorySnapshot, NpcProfile, PlayerState, Presentation } from '../api/types'
+import type { GameState, InventorySnapshot, NpcLifeProfile, NpcProfile, PlayerState, Presentation } from '../api/types'
 import { findEncounterNpc } from '../sceneLogic'
+import { NpcAvatar } from './NpcAvatar'
 
 const sceneFrom = (state: GameState, presentation: Presentation) => {
   const action = presentation.action || ''
@@ -69,7 +70,7 @@ export function ImmersiveScene({ state, presentation, calendarLabel, npcProfiles
 
       {npc && <div className="scene-npc" data-mood={mood?.key} aria-label={`正在与${npc.name}会面`}>
         <div className="scene-npc-copy"><small>{mood?.label} · {npc.status}</small><strong>{npc.name}</strong><em>{npc.identity}</em><div title={`好感 ${npc.affinity}，关系：${npc.relation}`}><span>{npc.relation || '缘分未定'}</span><i><b style={{ width: `${Math.max(3, Math.min(100, npc.affinity))}%` }} /></i><span>好感 {npc.affinity}</span></div></div>
-        <span className="scene-npc-portrait">{npc.name.slice(0, 1)}</span>
+        <NpcAvatar profile={npc as unknown as NpcLifeProfile} size="medium" className="scene-npc-portrait" />
       </div>}
 
       <article className="scene-narrative">

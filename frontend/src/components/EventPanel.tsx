@@ -6,6 +6,7 @@ import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot,
 import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
+import { NpcAvatar, deduceNpcAppearance } from './NpcAvatar'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -25,6 +26,7 @@ function PersonProfileDialog({ profile, readOnly, onClose, onAction }: { profile
   if (!profile) return null
   const remaining = Math.max(0, 100 - profile.life_percent)
   const act = (action: string) => { onClose(); onAction(action) }
+  const appearance = deduceNpcAppearance(profile)
   return (
     <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
       <Dialog.Portal>
@@ -32,7 +34,7 @@ function PersonProfileDialog({ profile, readOnly, onClose, onAction }: { profile
         <Dialog.Content className="character-dialog npc-profile-dialog" aria-describedby={`npc-profile-${profile.name}`}>
           <header><div><p>浮生一页 · 众生有迹</p><Dialog.Title>{profile.name}</Dialog.Title><Dialog.Description id={`npc-profile-${profile.name}`}>{profile.identity}</Dialog.Description></div><Dialog.Close aria-label="关闭人物档案"><X size={20} /></Dialog.Close></header>
           <div className="npc-profile-hero" data-alive={profile.alive || undefined}>
-            <span aria-hidden="true">{profile.name.slice(0, 1)}</span>
+            <NpcAvatar profile={profile} size="medium" />
             <div><small>{profile.gender}修 · {profile.relation}</small><strong>{profile.realm}</strong><p><MapPin size={13} />{profile.location} · {profile.activity}</p></div>
             <em data-danger={profile.wounded || !profile.alive || undefined}>{profile.status}</em>
           </div>
@@ -42,6 +44,16 @@ function PersonProfileDialog({ profile, readOnly, onClose, onAction }: { profile
             <span><small>好感</small><strong>{profile.affinity}</strong></span>
             <span><small>缘分</small><strong>{profile.relation}</strong></span>
           </div>
+          <section className="npc-profile-appearance">
+            <header>
+              <Sparkles size={15} />
+              <div>
+                <strong>相貌风仪</strong>
+                <small>{appearance.archetypeLabel} · {appearance.temperamentLabel}</small>
+              </div>
+            </header>
+            <p>{appearance.description}</p>
+          </section>
           <section className="npc-profile-life"><header><HeartPulse size={15} /><div><strong>{profile.alive ? `尚余约 ${profile.years_remaining} 年` : '此生已落幕'}</strong><small>{profile.cause_of_death || '岁月会随每一次跨年真实流逝'}</small></div><em>{remaining}%</em></header><i><b style={{ width: `${Math.max(3, remaining)}%` }} /></i></section>
           <section className="npc-profile-preferences"><strong>性情所好</strong><div>{profile.likes.length ? profile.likes.map((like) => <span key={like}>{like}</span>) : <span>尚待相知</span>}</div></section>
           <section className="npc-profile-chronicle"><header><ScrollText size={15} /><strong>近世行迹</strong></header>{profile.life_events.length ? <ol>{profile.life_events.slice(-5).reverse().map((entry, index) => <li key={`${entry}-${index}`}><span>{index + 1}</span><p>{entry}</p></li>)}</ol> : <p>此人的故事尚未留下更多笔墨。</p>}</section>
@@ -79,10 +91,21 @@ function PeopleBlock({ block, lives, readOnly, onAction }: { block: Presentation
           const name = text(item.name, '未知道友')
           const profile = lifeByName.get(name)
           const alive = profile?.alive !== false
+          const appearance = deduceNpcAppearance(profile, item as { name?: string; identity?: string; descriptor?: string; realm?: string; affinity?: number })
           return (
             <article className="person-gallery-card" data-alive={alive || undefined} data-pending={profile?.pending || undefined} key={`${name}-${index}`}>
-              <div className="person-gallery-portrait"><span>{name.slice(0, 1)}</span><em data-danger={profile?.wounded || !alive || undefined}>{profile?.status || (alive ? '近况未明' : '已故')}</em></div>
-              <header><small>{profile ? `${profile.gender}修 · ${profile.location}` : '来处未明'}</small><strong>{name}</strong><p>{profile?.identity || text(item.identity || item.descriptor, '身份未明')}</p></header>
+              <div className="person-gallery-portrait">
+                <NpcAvatar profile={profile} item={item as { name?: string; identity?: string; descriptor?: string; realm?: string; affinity?: number }} size="large" />
+                <em data-danger={profile?.wounded || !alive || undefined}>{profile?.status || (alive ? '近况未明' : '已故')}</em>
+              </div>
+              <header>
+                <small>{profile ? `${profile.gender}修 · ${profile.location}` : '来处未明'}</small>
+                <strong>{name}</strong>
+                <p>{profile?.identity || text(item.identity || item.descriptor, '身份未明')}</p>
+                <span className="person-appearance-badge" title={appearance.description}>
+                  <i>{appearance.archetypeLabel}</i> · {appearance.summary}
+                </span>
+              </header>
               <div className="person-gallery-vitals"><span><small>境界</small><strong>{profile?.realm || text(item.realm, '境界未明')}</strong></span><span><small>年岁</small><strong>{profile ? `${profile.age} / ${profile.lifespan}` : '未载'}</strong></span></div>
               <div className="person-gallery-affinity"><span><small>{profile?.relation || text(item.relation, '缘分未定')}</small><strong>好感 {profile?.affinity ?? text(item.affinity, '0')}</strong></span><i title={`好感 ${profile?.affinity ?? text(item.affinity, '0')}`}><b style={{ width: `${Math.max(0, Math.min(100, Number(profile?.affinity ?? item.affinity ?? 0)))}%` }} /></i></div>
               {profile && <>
@@ -205,63 +228,71 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
           const isSealed = selected.sealed === true
           return (
             <aside className="region-atlas-detail" data-tone={text(selected.tone, 'safe')} aria-label={`${text(selected.name)}地域详情`}>
-              <header>
-                <span>{text(selected.key, '州').slice(0, 1)}</span>
-                <div>
-                  <small>{isSealed ? '太古绝境' : visited ? '足迹已至' : '山河未访'}</small>
-                  <h3>{text(selected.name, '无名地域')}</h3>
-                </div>
-                <em>{current ? '当前落脚' : `${text(selected.danger_label)} · ${text(selected.danger)}`}</em>
-              </header>
-              <p>{text(selected.description)}</p>
-              {selected.has_event === true && (
-                <div className="region-event-badge" data-pending={selected.event_pending === true || undefined} title={text(selected.event_title, '地方机缘')}>
-                  <Sparkles size={12} />
-                  <strong>{selected.event_pending === true ? '机缘待决' : '有地方机缘'}</strong>
-                  <small>{text(selected.event_title)}</small>
-                </div>
-              )}
-              <div className="region-atlas-stats">
-                <span>
-                  <Wind size={12} />
-                  <small>行程</small>
-                  <strong>{text(selected.months)} 月</strong>
-                </span>
-                <span>
-                  <ShieldCheck size={12} />
-                  <small>准入</small>
-                  <strong>{text(selected.requirement_label)}</strong>
-                </span>
-                <span>
-                  <Landmark size={12} />
-                  <small>声望</small>
-                  <strong>{text(selected.rank, '初来乍到')} · {Number(selected.reputation || 0) >= 0 ? '+' : ''}{text(selected.reputation, '0')}</strong>
-                </span>
+              <div className="region-detail-section region-detail-overview">
+                <header>
+                  <span>{text(selected.key, '州').slice(0, 1)}</span>
+                  <div>
+                    <small>{isSealed ? '太古绝境' : visited ? '足迹已至' : '山河未访'}</small>
+                    <h3>{text(selected.name, '无名地域')}</h3>
+                  </div>
+                  <em>{current ? '当前落脚' : `${text(selected.danger_label)} · ${text(selected.danger)}`}</em>
+                </header>
+                <p>{text(selected.description)}</p>
               </div>
-              <dl>
-                <div>
-                  <dt>{isSealed ? '仙域异宝' : '本地特产'}</dt>
-                  <dd>{words(selected.specialties).join(' · ') || '尚待寻访'}</dd>
+
+              <div className="region-detail-section region-detail-vitals">
+                <div className="region-atlas-stats">
+                  <span>
+                    <Wind size={12} />
+                    <small>行程</small>
+                    <strong>{text(selected.months)} 月</strong>
+                  </span>
+                  <span>
+                    <ShieldCheck size={12} />
+                    <small>准入</small>
+                    <strong>{text(selected.requirement_label)}</strong>
+                  </span>
+                  <span>
+                    <Landmark size={12} />
+                    <small>声望</small>
+                    <strong>{text(selected.rank, '初来乍到')} · {Number(selected.reputation || 0) >= 0 ? '+' : ''}{text(selected.reputation, '0')}</strong>
+                  </span>
                 </div>
-                <div>
-                  <dt>{isSealed ? '渡禁所需' : '热门求购'}</dt>
-                  <dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                disabled={readOnly || !accessible}
-                title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)}
-                onClick={() => onAction(text(selected.action))}
-              >
-                {current ? (
-                  <><MapPin size={13} />当前所在</>
-                ) : accessible ? (
-                  <><ArrowRight size={13} />规划前往{text(selected.key)}</>
-                ) : (
-                  <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>
+                <dl>
+                  <div>
+                    <dt>{isSealed ? '仙域异宝' : '本地特产'}</dt>
+                    <dd>{words(selected.specialties).join(' · ') || '尚待寻访'}</dd>
+                  </div>
+                  <div>
+                    <dt>{isSealed ? '渡禁所需' : '热门求购'}</dt>
+                    <dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="region-detail-section region-detail-actions">
+                {selected.has_event === true && (
+                  <div className="region-event-badge" data-pending={selected.event_pending === true || undefined} title={text(selected.event_title, '地方机缘')}>
+                    <Sparkles size={12} />
+                    <strong>{selected.event_pending === true ? '机缘待决' : '有地方机缘'}</strong>
+                    <small>{text(selected.event_title)}</small>
+                  </div>
                 )}
-              </button>
+                <button
+                  type="button"
+                  disabled={readOnly || !accessible}
+                  title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)}
+                  onClick={() => onAction(text(selected.action))}
+                >
+                  {current ? (
+                    <><MapPin size={13} />当前所在</>
+                  ) : accessible ? (
+                    <><ArrowRight size={13} />规划前往{text(selected.key)}</>
+                  ) : (
+                    <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>
+                  )}
+                </button>
+              </div>
             </aside>
           )
         })()}

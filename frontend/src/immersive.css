@@ -499,16 +499,84 @@ body {
 .person-gallery-card[data-pending="true"] { border-color: rgba(178, 132, 54, .34); background: linear-gradient(150deg, #f7f1dd, #eaf0e5); box-shadow: inset 3px 0 #b58b48, 0 8px 20px rgba(61, 53, 33, .07); }
 .person-gallery-card[data-pending="true"]::before { content: ""; position: absolute; z-index: 4; width: 9px; height: 9px; right: 8px; top: 8px; border: 2px solid rgba(247, 241, 221, .9); border-radius: 50%; background: #bd8d3f; box-shadow: 0 0 0 4px rgba(189, 141, 63, .14); }
 .person-gallery-card:not([data-alive="true"]) { filter: saturate(.55); background: linear-gradient(150deg, #f0f0e9, #e5e9e4); }
-.person-gallery-portrait { position: relative; min-height: 105px; display: grid; place-items: center; margin: -11px -11px 11px; overflow: hidden; background: radial-gradient(circle at 50% 34%, rgba(242, 226, 181, .22), transparent 4rem), linear-gradient(145deg, #315d4b, #69826d); }
-.person-gallery-portrait::before, .person-gallery-portrait::after { content: ""; position: absolute; border: 1px solid rgba(237, 226, 194, .1); border-radius: 50%; }.person-gallery-portrait::before { width: 140px; height: 140px; left: -64px; bottom: -96px; }.person-gallery-portrait::after { width: 100px; height: 100px; right: -49px; top: -63px; box-shadow: 0 0 0 12px rgba(240,224,180,.025); }
-.person-gallery-portrait > span { position: relative; z-index: 1; width: 58px; height: 75px; display: grid; place-items: center; border: 1px solid rgba(242, 230, 199, .24); border-radius: 31px 31px 17px 17px; color: #f0dfb1; background: linear-gradient(180deg, rgba(234,222,190,.12), rgba(18,48,36,.5)); box-shadow: 0 13px 25px rgba(17, 42, 32, .2); font-family: "KaiTi", serif; font-size: 25px; }
-.person-gallery-portrait > em { position: absolute; z-index: 2; right: 9px; top: 8px; padding: 4px 7px; border: 1px solid rgba(239,226,193,.16); border-radius: 999px; color: rgba(245,239,219,.78); background: rgba(20,48,36,.28); font-size: 7px; font-style: normal; backdrop-filter: blur(4px); }
-.person-gallery-portrait > em[data-danger="true"] { color: #f1d2c9; background: rgba(113, 52, 45, .52); }
-.person-gallery-card > header small, .person-gallery-card > header strong, .person-gallery-card > header p { display: block; }.person-gallery-card > header small { color: #9a8053; font-size: 7px; letter-spacing: .06em; }.person-gallery-card > header strong { margin-top: 2px; color: #305946; font-family: "KaiTi", serif; font-size: 18px; font-weight: 500; }.person-gallery-card > header p { min-height: 15px; margin: 3px 0 0; overflow: hidden; color: #7f8b84; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.person-gallery-vitals { display: grid; grid-template-columns: 1.25fr .75fr; gap: 6px; margin: 9px 0 7px; }.person-gallery-vitals > span { min-width: 0; padding: 7px 8px; border-radius: 8px; background: rgba(235, 240, 230, .8); }.person-gallery-vitals small, .person-gallery-vitals strong { display: block; }.person-gallery-vitals small { color: #959d97; font-size: 6px; }.person-gallery-vitals strong { margin-top: 2px; overflow: hidden; color: #526b5e; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.person-gallery-affinity { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }.person-gallery-affinity > span { min-width: 58px; }.person-gallery-affinity small, .person-gallery-affinity strong { display: block; }.person-gallery-affinity small { color: #9b8153; font-size: 7px; }.person-gallery-affinity strong { margin-top: 1px; color: #52695d; font-size: 8px; }.person-gallery-affinity > i { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(73, 91, 80, .13); }.person-gallery-affinity > i b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5d8c75, #c39a53); }
-.person-gallery-card .guard-request { margin: 2px 0 8px; }.person-gallery-card .memorial-line { margin: 2px 0 8px; }
-.person-gallery-card .person-actions { margin-top: auto; padding-top: 3px; }.person-gallery-card .person-actions button { min-height: 34px; }.person-gallery-card .person-actions .profile-action { color: #80683f; border-color: rgba(152, 115, 55, .18); background: #f1eadb; }
+.person-gallery-portrait {
+  position: relative;
+  height: 145px;
+  display: block;
+  margin: -11px -11px 11px;
+  overflow: hidden;
+  border-radius: 13px 13px 0 0;
+  background: #192b22;
+}
+.person-gallery-portrait .npc-avatar-box {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
+.person-gallery-portrait > em {
+  position: absolute;
+  z-index: 5;
+  right: 8px;
+  top: 8px;
+  padding: 3px 7px;
+  border: 1px solid rgba(239,226,193,.25);
+  border-radius: 999px;
+  color: rgba(245,239,219,.92);
+  background: rgba(14,36,26,.68);
+  font-size: 7px;
+  font-style: normal;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+}
+.person-gallery-portrait > em[data-danger="true"] {
+  color: #ffe4df;
+  background: rgba(140, 48, 40, .78);
+  border-color: rgba(240, 150, 140, 0.4);
+}
+
+.person-gallery-card > header small, .person-gallery-card > header strong, .person-gallery-card > header p { display: block; }
+.person-gallery-card > header small { color: #9a8053; font-size: 7px; letter-spacing: .06em; }
+.person-gallery-card > header strong { margin-top: 2px; color: #305946; font-family: "KaiTi", serif; font-size: 18px; font-weight: 500; }
+.person-gallery-card > header p { min-height: 15px; margin: 3px 0 0; overflow: hidden; color: #7f8b84; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+
+.person-appearance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(62, 110, 84, 0.08);
+  border: 1px solid rgba(62, 110, 84, 0.16);
+  color: #4b6658;
+  font-size: 7.5px;
+  line-height: 1.35;
+  white-space: normal;
+}
+.person-appearance-badge i {
+  font-style: normal;
+  font-weight: 600;
+  color: #8c6e33;
+}
+
+.person-gallery-vitals { display: grid; grid-template-columns: 1.25fr .75fr; gap: 6px; margin: 9px 0 7px; }
+.person-gallery-vitals > span { min-width: 0; padding: 7px 8px; border-radius: 8px; background: rgba(235, 240, 230, .8); }
+.person-gallery-vitals small, .person-gallery-vitals strong { display: block; }
+.person-gallery-vitals small { color: #959d97; font-size: 6px; }
+.person-gallery-vitals strong { margin-top: 2px; overflow: hidden; color: #526b5e; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.person-gallery-affinity { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+.person-gallery-affinity > span { min-width: 58px; }
+.person-gallery-affinity small, .person-gallery-affinity strong { display: block; }
+.person-gallery-affinity small { color: #9b8153; font-size: 7px; }
+.person-gallery-affinity strong { margin-top: 1px; color: #52695d; font-size: 8px; }
+.person-gallery-affinity > i { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(73, 91, 80, .13); }
+.person-gallery-affinity > i b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5d8c75, #c39a53); }
+.person-gallery-card .guard-request { margin: 2px 0 8px; }
+.person-gallery-card .memorial-line { margin: 2px 0 8px; }
+.person-gallery-card .person-actions { margin-top: auto; padding-top: 3px; }
+.person-gallery-card .person-actions button { min-height: 34px; }
+.person-gallery-card .person-actions .profile-action { color: #80683f; border-color: rgba(152, 115, 55, .18); background: #f1eadb; }
 
 /* Local exploration cards */
 .event-panel[data-surface="locations"] .location-grid,
@@ -588,47 +656,160 @@ body {
 
 /* World atlas (九州山川大舆图) */
 .region-atlas {
-  display: grid;
-  grid-template-columns: minmax(580px, 2.5fr) minmax(280px, 0.95fr);
-  gap: 16px;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   transition: all 0.3s ease;
 }
 
-.region-atlas[data-panoramic="true"] {
+.region-atlas-detail {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(280px, 1.4fr) minmax(190px, 0.9fr);
+  gap: 16px;
+  align-items: center;
+  padding: 13px 18px;
+  border: 1px solid rgba(130, 95, 45, 0.28);
+  border-radius: 16px;
+  background: radial-gradient(circle at 100% 0, rgba(184, 145, 73, 0.12), transparent 14rem), linear-gradient(145deg, #f9f7e9, #edf2e8);
+  box-shadow: 0 8px 24px rgba(38, 67, 51, 0.08);
+}
+.region-atlas-detail[data-tone="warning"] { background: radial-gradient(circle at 100% 0, rgba(187, 112, 43, .13), transparent 14rem), linear-gradient(145deg, #faf4e7, #f0e9d8); }
+.region-atlas-detail[data-tone="danger"] { background: radial-gradient(circle at 100% 0, rgba(152, 68, 57, .12), transparent 14rem), linear-gradient(145deg, #f8f1e7, #ecdfd8); }
+
+.region-detail-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.region-atlas-map { position: relative; min-height: 430px; overflow: hidden; border: 1px solid rgba(72, 104, 81, .15); border-radius: 17px; background:
-  radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.68), transparent 40%),
-  radial-gradient(ellipse at 12% 53%, rgba(74, 107, 83, .13), transparent 28%),
-  radial-gradient(ellipse at 84% 46%, rgba(69, 112, 86, .13), transparent 25%),
-  linear-gradient(145deg, #e7eee2, #f7f2df 52%, #e4ece1); box-shadow: inset 0 0 35px rgba(52, 80, 62, .08), 0 10px 27px rgba(35, 65, 49, .07); }
-.region-atlas-map::before, .region-atlas-map::after { content: ""; position: absolute; pointer-events: none; }
-.region-atlas-map::before { inset: 10px; border: 1px solid rgba(134, 105, 57, .12); border-radius: 11px; box-shadow: inset 0 0 0 4px rgba(255,255,255,.16); }
-.region-atlas-map::after { width: 230px; height: 120px; left: 50%; bottom: -69px; transform: translateX(-50%); border: 1px solid rgba(47, 91, 67, .09); border-radius: 50%; box-shadow: 0 -28px 0 rgba(78, 112, 88, .025), 0 -55px 0 rgba(78, 112, 88, .02); }
-.region-atlas-map > svg { position: absolute; inset: 13% 13%; width: 74%; height: 74%; overflow: visible; }
-.region-atlas-map > svg path { fill: none; stroke: rgba(144, 112, 55, .23); stroke-width: .8; stroke-dasharray: 2.5 2.5; vector-effect: non-scaling-stroke; }
-.atlas-compass { position: absolute; left: 19px; top: 18px; display: grid; justify-items: center; gap: 2px; color: rgba(72, 101, 82, .56); font-family: "KaiTi", serif; }
-.atlas-compass b { width: 37px; height: 37px; display: grid; place-items: center; border: 1px solid rgba(91, 112, 86, .16); border-radius: 50%; font-size: 10px; font-weight: 500; }
-.atlas-compass i { font-size: 7px; font-style: normal; }
-.region-atlas-map > p { position: absolute; right: 17px; bottom: 14px; margin: 0; color: rgba(107, 89, 54, .58); font-family: "KaiTi", serif; font-size: 9px; letter-spacing: .16em; writing-mode: vertical-rl; }
+.region-detail-overview header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.region-detail-overview header > span {
+  width: 42px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(54, 103, 79, .16);
+  border-radius: 20px;
+  color: #3f6955;
+  background: rgba(255,255,255,.45);
+  font-family: "KaiTi", serif;
+  font-size: 20px;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.3);
+}
+.region-detail-overview header small { color: #94815c; font-size: 7.5px; letter-spacing: .08em; }
+.region-detail-overview h3 { margin: 2px 0 0; color: #315945; font-family: "KaiTi", serif; font-size: 19px; font-weight: 500; }
+.region-detail-overview header em { padding: 4px 8px; border-radius: 999px; color: #557563; background: rgba(69, 107, 87, .1); font-size: 7.5px; font-style: normal; white-space: nowrap; border: 1px solid rgba(69, 107, 87, 0.14); }
+.region-detail-overview p { margin: 0; color: #64766c; font-size: 9px; line-height: 1.65; }
 
-.region-atlas-detail { min-width: 0; display: flex; flex-direction: column; padding: 17px; border: 1px solid rgba(62, 102, 82, .16); border-radius: 16px; background: radial-gradient(circle at 100% 0, rgba(176, 137, 68, .12), transparent 14rem), linear-gradient(145deg, #f9f7e9, #eaf0e6); box-shadow: 0 10px 26px rgba(38, 67, 51, .07); }
-.region-atlas-detail[data-tone="warning"] { background: radial-gradient(circle at 100% 0, rgba(187, 112, 43, .13), transparent 14rem), linear-gradient(145deg, #faf4e7, #f0e9d8); }.region-atlas-detail[data-tone="danger"] { background: radial-gradient(circle at 100% 0, rgba(152, 68, 57, .12), transparent 14rem), linear-gradient(145deg, #f8f1e7, #ecdfd8); }
-.region-atlas-detail > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; align-items: center; }
-.region-atlas-detail > header > span { width: 44px; height: 54px; display: grid; place-items: center; border: 1px solid rgba(54, 103, 79, .16); border-radius: 22px; color: #3f6955; background: rgba(255,255,255,.34); font-family: "KaiTi", serif; font-size: 20px; }
-.region-atlas-detail header small { color: #94815c; font-size: 7px; letter-spacing: .09em; }.region-atlas-detail h3 { margin: 2px 0 0; color: #315945; font-family: "KaiTi", serif; font-size: 19px; font-weight: 500; }.region-atlas-detail header em { padding: 5px 7px; border-radius: 999px; color: #667a6e; background: rgba(69, 107, 87, .08); font-size: 7px; font-style: normal; white-space: nowrap; }
-.region-atlas-detail > p { min-height: 55px; margin: 15px 0 10px; color: #68786f; font-size: 10px; line-height: 1.75; }
-.region-atlas-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 11px 0; }.region-atlas-stats > span { display: grid; grid-template-columns: auto 1fr; column-gap: 5px; align-items: center; padding: 8px; border-radius: 9px; color: #6a7c71; background: rgba(235, 239, 229, .78); }.region-atlas-stats > span:last-child { grid-column: 1 / -1; }.region-atlas-stats svg { grid-row: 1 / span 2; }.region-atlas-stats small, .region-atlas-stats strong { display: block; }.region-atlas-stats small { color: #929b95; font-size: 7px; }.region-atlas-stats strong { margin-top: 2px; font-size: 8px; }
-.region-atlas-detail dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 12px; }.region-atlas-detail dl > div { min-width: 0; padding: 8px; border-radius: 9px; background: rgba(248, 246, 235, .72); }.region-atlas-detail dt { color: #998866; font-size: 7px; }.region-atlas-detail dd { margin: 3px 0 0; overflow: hidden; color: #617269; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.region-atlas-detail > button { min-height: 39px; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: auto; border: 1px solid rgba(54, 107, 82, .2); border-radius: 10px; color: #35654f; background: #deebdd; cursor: pointer; font-size: 9px; font-weight: 600; }.region-atlas-detail > button:hover:not(:disabled) { transform: translateY(-1px); background: #d4e7d7; box-shadow: 0 6px 14px rgba(40, 82, 61, .1); }.region-atlas-detail > button:disabled { color: #9aa19c; border-color: rgba(84, 94, 88, .08); background: #e9ebe6; cursor: not-allowed; }
-.region-event-badge { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px; min-height: 31px; padding: 6px 8px; border: 1px solid rgba(170, 128, 52, .18); border-radius: 9px; color: #8c6d35; background: linear-gradient(90deg, rgba(243, 229, 191, .5), rgba(248, 245, 229, .72)); }
+.region-detail-vitals .region-atlas-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.region-atlas-stats > span {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 5px;
+  align-items: center;
+  padding: 7px 8px;
+  border-radius: 9px;
+  color: #556c60;
+  background: rgba(235, 239, 229, .85);
+  border: 1px solid rgba(50, 90, 70, 0.08);
+}
+.region-atlas-stats svg { grid-row: 1 / span 2; }
+.region-atlas-stats small { display: block; color: #8e9a93; font-size: 6.5px; }
+.region-atlas-stats strong { display: block; margin-top: 1px; font-size: 8px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.region-detail-vitals dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+}
+.region-detail-vitals dl > div {
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(248, 246, 235, .82);
+  border: 1px solid rgba(130, 95, 45, 0.1);
+}
+.region-detail-vitals dt { color: #8e7d58; font-size: 6.5px; font-weight: 500; }
+.region-detail-vitals dd { margin: 2px 0 0; overflow: hidden; color: #4e6357; font-size: 8px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+
+.region-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  justify-content: center;
+}
+.region-event-badge {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid rgba(170, 128, 52, .22);
+  border-radius: 9px;
+  color: #8c6d35;
+  background: linear-gradient(90deg, rgba(243, 229, 191, .6), rgba(248, 245, 229, .8));
+}
 .region-event-badge > strong { font-size: 8px; white-space: nowrap; }
-.region-event-badge > small { min-width: 0; overflow: hidden; color: #9a8a6d; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.region-event-badge[data-pending="true"] { border-color: rgba(180, 115, 43, .32); color: #976127; background: linear-gradient(90deg, rgba(244, 218, 161, .68), rgba(248, 238, 208, .74)); box-shadow: inset 3px 0 #b78139; }
+.region-event-badge > small { min-width: 0; overflow: hidden; color: #8e7c5c; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.region-event-badge[data-pending="true"] { border-color: rgba(180, 115, 43, .35); color: #976127; background: linear-gradient(90deg, rgba(244, 218, 161, .75), rgba(248, 238, 208, .82)); box-shadow: inset 3px 0 #b78139; }
+
+.region-detail-actions button {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid rgba(54, 107, 82, .24);
+  border-radius: 10px;
+  color: #f7f3e4;
+  background: linear-gradient(135deg, #37654f, #264e3b);
+  box-shadow: 0 4px 12px rgba(35, 70, 52, 0.16);
+  cursor: pointer;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.18s ease;
+}
+.region-detail-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #43775e, #2e5c46);
+  box-shadow: 0 6px 16px rgba(35, 70, 52, 0.22);
+}
+.region-detail-actions button:disabled {
+  color: #9aa19c;
+  border-color: rgba(84, 94, 88, .1);
+  background: #e7eae4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 880px) {
+  .region-atlas-detail {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .region-detail-vitals .region-atlas-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
 /* 2D 九州全景山川舆图 (NineProvincesMap) */
 .region-atlas-map.nine-provinces-2d-canvas {
@@ -648,41 +829,6 @@ body {
   min-height: 760px;
   height: 80vh;
   max-height: 980px;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail {
-  display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) minmax(320px, 1.8fr) minmax(220px, 1fr);
-  gap: 18px;
-  align-items: center;
-  padding: 16px 20px;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail > header {
-  grid-column: 1;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail > p {
-  grid-column: 2;
-  margin: 0;
-  min-height: auto;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail .region-atlas-stats {
-  grid-column: 1 / span 2;
-  grid-template-columns: repeat(3, 1fr);
-  margin: 8px 0;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail dl {
-  grid-column: 1 / span 2;
-  margin: 0;
-}
-
-.region-atlas[data-panoramic="true"] .region-atlas-detail > button {
-  grid-column: 3;
-  min-height: 48px;
-  font-size: 13px;
 }
 
 /* 全景缩放切换按钮 */
@@ -5240,4 +5386,146 @@ body {
 .dialog-bottom-spacer {
   height: 16px;
   width: 100%;
+}
+
+/* ==========================================================================
+   人物水墨肖像与样貌风仪系统 (NPC Avatar & Appearance)
+   ========================================================================== */
+
+.npc-avatar-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1.5px solid rgba(186, 148, 75, 0.35);
+  background: radial-gradient(circle at 50% 30%, rgba(55, 85, 70, 0.6) 0%, rgba(20, 35, 28, 0.95) 100%);
+  box-shadow: 0 4px 14px rgba(22, 45, 34, 0.18);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.npc-avatar-box[data-size="small"] {
+  width: 44px;
+  height: 55px;
+  border-radius: 8px;
+}
+
+.npc-avatar-box[data-size="medium"] {
+  width: 68px;
+  height: 85px;
+  border-radius: 14px;
+}
+
+.npc-avatar-box[data-size="large"] {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
+
+.npc-avatar-box[data-alive="false"] {
+  filter: saturate(0.4) contrast(0.92);
+  opacity: 0.82;
+}
+
+.npc-avatar-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.npc-avatar-seal {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #b83c34 0%, #8e2720 100%);
+  color: #fff8eb;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(184, 60, 52, 0.45);
+  border: 0.8px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.npc-avatar-box[data-size="small"] .npc-avatar-seal {
+  width: 15px;
+  height: 15px;
+  font-size: 9px;
+  right: 3px;
+  bottom: 3px;
+  border-radius: 3.5px;
+}
+
+.scene-npc-portrait.npc-avatar-box {
+  border: 2px solid rgba(186, 148, 75, 0.65) !important;
+  border-radius: 36px 36px 14px 14px !important;
+  box-shadow: 0 12px 30px rgba(45, 70, 55, 0.22), inset 0 0 0 1.5px rgba(255, 255, 255, 0.25) !important;
+}
+
+.npc-profile-hero .npc-avatar-box {
+  width: 68px;
+  height: 85px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(30, 60, 45, 0.22);
+  border: 1.5px solid rgba(186, 148, 75, 0.48);
+}
+
+/* 档案相貌风仪栏 */
+.npc-profile-appearance {
+  margin: 14px 20px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(252, 250, 242, 0.94) 0%, rgba(240, 246, 238, 0.88) 100%);
+  border: 1px solid rgba(186, 148, 75, 0.32);
+  box-shadow: 0 2px 8px rgba(45, 75, 60, 0.04);
+}
+
+.npc-profile-appearance header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c6a28;
+  margin-bottom: 6px;
+}
+
+.npc-profile-appearance header strong {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 14px;
+  color: #1f4233;
+  font-weight: 600;
+}
+
+.npc-profile-appearance header small {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(186, 148, 75, 0.14);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  color: #835c1a;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.npc-profile-appearance p {
+  margin: 0;
+  color: #375345;
+  font-size: 12.5px;
+  line-height: 1.75;
+  font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+  text-indent: 2em;
+  letter-spacing: 0.02em;
 }
