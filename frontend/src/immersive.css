@@ -586,8 +586,21 @@ body {
   transform: translateY(1px);
 }
 
-/* World atlas */
-.region-atlas { display: grid; grid-template-columns: minmax(320px, 1.25fr) minmax(255px, .75fr); gap: 13px; align-items: stretch; }
+/* World atlas (九州山川大舆图) */
+.region-atlas {
+  display: grid;
+  grid-template-columns: minmax(580px, 2.5fr) minmax(280px, 0.95fr);
+  gap: 16px;
+  align-items: stretch;
+  transition: all 0.3s ease;
+}
+
+.region-atlas[data-panoramic="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .region-atlas-map { position: relative; min-height: 430px; overflow: hidden; border: 1px solid rgba(72, 104, 81, .15); border-radius: 17px; background:
   radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.68), transparent 40%),
   radial-gradient(ellipse at 12% 53%, rgba(74, 107, 83, .13), transparent 28%),
@@ -620,12 +633,97 @@ body {
 /* 2D 九州全景山川舆图 (NineProvincesMap) */
 .region-atlas-map.nine-provinces-2d-canvas {
   position: relative;
-  min-height: 480px;
+  min-height: 640px;
+  height: 68vh;
+  max-height: 840px;
   overflow: hidden;
   border: 1px solid rgba(130, 95, 45, 0.35);
   border-radius: 17px;
   background: #f1e9d2;
   box-shadow: inset 0 0 45px rgba(60, 42, 20, 0.16), 0 12px 32px rgba(35, 30, 20, 0.12);
+  transition: min-height 0.35s ease, height 0.35s ease;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-map.nine-provinces-2d-canvas {
+  min-height: 760px;
+  height: 80vh;
+  max-height: 980px;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(320px, 1.8fr) minmax(220px, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail > header {
+  grid-column: 1;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail > p {
+  grid-column: 2;
+  margin: 0;
+  min-height: auto;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail .region-atlas-stats {
+  grid-column: 1 / span 2;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 8px 0;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail dl {
+  grid-column: 1 / span 2;
+  margin: 0;
+}
+
+.region-atlas[data-panoramic="true"] .region-atlas-detail > button {
+  grid-column: 3;
+  min-height: 48px;
+  font-size: 13px;
+}
+
+/* 全景缩放切换按钮 */
+.map-panoramic-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  background: rgba(248, 243, 230, 0.94);
+  border: 1px solid rgba(138, 102, 54, 0.42);
+  border-radius: 8px;
+  color: #4a341e;
+  font-family: "KaiTi", serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(35, 20, 10, 0.12);
+  transition: all 0.25s ease;
+  backdrop-filter: blur(4px);
+}
+
+.map-panoramic-btn:hover {
+  background: #fdf8eb;
+  border-color: #b8860b;
+  color: #8b4513;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(184, 134, 11, 0.22);
+}
+
+@media (max-width: 960px) {
+  .region-atlas {
+    grid-template-columns: 1fr;
+  }
+  .region-atlas-map.nine-provinces-2d-canvas {
+    min-height: 520px;
+    height: 60vh;
+  }
 }
 .map-canvas-background {
   position: absolute;

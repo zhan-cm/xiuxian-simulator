@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
-import { NineProvincesMap, type RegionAtlasItem } from './NineProvincesMap'
+import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -163,33 +163,106 @@ function LocationsBlock({ block, readOnly, onAction }: { block: PresentationBloc
 }
 
 function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
-  const items = useMemo(() => block.items || [], [block.items])
+  const backendItems = useMemo(() => (block.items || []) as RegionAtlasItem[], [block.items])
+  const items = useMemo(() => {
+    const merged = [...backendItems]
+    const existingKeys = new Set(backendItems.map((it) => text(it.key)))
+    for (const [key, outerItem] of Object.entries(OUTER_SEALED_PROVINCES)) {
+      if (!existingKeys.has(key)) {
+        merged.push(outerItem)
+      }
+    }
+    return merged
+  }, [backendItems])
+
   const [selectedKey, setSelectedKey] = useState('')
+  const [panoramic, setPanoramic] = useState(false)
   const selected = items.find((item) => text(item.key) === selectedKey) || items.find((item) => item.current === true) || items[0]
   const count = items.length
   return (
-    <section className="semantic-block region-block">
-      <SystemBlockHeader mark="州" eyebrow="云路万里" title={block.title || '九州舆图'} description={block.legend || '各域物产、声望与行程不同，启程前请细察路途。'} meta={`${count} 方地域`} icon={<Route size={21} />} />
-      <div className="region-atlas">
+    <section className="semantic-block region-block" data-panoramic={panoramic || undefined}>
+      <SystemBlockHeader
+        mark="州"
+        eyebrow="九宫八卦"
+        title={block.title || '九州全景舆图'}
+        description={block.legend || '神州九宫九域，各域物产、天地法则与行止不同，细察舆图以谋长生。'}
+        meta={`${count} 方九域`}
+        icon={<Route size={21} />}
+      />
+      <div className="region-atlas" data-panoramic={panoramic || undefined}>
         <NineProvincesMap
-          items={items as RegionAtlasItem[]}
+          items={items}
           selectedKey={selectedKey || text(selected?.key)}
           onSelect={(key) => setSelectedKey(key)}
+          panoramic={panoramic}
+          onTogglePanoramic={() => setPanoramic((prev) => !prev)}
         />
         {selected && (() => {
           const current = selected.current === true
           const accessible = selected.accessible === true
           const visited = selected.visited === true
-          return <aside className="region-atlas-detail" data-tone={text(selected.tone, 'safe')} aria-label={`${text(selected.name)}地域详情`}>
-            <header><span>{text(selected.key, '州').slice(0, 1)}</span><div><small>{visited ? '足迹已至' : '山河未访'}</small><h3>{text(selected.name, '无名地域')}</h3></div><em>{current ? '当前落脚' : `${text(selected.danger_label)} · ${text(selected.danger)}`}</em></header>
-            <p>{text(selected.description)}</p>
-            {selected.has_event === true && <div className="region-event-badge" data-pending={selected.event_pending === true || undefined} title={text(selected.event_title, '地方机缘')}><Sparkles size={12} /><strong>{selected.event_pending === true ? '机缘待决' : '有地方机缘'}</strong><small>{text(selected.event_title)}</small></div>}
-            <div className="region-atlas-stats"><span><Wind size={12} /><small>行程</small><strong>{text(selected.months)} 月</strong></span><span><ShieldCheck size={12} /><small>准入</small><strong>{text(selected.requirement_label)}</strong></span><span><Landmark size={12} /><small>声望</small><strong>{text(selected.rank, '初来乍到')} · {Number(selected.reputation || 0) >= 0 ? '+' : ''}{text(selected.reputation, '0')}</strong></span></div>
-            <dl><div><dt>本地特产</dt><dd>{words(selected.specialties).join(' · ') || '尚待寻访'}</dd></div><div><dt>热门求购</dt><dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd></div></dl>
-            <button type="button" disabled={readOnly || !accessible} title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)} onClick={() => onAction(text(selected.action))}>
-              {current ? <><MapPin size={13} />当前所在</> : accessible ? <><ArrowRight size={13} />规划前往{text(selected.key)}</> : <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>}
-            </button>
-          </aside>
+          const isSealed = selected.sealed === true
+          return (
+            <aside className="region-atlas-detail" data-tone={text(selected.tone, 'safe')} aria-label={`${text(selected.name)}地域详情`}>
+              <header>
+                <span>{text(selected.key, '州').slice(0, 1)}</span>
+                <div>
+                  <small>{isSealed ? '太古绝境' : visited ? '足迹已至' : '山河未访'}</small>
+                  <h3>{text(selected.name, '无名地域')}</h3>
+                </div>
+                <em>{current ? '当前落脚' : `${text(selected.danger_label)} · ${text(selected.danger)}`}</em>
+              </header>
+              <p>{text(selected.description)}</p>
+              {selected.has_event === true && (
+                <div className="region-event-badge" data-pending={selected.event_pending === true || undefined} title={text(selected.event_title, '地方机缘')}>
+                  <Sparkles size={12} />
+                  <strong>{selected.event_pending === true ? '机缘待决' : '有地方机缘'}</strong>
+                  <small>{text(selected.event_title)}</small>
+                </div>
+              )}
+              <div className="region-atlas-stats">
+                <span>
+                  <Wind size={12} />
+                  <small>行程</small>
+                  <strong>{text(selected.months)} 月</strong>
+                </span>
+                <span>
+                  <ShieldCheck size={12} />
+                  <small>准入</small>
+                  <strong>{text(selected.requirement_label)}</strong>
+                </span>
+                <span>
+                  <Landmark size={12} />
+                  <small>声望</small>
+                  <strong>{text(selected.rank, '初来乍到')} · {Number(selected.reputation || 0) >= 0 ? '+' : ''}{text(selected.reputation, '0')}</strong>
+                </span>
+              </div>
+              <dl>
+                <div>
+                  <dt>{isSealed ? '仙域异宝' : '本地特产'}</dt>
+                  <dd>{words(selected.specialties).join(' · ') || '尚待寻访'}</dd>
+                </div>
+                <div>
+                  <dt>{isSealed ? '渡禁所需' : '热门求购'}</dt>
+                  <dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                disabled={readOnly || !accessible}
+                title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)}
+                onClick={() => onAction(text(selected.action))}
+              >
+                {current ? (
+                  <><MapPin size={13} />当前所在</>
+                ) : accessible ? (
+                  <><ArrowRight size={13} />规划前往{text(selected.key)}</>
+                ) : (
+                  <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>
+                )}
+              </button>
+            </aside>
+          )
         })()}
       </div>
     </section>
