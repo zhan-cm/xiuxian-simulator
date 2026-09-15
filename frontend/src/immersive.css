@@ -5430,12 +5430,50 @@ body {
   opacity: 0.82;
 }
 
+.npc-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 14%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  transition: transform 0.35s ease;
+}
+
+.npc-avatar-lighting-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 45%, rgba(15, 30, 24, 0.5) 100%);
+  z-index: 1;
+}
+
+.npc-avatar-ghost-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(18, 38, 30, 0.45);
+  backdrop-filter: grayscale(0.6) brightness(0.85);
+  z-index: 1;
+}
+
 .npc-avatar-svg {
   width: 100%;
   height: 100%;
   display: block;
   pointer-events: none;
   user-select: none;
+  transition: transform 0.3s ease;
+}
+
+.person-gallery-card:hover .npc-avatar-box .npc-avatar-img,
+.npc-avatar-box:hover .npc-avatar-img {
+  transform: scale(1.05);
+}
+
+.person-gallery-card:hover .npc-avatar-box.anime-vector-box .npc-avatar-svg {
+  transform: scale(1.04);
 }
 
 .npc-avatar-seal {
