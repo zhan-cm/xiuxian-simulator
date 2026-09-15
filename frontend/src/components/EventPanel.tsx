@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
+import { NineProvincesMap, type RegionAtlasItem } from './NineProvincesMap'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -170,22 +171,11 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
     <section className="semantic-block region-block">
       <SystemBlockHeader mark="州" eyebrow="云路万里" title={block.title || '九州舆图'} description={block.legend || '各域物产、声望与行程不同，启程前请细察路途。'} meta={`${count} 方地域`} icon={<Route size={21} />} />
       <div className="region-atlas">
-        <nav className="region-atlas-map" aria-label="五域卷轴舆图">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M50 13 C42 25 52 35 50 50 C44 65 55 78 50 88" /><path d="M15 50 C30 42 38 53 50 50 C64 45 73 55 86 48" /></svg>
-          <span className="atlas-compass" aria-hidden="true"><i>北</i><b>九州</b><i>南</i></span>
-          {items.map((item, index) => {
-            const current = item.current === true
-            const accessible = item.accessible === true
-            const visited = item.visited === true
-            const key = text(item.key, `地域-${index}`)
-            const chosen = selected === item
-            return <button type="button" className="region-node" data-region={key} data-current={current || undefined} data-visited={visited || undefined} data-locked={!accessible && !current || undefined} aria-pressed={chosen} aria-label={`查看${text(item.name, key)}地域`} onClick={() => setSelectedKey(key)} key={key}>
-              <span>{key.slice(0, 1)}</span><strong>{text(item.name, '无名地域')}</strong><small>{current ? '当前落脚' : visited ? '已经踏访' : text(item.danger_label, '路途未明')}</small>
-              {item.has_event === true && <i aria-label="有地方机缘" />}
-            </button>
-          })}
-          <p>山河入卷 · 五域可观</p>
-        </nav>
+        <NineProvincesMap
+          items={items as RegionAtlasItem[]}
+          selectedKey={selectedKey || text(selected?.key)}
+          onSelect={(key) => setSelectedKey(key)}
+        />
         {selected && (() => {
           const current = selected.current === true
           const accessible = selected.accessible === true

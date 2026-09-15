@@ -582,6 +582,194 @@ body {
 .region-event-badge > small { min-width: 0; overflow: hidden; color: #9a8a6d; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
 .region-event-badge[data-pending="true"] { border-color: rgba(180, 115, 43, .32); color: #976127; background: linear-gradient(90deg, rgba(244, 218, 161, .68), rgba(248, 238, 208, .74)); box-shadow: inset 3px 0 #b78139; }
 
+/* 2D 九州全景山川舆图 (NineProvincesMap) */
+.region-atlas-map.nine-provinces-2d-canvas {
+  position: relative;
+  min-height: 480px;
+  overflow: hidden;
+  border: 1px solid rgba(72, 104, 81, 0.2);
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.75), transparent 60%),
+    radial-gradient(ellipse at 50% 12%, rgba(92, 163, 207, 0.12), transparent 45%),
+    radial-gradient(ellipse at 50% 88%, rgba(217, 83, 79, 0.12), transparent 45%),
+    radial-gradient(ellipse at 12% 50%, rgba(227, 190, 116, 0.15), transparent 40%),
+    radial-gradient(ellipse at 88% 50%, rgba(61, 107, 81, 0.15), transparent 40%),
+    linear-gradient(145deg, #f5f2e6, #ebe4d3 52%, #f2ede1);
+  box-shadow: inset 0 0 40px rgba(52, 80, 62, 0.09), 0 12px 30px rgba(35, 65, 49, 0.08);
+}
+.map-topography-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.nine-provinces-2d-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border-radius: 14px;
+  background: rgba(254, 252, 246, 0.94);
+  border: 1.5px solid rgba(85, 109, 93, 0.24);
+  box-shadow: 0 5px 16px rgba(35, 55, 42, 0.12);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  z-index: 2;
+}
+.nine-provinces-2d-node:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+  border-color: rgba(52, 107, 80, 0.55);
+  box-shadow: 0 10px 25px rgba(35, 70, 52, 0.2);
+  z-index: 5;
+}
+.nine-provinces-2d-node[aria-pressed="true"] {
+  border-color: #ba8d3c;
+  background: #fdfaf1;
+  box-shadow: 0 0 0 2px rgba(186, 141, 60, 0.38), 0 10px 25px rgba(45, 75, 55, 0.18);
+  z-index: 4;
+}
+.nine-provinces-2d-node[data-current="true"] {
+  border-color: #2b6351;
+  background: #f0f7f2;
+}
+.nine-provinces-2d-node[data-locked="true"] {
+  opacity: 0.72;
+  filter: grayscale(0.2);
+}
+.node-emblem {
+  width: 32px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+.node-terrain-icon {
+  opacity: 0.85;
+}
+.node-char {
+  font-size: 11px;
+  font-family: "KaiTi", serif;
+  font-weight: bold;
+}
+.node-text-col {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.25;
+}
+.node-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.node-name-row strong {
+  font-size: 12px;
+  color: #2d3b33;
+  font-family: "KaiTi", serif;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.current-player-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #2b6351;
+  color: #ffffff;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: normal;
+}
+.node-terrain-subtitle {
+  font-size: 9px;
+  color: #79877e;
+}
+.active-glow-text {
+  color: #2b6351;
+  font-weight: 500;
+}
+.node-event-star {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ba8d3c;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 8px rgba(186, 141, 60, 0.7);
+}
+.taiji-halo-beacon {
+  position: absolute;
+  inset: -6px;
+  border-radius: 18px;
+  border: 2px solid rgba(43, 99, 81, 0.5);
+  pointer-events: none;
+}
+.map-canvas-footer {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(90, 80, 60, 0.72);
+  font-family: "KaiTi", serif;
+  pointer-events: none;
+}
+
+/* 突破圣台暂缓突破按键 */
+.altar-cancel-action-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(130, 95, 45, 0.3);
+  background: rgba(255, 255, 255, 0.65);
+  color: #634b22;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.altar-cancel-action-btn:hover:not(:disabled) {
+  background: rgba(245, 237, 218, 0.95);
+  border-color: #ba8d3c;
+  transform: translateY(-1px);
+}
+
+/* Toast 告警与受阻态样式 */
+.action-toast.warning-toast {
+  border-color: rgba(186, 141, 60, 0.45);
+  background: rgba(254, 250, 240, 0.97);
+  color: #8c5d1e;
+}
+.action-toast.warning-toast strong {
+  color: #78480d;
+}
+.action-toast.warning-toast p {
+  color: #8a6a42;
+}
+
 /* Market shelf */
 .event-panel[data-surface="market"] .market-context { gap: 8px; margin-bottom: 12px; }
 .event-panel[data-surface="market"] .market-context > span { padding: 9px 11px; border: 1px solid rgba(73, 102, 83, .09); border-radius: 10px; background: rgba(249, 247, 237, .9); font-size: 9px; }

@@ -38,13 +38,19 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
     (player.resources?.['天材地宝'] && player.resources['天材地宝'] > 0) ||
     snapshot.inventory?.items?.some((item) => item.name === '天材地宝' && item.count > 0)
   )
-  const hasHeavenTreasure = hasEarthTreasure && Boolean(
+  const hasSpiritOrb = Boolean(
     (player.resources?.['五行灵珠'] && player.resources['五行灵珠'] > 0) ||
     snapshot.inventory?.items?.some((item) => item.name === '五行灵珠' && item.count > 0)
   )
+  const hasDaoRhyme = Boolean(
+    (player.resources?.['道韵'] && player.resources['道韵'] > 0) ||
+    snapshot.inventory?.items?.some((item) => item.name === '道韵' && item.count > 0)
+  )
+  const hasHeavenTreasure = hasEarthTreasure && hasSpiritOrb && hasDaoRhyme
 
   const isDestinyPhase = state.phase === 'destiny_choice' || decision?.eyebrow === '逆天改命' || (decision?.title || '').includes('逆天改命')
   const isMajorDecisionPhase = state.phase === 'major_breakthrough_choice' || decision?.eyebrow === '破境路线'
+  const isMajorDecision = isPinnacleStage || isMajorDecisionPhase
 
   // 1. 如果处于【逆天改命】先天气运刻印时刻
   if (isDestinyPhase) {
@@ -113,10 +119,10 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
       <header className="altar-hero">
         <div className="altar-crown-seal"><Flame size={24} /></div>
         <div className="altar-hero-text">
-          <small>{isPinnacleStage ? '大境界天关叩关' : '小境界蓄力推演'}</small>
-          <h2>{isPinnacleStage ? `${player.realm} · 叩问天门` : `${player.realm} · 潜心蓄力`}</h2>
+          <small>{isMajorDecision ? '大境界天关叩关' : '小境界蓄力推演'}</small>
+          <h2>{isMajorDecision ? `${player.realm} · 叩问天门` : `${player.realm} · 潜心蓄力`}</h2>
           <p>
-            {isPinnacleStage
+            {isMajorDecision
               ? `已至${baseRealm}大圆满。欲登临【${nextRealmName}】之境，需定夺破境道基，历经劫数洗礼。`
               : `当前道行尚未抵达圆满天关，可先行体悟人、地、天三道之奥秘与资粮要求。`}
           </p>
@@ -157,19 +163,10 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
           {isCultivationMax ? <CheckCircle2 size={18} color="#2b6351" /> : <AlertCircle size={18} color="#ba8d3c" />}
           <span>
             {isCultivationMax
-              ? '气海灵元大圆满！随时可引动天地灵气叩问天关。'
+              ? '气海灵元大圆满！请择定人道、地道或天道其一叩问天关。'
               : `气海尚需积蓄 ${player.cultivation_required - player.cultivation} 点修为，方可引发天地天象。`}
           </span>
         </div>
-        {isCultivationMax && (
-          <button
-            type="button"
-            disabled={busy || readOnly}
-            onClick={() => onAction('突破')}
-          >
-            直接破关
-          </button>
-        )}
       </div>
 
       {/* 三大破境道基路线对比 (人道 / 地道 / 天道) */}
@@ -204,7 +201,7 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             <div className="route-requirements">
               <span className="req-item" data-fulfilled={hasHumanPill}>
                 {hasHumanPill ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                <span>所需丹药：{pillRequired} ×1</span>
+                <span>所需丹药：{pillRequired} ×1 ({hasHumanPill ? '已备齐' : '缺少'})</span>
               </span>
             </div>
 
@@ -216,10 +213,19 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             <button
               type="button"
               className="route-action-btn"
-              disabled={busy || readOnly || (!isCultivationMax && !isMajorDecisionPhase)}
+              disabled={busy || readOnly || !isCultivationMax || !hasHumanPill}
               onClick={() => onAction('突破 人道')}
+              title={
+                !isCultivationMax
+                  ? `修为未满（还需 ${player.cultivation_required - player.cultivation} 点修为）`
+                  : !hasHumanPill
+                    ? `缺少所需丹药【${pillRequired}×1】，可在坊市百宝阁购买或洞府炼制`
+                    : '以人道根基叩问天关'
+              }
             >
-              <span>叩定人道</span>
+              <span>
+                {!isCultivationMax ? '修为未圆满' : !hasHumanPill ? `缺少${pillRequired}` : '叩定人道'}
+              </span>
             </button>
           </article>
 
@@ -247,7 +253,7 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             <div className="route-requirements">
               <span className="req-item" data-fulfilled={hasEarthTreasure}>
                 {hasEarthTreasure ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                <span>所需灵材：天材地宝 ×1</span>
+                <span>所需灵材：天材地宝 ×1 ({hasEarthTreasure ? '已备齐' : '缺少'})</span>
               </span>
             </div>
 
@@ -259,10 +265,19 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             <button
               type="button"
               className="route-action-btn"
-              disabled={busy || readOnly || (!isCultivationMax && !isMajorDecisionPhase)}
+              disabled={busy || readOnly || !isCultivationMax || !hasEarthTreasure}
               onClick={() => onAction('突破 地道')}
+              title={
+                !isCultivationMax
+                  ? `修为未满（还需 ${player.cultivation_required - player.cultivation} 点修为）`
+                  : !hasEarthTreasure
+                    ? '缺少所需灵物【天材地宝×1】，可在地方机缘、拍卖会或大荒探索中寻觅'
+                    : '以厚土地脉叩问天关'
+              }
             >
-              <span>叩定地道</span>
+              <span>
+                {!isCultivationMax ? '修为未圆满' : !hasEarthTreasure ? '缺少天材地宝' : '叩定地道'}
+              </span>
             </button>
           </article>
 
@@ -288,9 +303,17 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             </div>
 
             <div className="route-requirements">
-              <span className="req-item" data-fulfilled={hasHeavenTreasure}>
-                {hasHeavenTreasure ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                <span>天材地宝 + 五行灵珠</span>
+              <span className="req-item" data-fulfilled={hasEarthTreasure}>
+                {hasEarthTreasure ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                <span>天材地宝 ×1</span>
+              </span>
+              <span className="req-item" data-fulfilled={hasSpiritOrb}>
+                {hasSpiritOrb ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                <span>五行灵珠 ×1</span>
+              </span>
+              <span className="req-item" data-fulfilled={hasDaoRhyme}>
+                {hasDaoRhyme ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                <span>道韵 ×1</span>
               </span>
             </div>
 
@@ -302,20 +325,40 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
             <button
               type="button"
               className="route-action-btn"
-              disabled={busy || readOnly || (!isCultivationMax && !isMajorDecisionPhase)}
+              disabled={busy || readOnly || !isCultivationMax || !hasHeavenTreasure}
               onClick={() => onAction('突破 天道')}
+              title={
+                !isCultivationMax
+                  ? `修为未满（还需 ${player.cultivation_required - player.cultivation} 点修为）`
+                  : !hasHeavenTreasure
+                    ? `缺少极道资粮：${[!hasEarthTreasure && '天材地宝', !hasSpiritOrb && '五行灵珠', !hasDaoRhyme && '道韵'].filter(Boolean).join('、')}，逆天改命需极道资粮`
+                    : '夺天地造化，叩定极道天关'
+              }
             >
-              <span>叩定天道</span>
+              <span>
+                {!isCultivationMax ? '修为未圆满' : !hasHeavenTreasure ? '极道资粮不足' : '叩定天道'}
+              </span>
             </button>
           </article>
         </div>
       </div>
 
-      <footer className="altar-status-banner">
+      <footer className="altar-status-banner altar-footer-banner">
         <div>
           <Info size={16} />
           <span>若材料不足，可在【坊市】寻访百宝阁，或在【洞府】静室中炼丹制器。</span>
         </div>
+        {onClose && (
+          <button
+            type="button"
+            className="altar-cancel-action-btn"
+            disabled={busy || readOnly}
+            onClick={onClose}
+          >
+            <X size={14} />
+            <span>暂缓突破 · 收拢灵力</span>
+          </button>
+        )}
       </footer>
     </section>
   )

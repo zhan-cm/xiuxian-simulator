@@ -1,9 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { AlertCircle, CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
+
+export interface NoticeItem {
+  title: string
+  message: string
+  isWarning?: boolean
+}
 import { ActionDock } from './components/ActionDock'
 import type { ContextAction } from './components/ActionDock'
 import { ArchiveDialog } from './components/ArchiveDialog'
@@ -84,7 +90,7 @@ interface GameProps {
   showcaseLoading: boolean
   onShowcase: () => void
   onExitShowcase: () => void
-  notice: string
+  notice: NoticeItem | null
   onArchiveChanged: () => Promise<unknown> | void
   onNotice: (message: string) => void
 }
@@ -262,7 +268,12 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                     busy={busy}
                     readOnly={showcase}
                     onAction={onAction}
-                    onClose={() => setViewBreakthrough(false)}
+                    onClose={() => {
+                      setViewBreakthrough(false)
+                      if (state.phase === 'major_breakthrough_choice') {
+                        onAction('取消突破')
+                      }
+                    }}
                   />
                 ) : (
                   <>
@@ -409,7 +420,22 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
         </main>
       )}
         <footer className="game-footer">永恒之道 · 高自由单机文字修仙 · 凡尘一念，万法由心</footer>
-        <AnimatePresence>{notice && <motion.div className="action-toast" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}><CheckCircle2 size={17} /><div><strong>推演完成</strong><p>{notice}</p></div></motion.div>}</AnimatePresence>
+        <AnimatePresence>
+          {notice && (
+            <motion.div
+              className={`action-toast ${notice.isWarning ? 'warning-toast' : ''}`}
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8 }}
+            >
+              {notice.isWarning ? <AlertCircle size={17} color="#ba8d3c" /> : <CheckCircle2 size={17} />}
+              <div>
+                <strong>{notice.title}</strong>
+                <p>{notice.message}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <CultivationGuideDialog
           open={guideOpen}
           onOpenChange={setGuideOpen}
@@ -435,16 +461,36 @@ export default function App() {
   const queryClient = useQueryClient()
   const [activeAction, setActiveAction] = useState('')
   const [actionError, setActionError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState<NoticeItem | null>(null)
   const [showcaseIndex, setShowcaseIndex] = useState<number | null>(null)
   const snapshot = useQuery({ queryKey: ['snapshot'], queryFn: fetchSnapshot, staleTime: 15_000, retry: 1 })
   const showcase = useQuery({ queryKey: ['showcase'], queryFn: fetchShowcase, enabled: false, staleTime: Infinity })
   const action = useMutation({
     mutationFn: performAction,
-    onMutate: (value) => { setActiveAction(value); setActionError(''); setNotice('') },
+    onMutate: (value) => { setActiveAction(value); setActionError(''); setNotice(null) },
     onSuccess: (data, value) => {
       queryClient.setQueryData(['snapshot'], data)
-      setNotice(data.presentation?.title || `已完成：${value}`)
+      const out = String(data.output || '')
+      const isBlocked =
+        out.includes('资源不足') ||
+        out.includes('反噬尚未平复') ||
+        out.includes('伤势未愈') ||
+        out.includes('不可突破') ||
+        out.includes('要求当前境界圆满') ||
+        out.includes('尚未')
+      if (isBlocked) {
+        setNotice({
+          title: '破关受阻',
+          message: out.split('\n')[0] || '资粮或道行未足，暂未能破境',
+          isWarning: true,
+        })
+      } else {
+        setNotice({
+          title: '推演完成',
+          message: data.presentation?.title || `已完成：${value}`,
+          isWarning: false,
+        })
+      }
       window.scrollTo({ top: 0, behavior: 'instant' })
     },
     onError: (reason: Error) => setActionError(reason.message),
@@ -452,7 +498,7 @@ export default function App() {
   })
   useEffect(() => {
     if (!notice) return
-    const timer = window.setTimeout(() => setNotice(''), 3200)
+    const timer = window.setTimeout(() => setNotice(null), 3200)
     return () => window.clearTimeout(timer)
   }, [notice])
 
@@ -481,9 +527,9 @@ export default function App() {
         showcaseLoading={showcase.isFetching}
         onShowcase={openShowcase}
         onExitShowcase={() => setShowcaseIndex(null)}
-        notice={inShowcase ? '' : notice}
+        notice={inShowcase ? null : notice}
         onArchiveChanged={async () => { await snapshot.refetch() }}
-        onNotice={(message) => { setActionError(''); setNotice(message) }}
+        onNotice={(message) => { setActionError(''); setNotice({ title: '道途提醒', message, isWarning: false }) }}
       />
       {inShowcase && <ShowcaseNavigator pages={pages} index={showcaseIndex} appVersion={snapshot.data.app_version} onIndex={setShowcaseIndex} onExit={() => setShowcaseIndex(null)} />}
     </>
