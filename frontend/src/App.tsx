@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlertCircle, CalendarDays, CheckCircle2, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -95,7 +95,7 @@ interface GameProps {
   onNotice: (message: string) => void
 }
 
-function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, notice, onArchiveChanged, onNotice }: GameProps) {
+function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcaseLoading, onShowcase, onExitShowcase, onArchiveChanged, onNotice }: GameProps) {
   const { state, presentation, decision } = snapshot
   const { player } = state
   const { codexOpen, toggleCodex, closeCodex } = useUiStore()
@@ -420,22 +420,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
         </main>
       )}
         <footer className="game-footer">永恒之道 · 高自由单机文字修仙 · 凡尘一念，万法由心</footer>
-        <AnimatePresence>
-          {notice && (
-            <motion.div
-              className={`action-toast ${notice.isWarning ? 'warning-toast' : ''}`}
-              initial={{ opacity: 0, y: 14, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8 }}
-            >
-              {notice.isWarning ? <AlertCircle size={17} color="#ba8d3c" /> : <CheckCircle2 size={17} />}
-              <div>
-                <strong>{notice.title}</strong>
-                <p>{notice.message}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
         <CultivationGuideDialog
           open={guideOpen}
           onOpenChange={setGuideOpen}
