@@ -229,6 +229,20 @@ class CombatEngine:
             1,
             round(base * power_multiplier * arts_multiplier * realm * element * critical_multiplier - int(combat["enemy_defense"])),
         )
+        # 本命与装备法宝器纹神威触发
+        bonded = state.bonded_artifact
+        weapon = player.equipped_weapon
+        armor = player.equipped_armor
+        weapon_inscriptions = []
+        if bonded:
+            weapon_inscriptions.extend(state.artifact_refinements.get(bonded, {}).get("inscriptions", []))
+        if weapon and weapon != bonded:
+            weapon_inscriptions.extend(state.artifact_refinements.get(weapon, {}).get("inscriptions", []))
+        if "雷罡" in weapon_inscriptions and damage > 0:
+            damage += 40
+        if "噬血" in weapon_inscriptions and damage > 0:
+            leech = max(1, round(damage * 0.12))
+            player.health = min(player.health_max, player.health + leech)
         combat["enemy_health"] = max(0, int(combat["enemy_health"]) - damage)
         combat["player_observed"] = False
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
@@ -262,6 +276,17 @@ class CombatEngine:
         if defending or beast_guard or formation_guard:
             damage = max(1, round(damage * 0.5))
         player.health = max(0, player.health - damage)
+        # 护命之纹绝境护主
+        armor = player.equipped_armor
+        bonded = state.bonded_artifact
+        def_inscriptions = []
+        if bonded:
+            def_inscriptions.extend(state.artifact_refinements.get(bonded, {}).get("inscriptions", []))
+        if armor and armor != bonded:
+            def_inscriptions.extend(state.artifact_refinements.get(armor, {}).get("inscriptions", []))
+        if player.health <= 0 and "护命" in def_inscriptions and not combat.get("life_sanctuary_used"):
+            combat["life_sanctuary_used"] = True
+            player.health = max(1, round(player.health_max * 0.35))
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
 
     @staticmethod

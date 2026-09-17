@@ -423,6 +423,9 @@ class TianjiRankingsEngine:
             + player.dao_heart * 6
             + len(player.inventory) * 8
         )
+        if state.bonded_artifact:
+            rec = state.artifact_refinements.get(state.bonded_artifact, {})
+            power += int(rec.get("level", 0)) * 45 + int(rec.get("resonance", 0)) * 2 + len(rec.get("inscriptions", [])) * 30
         return max(100, power)
 
     @classmethod

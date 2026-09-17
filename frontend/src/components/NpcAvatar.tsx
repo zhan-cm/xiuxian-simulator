@@ -4,12 +4,16 @@ import guQingxuanImg from '../assets/avatars/gu_qingxuan.jpg'
 import baiNingshuangImg from '../assets/avatars/bai_ningshuang.jpg'
 import yunQiImg from '../assets/avatars/yun_qi.jpg'
 import xieWujiuImg from '../assets/avatars/xie_wujiu.jpg'
+import moChenImg from '../assets/avatars/mo_chen.jpg'
+import luoQianqianImg from '../assets/avatars/luo_qianqian.jpg'
 
 export const NPC_PORTRAIT_IMAGES: Record<string, string> = {
   顾清玄: guQingxuanImg,
   白凝霜: baiNingshuangImg,
   云栖: yunQiImg,
   谢无咎: xieWujiuImg,
+  墨尘: moChenImg,
+  洛浅浅: luoQianqianImg,
 }
 
 export interface NpcAppearanceData {

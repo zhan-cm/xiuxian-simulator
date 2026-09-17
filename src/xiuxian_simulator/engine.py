@@ -278,6 +278,14 @@ class GameEngine:
             return self._refine_artifact(action)
         if action.startswith("温养法宝"):
             return self._nourish_artifact(action)
+        if action.startswith("铭刻器纹"):
+            return self._inscribe_artifact(action)
+        if action.startswith("洗练器纹"):
+            return self._wash_artifact(action)
+        if action.startswith("熔铸神料"):
+            return self._infuse_artifact(action)
+        if action.startswith("器灵感应"):
+            return self._spirit_commune(action)
         if action.startswith("参悟"):
             return self._learn_art(action)
         if action.startswith(("参研道法", "研习功法", "研习法术")):
@@ -2110,6 +2118,79 @@ class GameEngine:
         return (
             f"{self.state.time_label}\n【本命温养 · {name}】灵力 -{ArtifactGrowthEngine.NOURISH_SPIRIT_COST}｜"
             f"器心契合 +{result['gained']}，当前 {result['resonance']}/100\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _inscribe_artifact(self, action: str) -> str:
+        raw = action.removeprefix("铭刻器纹").strip()
+        parts = raw.split()
+        if len(parts) < 2:
+            return "用法：铭刻器纹 [法宝名] [器纹名]\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        artifact_name, inscription_id = parts[0], parts[1]
+        try:
+            result = ArtifactGrowthEngine.inscribe(self.state, artifact_name, inscription_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        inscriptions_str = "、".join(f"【{i}】" for i in result["inscriptions"])
+        self.state.remember(f"在{artifact_name}上成功铭刻【{inscription_id}之纹】")
+        self._autosave()
+        return (
+            f"【器纹铭刻 · {artifact_name}】器纹引动天地道韵，铭刻成功！\n"
+            f"当前铭刻器纹：{inscriptions_str}\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _wash_artifact(self, action: str) -> str:
+        raw = action.removeprefix("洗练器纹").strip()
+        parts = raw.split()
+        if len(parts) < 2:
+            return "用法：洗练器纹 [法宝名] [器纹名]\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        artifact_name, inscription_id = parts[0], parts[1]
+        try:
+            result = ArtifactGrowthEngine.wash(self.state, artifact_name, inscription_id)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        self.state.remember(f"以真火洗去{artifact_name}上的【{inscription_id}之纹】")
+        self._autosave()
+        return (
+            f"【器纹洗练 · {artifact_name}】三昧真火散尽，已洗去【{result['washed']}之纹】，空出器纹槽位。\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _infuse_artifact(self, action: str) -> str:
+        raw = action.removeprefix("熔铸神料").strip()
+        parts = raw.split()
+        if len(parts) < 2:
+            return "用法：熔铸神料 [法宝名] [材料名]\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        artifact_name, material_name = parts[0], parts[1]
+        try:
+            result = ArtifactGrowthEngine.infuse(self.state, artifact_name, material_name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        self.state.remember(f"向{artifact_name}熔铸【{material_name}】，器心契合 +{result['gained']}")
+        self._autosave()
+        return (
+            f"【神料熔铸 · {artifact_name}】灵火纯青，【{result['material']}】化入宝胚！\n"
+            f"器心契合 +{result['gained']}，当前 {result['resonance']}/100\n\n"
+            f"{ArtifactGrowthEngine.panel_text(self.state)}"
+        )
+
+    def _spirit_commune(self, action: str) -> str:
+        name = action.removeprefix("器灵感应").strip()
+        if not name:
+            name = self.state.bonded_artifact
+        if not name:
+            return "尚未指定或认主本命法宝。\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        try:
+            result = ArtifactGrowthEngine.spirit_commune(self.state, name)
+        except ValueError as exc:
+            return str(exc) + "\n\n" + ArtifactGrowthEngine.panel_text(self.state)
+        self.state.remember(f"感应{name}器灵【{result['title']}】")
+        self._autosave()
+        spirit_note = f"｜真元共振，灵力回复 +{result['gained_spirit']}" if result["gained_spirit"] > 0 else ""
+        return (
+            f"【器灵通微 · {name}】器灵阶梯：{result['title']}{spirit_note}\n"
+            f"‘{result['dialogue']}’\n\n"
             f"{ArtifactGrowthEngine.panel_text(self.state)}"
         )
 

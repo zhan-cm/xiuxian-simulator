@@ -13,6 +13,8 @@ describe('NpcAvatar dual-mode portrait engine', () => {
     expect(NPC_PORTRAIT_IMAGES['白凝霜']).toBeDefined()
     expect(NPC_PORTRAIT_IMAGES['云栖']).toBeDefined()
     expect(NPC_PORTRAIT_IMAGES['谢无咎']).toBeDefined()
+    expect(NPC_PORTRAIT_IMAGES['墨尘']).toBeDefined()
+    expect(NPC_PORTRAIT_IMAGES['洛浅浅']).toBeDefined()
   })
 
   it('renders high-res anime artwork image for registered core characters', () => {
@@ -35,12 +37,22 @@ describe('NpcAvatar dual-mode portrait engine', () => {
     const xieImg = screen.getByRole('img', { name: '谢无咎立绘' })
     expect(xieImg).toBeInTheDocument()
     expect(xieImg).toHaveAttribute('src', NPC_PORTRAIT_IMAGES['谢无咎'])
+
+    rerender(<NpcAvatar item={{ name: '墨尘' }} size="large" />)
+    const moImg = screen.getByRole('img', { name: '墨尘立绘' })
+    expect(moImg).toBeInTheDocument()
+    expect(moImg).toHaveAttribute('src', NPC_PORTRAIT_IMAGES['墨尘'])
+
+    rerender(<NpcAvatar item={{ name: '洛浅浅' }} size="large" />)
+    const luoImg = screen.getByRole('img', { name: '洛浅浅立绘' })
+    expect(luoImg).toBeInTheDocument()
+    expect(luoImg).toHaveAttribute('src', NPC_PORTRAIT_IMAGES['洛浅浅'])
   })
 
   it('renders bespoke SVG vector portrait for characters without raster artwork', () => {
-    render(<NpcAvatar item={{ name: '墨尘' }} size="medium" />)
-    expect(screen.queryByRole('img', { name: '墨尘立绘' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('墨尘肖像')).toBeInTheDocument()
+    render(<NpcAvatar item={{ name: '青云知客' }} size="medium" />)
+    expect(screen.queryByRole('img', { name: '青云知客立绘' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('青云知客肖像')).toBeInTheDocument()
   })
 
   it('deduces correct known profiles and lore descriptions', () => {

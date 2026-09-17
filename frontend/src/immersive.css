@@ -8896,3 +8896,795 @@ body {
   }
 }
 
+/* ==========================================================================
+   V2 · 本命灵宝阁与九重器纹系统 (LifeboundArtifactModal)
+   ========================================================================== */
+
+.lifebound-topbar-trigger {
+  border-color: rgba(186, 148, 75, 0.45) !important;
+  color: #8c6328 !important;
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.95), rgba(245, 238, 224, 0.88)) !important;
+}
+
+.lifebound-topbar-trigger:hover {
+  border-color: #c99a3e !important;
+  color: #634316 !important;
+  box-shadow: 0 4px 12px rgba(186, 148, 75, 0.25) !important;
+}
+
+.lifebound-modal {
+  max-width: 960px !important;
+  width: 95vw !important;
+  max-height: 88vh !important;
+  background: #fbf9f4 !important;
+  border: 1px solid rgba(186, 148, 75, 0.35) !important;
+  box-shadow: 0 16px 48px rgba(32, 40, 36, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.lifebound-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 88vh;
+}
+
+.lifebound-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, #f7f3e8 0%, #efe7d5 100%);
+  border-bottom: 1px solid rgba(186, 148, 75, 0.3);
+  position: relative;
+}
+
+.lifebound-seal .ink-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #a8382b;
+  border-radius: 6px;
+  color: #a8382b;
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', serif;
+  font-size: 20px;
+  font-weight: bold;
+  background: rgba(168, 56, 43, 0.06);
+  box-shadow: 0 0 0 2px rgba(168, 56, 43, 0.2) inset;
+}
+
+.lifebound-titles {
+  flex: 1;
+}
+
+.lifebound-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #9c6c22;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.lifebound-titles h2 {
+  margin: 0;
+  font-size: 20px;
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', serif;
+  color: #24352b;
+  letter-spacing: 1px;
+}
+
+.lifebound-titles p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #6a7c73;
+}
+
+.lifebound-close-btn {
+  background: none;
+  border: none;
+  color: #6a7c73;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.lifebound-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #24352b;
+}
+
+/* 灵宝总览指示条 */
+.lifebound-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 12px 24px;
+  background: #f4ede1;
+  border-bottom: 1px solid rgba(186, 148, 75, 0.2);
+}
+
+.banner-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.banner-stat .stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ede3d1;
+  color: #8c6328;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+}
+
+.banner-stat small {
+  display: block;
+  font-size: 10px;
+  color: #7b8b82;
+}
+
+.banner-stat strong {
+  font-size: 13px;
+  color: #2a3d32;
+}
+
+.banner-resources {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: #5d6d64;
+  justify-self: end;
+}
+
+.banner-resources span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 标签导航 */
+.lifebound-nav {
+  display: flex;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #f8f6f0;
+  border-bottom: 1px solid rgba(186, 148, 75, 0.18);
+}
+
+.lifebound-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  font-size: 12px;
+  font-family: inherit;
+  color: #617369;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lifebound-tab:hover {
+  background: rgba(186, 148, 75, 0.1);
+  color: #2a3d32;
+}
+
+.lifebound-tab.active {
+  background: #ede5d3;
+  color: #8c6328;
+  font-weight: 600;
+  border-color: rgba(186, 148, 75, 0.35);
+  box-shadow: 0 2px 6px rgba(186, 148, 75, 0.15);
+}
+
+/* 内容主舞台 */
+.lifebound-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* 1. 器纹布局 */
+.inscriptions-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+}
+
+.stage-card {
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 4px 14px rgba(32, 40, 36, 0.05);
+  text-align: center;
+}
+
+.core-avatar {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f7eedb, #ede2cb);
+  border: 2px solid rgba(186, 148, 75, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9c6c22;
+  box-shadow: 0 0 16px rgba(186, 148, 75, 0.2);
+}
+
+.stage-card h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: #24352b;
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', serif;
+}
+
+.grade-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 10px;
+  border-radius: 4px;
+  background: rgba(186, 148, 75, 0.15);
+  color: #8c6328;
+  margin-bottom: 6px;
+}
+
+.effect-label {
+  font-size: 11px;
+  color: #5a6e63;
+  margin: 0 0 16px;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  text-align: left;
+}
+
+.slot-box {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px dashed rgba(186, 148, 75, 0.35);
+  background: #fbf9f4;
+  position: relative;
+}
+
+.slot-box.filled {
+  border-style: solid;
+  border-color: rgba(186, 148, 75, 0.4);
+  background: #f9f5ec;
+}
+
+.slot-idx {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  color: #a4b3aa;
+}
+
+.slot-content strong {
+  display: block;
+  font-size: 12px;
+  color: #9c6c22;
+}
+
+.slot-content small {
+  display: block;
+  font-size: 10px;
+  color: #6a7c73;
+  margin: 2px 0 6px;
+}
+
+.wash-btn {
+  padding: 2px 8px;
+  font-size: 9.5px;
+  border-radius: 4px;
+  border: 1px solid rgba(168, 56, 43, 0.3);
+  background: rgba(168, 56, 43, 0.05);
+  color: #a8382b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wash-btn:hover:not(:disabled) {
+  background: #a8382b;
+  color: #fff;
+}
+
+.slot-empty {
+  padding: 12px 0;
+  text-align: center;
+  font-size: 11px;
+  color: #9caaa1;
+}
+
+/* 太古器纹图鉴列表 */
+.inscriptions-catalog h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #24352b;
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', serif;
+}
+
+.inscriptions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.inscr-card {
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.2);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.inscr-card:hover {
+  border-color: rgba(186, 148, 75, 0.45);
+  box-shadow: 0 4px 12px rgba(32, 40, 36, 0.06);
+}
+
+.inscr-card.is-inscribed {
+  background: #faf7f0;
+  border-color: rgba(186, 148, 75, 0.45);
+}
+
+.inscr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.inscr-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inscr-name-wrap h4 {
+  margin: 0;
+  font-size: 13.5px;
+  color: #24352b;
+}
+
+.inscr-type,
+.inscr-req {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #ede4d1;
+  color: #7d5e23;
+}
+
+.inscr-effect {
+  font-size: 11px;
+  color: #a8382b;
+  font-weight: 600;
+}
+
+.inscr-desc {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #6a7c73;
+  line-height: 1.4;
+}
+
+.inscr-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inscr-cost {
+  font-size: 10.5px;
+  color: #8c9c93;
+}
+
+.inscribe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  background: linear-gradient(135deg, #f7edd7, #ebdcbc);
+  color: #825b1f;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inscribe-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #eedcb3, #dfc696);
+  box-shadow: 0 2px 6px rgba(186, 148, 75, 0.25);
+}
+
+.inscribe-btn:disabled {
+  background: #eae8e1;
+  color: #a1a9a4;
+  border-color: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+}
+
+.inscribed-tag {
+  font-size: 11px;
+  color: #3b7d59;
+  font-weight: 600;
+}
+
+/* 2. 神料熔铸 */
+.infusion-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f7eedb;
+  border-radius: 8px;
+  color: #8c6328;
+  font-size: 11.5px;
+  margin-bottom: 16px;
+}
+
+.infusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.infuse-card {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.22);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.mat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.mat-head h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #24352b;
+}
+
+.mat-count {
+  font-size: 11px;
+  color: #8c6328;
+  font-weight: 600;
+}
+
+.mat-desc {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #6a7c73;
+}
+
+.mat-bonus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  color: #4a6254;
+  margin-bottom: 12px;
+  padding: 6px 8px;
+  background: #f6f3eb;
+  border-radius: 4px;
+}
+
+.infuse-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  background: linear-gradient(135deg, #f7eedb, #ebdcbc);
+  color: #825b1f;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.infuse-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #eedcb3, #dfc696);
+}
+
+.infuse-action-btn:disabled {
+  background: #eae8e1;
+  color: #a1a9a4;
+  border-color: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+}
+
+/* 3. 器灵通微 */
+.spirit-panel {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.spirit-avatar-box {
+  padding: 24px;
+  background: linear-gradient(180deg, #fbf7ef, #f4ecd9);
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.spirit-icon-halo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fdeec9, #ebd6a4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9c6c22;
+  box-shadow: 0 0 24px rgba(186, 148, 75, 0.35);
+}
+
+.spirit-avatar-box h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #24352b;
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', serif;
+}
+
+.spirit-dialogue-bubble {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #63471c;
+  line-height: 1.5;
+}
+
+.spirit-stages h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #24352b;
+  text-align: left;
+}
+
+.stages-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.stage-step {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f7f5ed;
+  opacity: 0.6;
+}
+
+.stage-step.achieved {
+  opacity: 1;
+  border-color: rgba(186, 148, 75, 0.4);
+  background: #fdfaf3;
+  box-shadow: 0 2px 6px rgba(186, 148, 75, 0.1);
+}
+
+.stage-step strong {
+  display: block;
+  font-size: 11.5px;
+  color: #8c6328;
+}
+
+.stage-step small {
+  display: block;
+  font-size: 10px;
+  color: #6a7c73;
+}
+
+.spirit-commune-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.45);
+  background: linear-gradient(135deg, #f7eedb, #ebdcbc);
+  color: #825b1f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.spirit-commune-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #eedcb3, #dfc696);
+  box-shadow: 0 4px 12px rgba(186, 148, 75, 0.25);
+}
+
+/* 4. 法宝总览 */
+.artifacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.artifact-card {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.2);
+  border-radius: 8px;
+}
+
+.artifact-card.is-bonded {
+  border-color: rgba(186, 148, 75, 0.5);
+  background: #fdfaf4;
+  box-shadow: 0 4px 12px rgba(186, 148, 75, 0.12);
+}
+
+.art-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.art-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #f5eedf;
+  color: #8c6328;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.art-header h4 {
+  margin: 0;
+  font-size: 13.5px;
+  color: #24352b;
+}
+
+.art-header small {
+  font-size: 10px;
+  color: #7b8b82;
+}
+
+.bond-status {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.bond-status.bonded {
+  background: rgba(186, 148, 75, 0.2);
+  color: #8c6328;
+  font-weight: 600;
+}
+
+.bond-status.equipped {
+  background: rgba(56, 108, 86, 0.12);
+  color: #2b5d49;
+}
+
+.bond-status.stored {
+  background: #edf0ed;
+  color: #7f8e85;
+}
+
+.art-effect {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: #4a6254;
+}
+
+.art-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8c9c93;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.art-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.art-actions button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  cursor: pointer;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: #f7eedb;
+  color: #825b1f;
+  transition: all 0.15s ease;
+}
+
+.art-actions button:hover:not(:disabled) {
+  background: #eedcb3;
+}
+
+.art-actions button:disabled {
+  background: #eae8e1;
+  color: #a1a9a4;
+  border-color: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+}
+
+/* 底栏 */
+.lifebound-footer {
+  padding: 10px 24px;
+  border-top: 1px solid rgba(186, 148, 75, 0.2);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.lifebound-footer p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #7d8d84;
+  font-size: 10.5px;
+}
+
+.no-bonded-notice {
+  text-align: center;
+  padding: 48px 24px;
+  color: #7d8d84;
+}
+
+.no-bonded-notice svg {
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .inscriptions-layout {
+    grid-template-columns: 1fr;
+  }
+  .stages-list {
+    grid-template-columns: 1fr;
+  }
+}
+

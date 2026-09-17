@@ -35,6 +35,7 @@ import { CultivationGuideDialog } from './components/CultivationGuide'
 import { RealmsLadderDialog } from './components/RealmsLadderDialog'
 import { SectGateModal } from './components/SectGateModal'
 import { TianjiRankModal } from './components/TianjiRankModal'
+import { LifeboundArtifactModal } from './components/LifeboundArtifactModal'
 import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { findEncounterNpc } from './sceneLogic'
@@ -125,6 +126,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [sectGateOpen, setSectGateOpen] = useState(false)
   const [selectedSectGate, setSelectedSectGate] = useState<string | undefined>(undefined)
   const [tianjiOpen, setTianjiOpen] = useState(false)
+  const [lifeboundOpen, setLifeboundOpen] = useState(false)
 
   const handleOpenSectGate = (sectName?: string) => {
     setSelectedSectGate(sectName)
@@ -220,6 +222,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <Trophy size={16} />
                   <span>天机风云谱</span>
+                </button>
+                <button
+                  className="archive-trigger lifebound-topbar-trigger"
+                  type="button"
+                  onClick={() => setLifeboundOpen(true)}
+                  title="本命灵宝阁：九重太古器纹铭刻、神料熔铸、器灵通微与性命温养"
+                >
+                  <Sparkles size={16} />
+                  <span>本命灵宝</span>
                 </button>
               </>
             )}
@@ -489,6 +500,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           }}
           onOpenNpc={(name) => {
             onAction('拜访 ' + name)
+          }}
+        />
+        <LifeboundArtifactModal
+          open={lifeboundOpen}
+          onOpenChange={setLifeboundOpen}
+          artifacts={snapshot.artifacts}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
           }}
         />
       </div>

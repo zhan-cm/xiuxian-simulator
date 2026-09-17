@@ -279,6 +279,43 @@ export interface SectMembershipSnapshot {
   }
 }
 
+export interface AvailableInscriptionItem {
+  id: string
+  name: string
+  desc: string
+  effect_text: string
+  cost_stones: number
+  cost_materials: Record<string, number>
+  req_grade: string
+  slot_type: string
+  inscribed: boolean
+  can_inscribe: boolean
+  inscribe_reason: string
+  inscribe_action: string
+  wash_action: string
+}
+
+export interface InscriptionInfo {
+  id: string
+  name: string
+  slot_type: string
+  desc: string
+  cost_stones: number
+  cost_materials: Record<string, number>
+  req_grade: string
+  effect_text: string
+}
+
+export interface InfusableMaterialItem {
+  name: string
+  desc: string
+  bonus_text: string
+  resonance_gain: number
+  count: number
+  can_infuse: boolean
+  infuse_action: string
+}
+
 export interface ArtifactGrowthItem {
   name: string; mark: string; grade: string; slot: string; element: string
   level: number; level_label: string; level_cap: number; resonance: number; victories: number
@@ -286,12 +323,27 @@ export interface ArtifactGrowthItem {
   can_refine: boolean; refine_reason: string; refine_action: string
   can_bind: boolean; bind_reason: string; bind_action: string
   can_nourish: boolean; nourish_reason: string; nourish_action: string
+  inscriptions?: string[]
+  max_slots?: number
+  spirit_stage?: number
+  spirit_stage_label?: string
+  spirit_dialogue?: string
+  spirit_awakened?: boolean
+  spirit_commune_action?: string
+  available_inscriptions?: AvailableInscriptionItem[]
+  infused_materials?: Record<string, number>
 }
 
 export interface ArtifactGrowthSnapshot {
   count: number; bonded_name: string; bonded: Partial<ArtifactGrowthItem>
   level_cap: number; level_cap_label: string; artifacts: ArtifactGrowthItem[]
-  materials: { spirit_stones: number; spirit: number; spirit_max: number; spirit_iron: number; beast_materials: number }
+  all_inscriptions?: InscriptionInfo[]
+  infusable_materials?: InfusableMaterialItem[]
+  materials: {
+    spirit_stones: number; spirit: number; spirit_max: number
+    spirit_iron: number; beast_materials: number
+    divine_iron?: number; sword_soul?: number
+  }
   history: string[]
 }
 
