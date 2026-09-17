@@ -602,7 +602,83 @@ export interface Snapshot {
   sect_visit?: SectVisitSnapshot
   natural_exploration?: NaturalExplorationSnapshot
   tianji_rankings?: TianjiSnapshot
+  tribulation?: TribulationSnapshot
   output?: string
+}
+
+export interface TribulationTierInfo {
+  tier: number
+  name: string
+  title: string
+  description: string
+  waves_count: number
+  base_power: number
+  wave_names: string[]
+  element: string
+  threat_level: string
+}
+
+export interface DaoProtectionInfo {
+  has_artifact: boolean
+  artifact_name: string
+  artifact_tier: string
+  affinity: number
+  inscriptions: string[]
+  has_thunder_seal: boolean
+  has_life_seal: boolean
+  has_solid_seal: boolean
+  has_chaos_seal: boolean
+  spirit_stage: string
+  spirit_stage_index: number
+  formation_shield: number
+  has_ward_talisman: boolean
+  has_protect_pill: boolean
+  has_breakthrough_pill: boolean
+  thunder_mitigation_rate: number
+  protection_tags: string[]
+  defense_score: number
+  readiness_label: string
+}
+
+export interface TribulationSnapshot {
+  current_realm: string
+  target_realm: string
+  target_realm_index: number
+  tier_info: TribulationTierInfo
+  protection: DaoProtectionInfo
+}
+
+export interface TribulationTrigger {
+  kind: string
+  title: string
+  desc: string
+}
+
+export interface TribulationWaveRecord {
+  wave: number
+  name: string
+  thunder_damage: number
+  mitigated_damage: number
+  actual_damage: number
+  player_health_before: number
+  player_health_after: number
+  triggers: TribulationTrigger[]
+  passed: boolean
+  description: string
+}
+
+export interface TribulationDetail {
+  tier_name: string
+  route: string
+  total_waves: number
+  waves: TribulationWaveRecord[]
+  fatal: boolean
+  life_saved: boolean
+  life_saved_source: string
+  heart_trial_passed: boolean
+  summary_text: string
+  damage_total: number
+  mitigated_total: number
 }
 
 export interface SectTreasureItem {

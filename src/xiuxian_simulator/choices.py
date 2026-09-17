@@ -43,6 +43,12 @@ class DecisionCatalog:
     @staticmethod
     def _major_breakthrough(state: GameState) -> dict[str, Any]:
         choices = []
+        target_realm_index = min(9, state.player.realm_index + 1)
+        realm_action_names = {1: "筑基", 2: "结晶", 3: "结丹", 4: "通灵", 5: "化婴", 6: "化神", 7: "悟道", 8: "羽化", 9: "登仙"}
+        action_word = realm_action_names.get(target_realm_index, "破境")
+        from .tribulation import TribulationEngine
+        tier_info = TribulationEngine.get_tier_info(target_realm_index)
+
         for route, tone in (("人道", "safe"), ("地道", "primary"), ("天道", "danger")):
             requirements = ProgressionEngine.major_requirements(state.player, route)
             needs = "、".join(f"{name}×{count}" for name, count in requirements.items())
@@ -55,11 +61,11 @@ class DecisionCatalog:
             }[route]
             choices.append(
                 {
-                    "label": f"{route}筑基",
+                    "label": f"{route}{action_word}",
                     "action": f"突破 {route}",
                     "summary": f"材料 {needs} · 心魔 {heart_chance}% / 雷劫 {thunder_chance}%",
-                    "description": f"需要 {needs}；心魔判定 {heart_chance}%，雷劫判定 {thunder_chance}%。{route_meaning}",
-                    "tooltip": f"{route_meaning} 两次判定都通过才算突破成功；所需材料：{needs}。",
+                    "description": f"需引动【{tier_info['name']}】；心魔判定 {heart_chance}%，雷劫判定 {thunder_chance}%。{route_meaning}",
+                    "tooltip": f"引动{tier_info['name']}！{route_meaning} 两次判定都通过才算突破成功；所需材料：{needs}。",
                     "tone": tone,
                     "disabled": bool(missing),
                     "disabled_reason": "缺少 " + "、".join(missing) if missing else "",

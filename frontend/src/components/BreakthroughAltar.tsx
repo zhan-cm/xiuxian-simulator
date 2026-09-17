@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { AlertCircle, CheckCircle2, Crown, Flame, Info, Sparkles, X } from 'lucide-react'
+import { Activity, AlertCircle, CheckCircle2, Crown, Flame, Info, Shield, Sparkles, Swords, X, Zap } from 'lucide-react'
 import type { Snapshot } from '../api/types'
 
 const REALM_NAMES = ['炼气', '筑基', '结晶', '金丹', '具灵', '元婴', '化神', '悟道', '羽化', '登仙']
@@ -47,6 +47,12 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
     snapshot.inventory?.items?.some((item) => item.name === '道韵' && item.count > 0)
   )
   const hasHeavenTreasure = hasEarthTreasure && hasSpiritOrb && hasDaoRhyme
+
+  const tribulation = snapshot.tribulation
+  const tierInfo = tribulation?.tier_info
+  const protection = tribulation?.protection
+  const outputText = snapshot.output || ''
+  const hasTribulationOutput = outputText.includes('渡劫战报') || outputText.includes('天劫雷罚')
 
   const isDestinyPhase = state.phase === 'destiny_choice' || decision?.eyebrow === '逆天改命' || (decision?.title || '').includes('逆天改命')
   const isMajorDecisionPhase = state.phase === 'major_breakthrough_choice' || decision?.eyebrow === '破境路线'
@@ -168,6 +174,93 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
           </span>
         </div>
       </div>
+
+      {/* 渡劫实况回响（若刚经历渡劫） */}
+      {hasTribulationOutput && (
+        <div className="tribulation-chronicle-box" role="region" aria-label="渡劫回响战报">
+          <div className="chronicle-header">
+            <Zap size={16} color="#ba8d3c" />
+            <strong>九天雷劫 · 渡劫回响</strong>
+          </div>
+          <p className="chronicle-body">{outputText.split('【逆天改命')[0].trim()}</p>
+        </div>
+      )}
+
+      {/* 天劫雷罚威仪与护道底蕴面板 */}
+      {tierInfo && (
+        <section className="tribulation-overview-card" aria-label="九天雷劫与护道底蕴">
+          <div className="tribulation-hero-grid">
+            {/* 左侧：天劫威仪 */}
+            <div className="tribulation-danger-block">
+              <div className="tribulation-title-row">
+                <span className="tribulation-pill-tag">大境界雷罚</span>
+                <span className="tribulation-threat-badge">{tierInfo.threat_level}</span>
+              </div>
+              <h3 className="tribulation-name">
+                <Zap size={20} className="thunder-icon" />
+                <span>{tierInfo.name}</span>
+              </h3>
+              <p className="tribulation-desc">{tierInfo.description}</p>
+              <div className="tribulation-waves-meta">
+                <span className="wave-badge">
+                  <Activity size={13} /> 共 <strong>{tierInfo.waves_count}</strong> 重神雷轰顶
+                </span>
+                <span className="wave-badge">
+                  <Flame size={13} /> 异象：{tierInfo.element}
+                </span>
+              </div>
+            </div>
+
+            {/* 右侧：护道底蕴检视 */}
+            <div className="dao-protection-block">
+              <div className="protection-title-row">
+                <div className="protection-title-left">
+                  <Shield size={16} color="#ba8d3c" />
+                  <strong>护道底牌大阵</strong>
+                </div>
+                <span className={`readiness-seal readiness-${protection?.readiness_label || '单薄'}`}>
+                  {protection?.readiness_label || '单薄涉险'}
+                </span>
+              </div>
+
+              <div className="protection-grid-specs">
+                <div className="prot-spec-item">
+                  <small>抗雷削减</small>
+                  <strong>+{protection?.thunder_mitigation_rate || 0}%</strong>
+                </div>
+                <div className="prot-spec-item">
+                  <small>阵法灵幕</small>
+                  <strong>{protection?.formation_shield ? `${protection.formation_shield}点` : '无阵法'}</strong>
+                </div>
+                <div className="prot-spec-item">
+                  <small>避劫神符</small>
+                  <strong style={{ color: protection?.has_ward_talisman ? '#2b6351' : '#888' }}>
+                    {protection?.has_ward_talisman ? '已就绪' : '未佩戴'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* 核心法宝神威标签 */}
+              <div className="protection-tags-list">
+                {protection?.has_artifact ? (
+                  <div className="artifact-status-pill">
+                    <Swords size={12} />
+                    <span>本命【{protection.artifact_name}】· {protection.spirit_stage}</span>
+                  </div>
+                ) : (
+                  <span className="no-artifact-hint">暂未认主本命灵宝，以肉身直面天雷</span>
+                )}
+                {protection?.protection_tags?.map((tag) => (
+                  <span key={tag} className="dao-seal-tag">
+                    {tag.includes('免死') || tag.includes('避劫') ? '🔥 ' : tag.includes('引雷') ? '⚡ ' : '✨ '}
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 三大破境道基路线对比 (人道 / 地道 / 天道) */}
       <div className="altar-routes-container">

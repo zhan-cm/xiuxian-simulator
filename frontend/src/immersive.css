@@ -9688,3 +9688,253 @@ body {
   }
 }
 
+/* ==========================================================================
+   7. 九天雷劫雷罚与护道底蕴面板 (Tribulation & Dao Protection)
+   ========================================================================== */
+.tribulation-chronicle-box {
+  background: linear-gradient(135deg, rgba(38, 24, 58, 0.95), rgba(28, 20, 42, 0.92));
+  border: 1.5px solid rgba(179, 136, 255, 0.4);
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: #ede7f6;
+  box-shadow: 0 6px 20px rgba(28, 16, 45, 0.35);
+  animation: tribulationPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes tribulationPulse {
+  0% {
+    box-shadow: 0 4px 16px rgba(124, 77, 255, 0.2);
+  }
+  100% {
+    box-shadow: 0 8px 26px rgba(179, 136, 255, 0.45);
+  }
+}
+
+.chronicle-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #ffd54f;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 14px;
+}
+
+.chronicle-body {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #d1c4e9;
+  white-space: pre-wrap;
+}
+
+.tribulation-overview-card {
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(253, 250, 244, 0.96), rgba(246, 241, 230, 0.94));
+  padding: 16px 20px;
+  box-shadow: 0 6px 20px rgba(35, 60, 48, 0.06);
+}
+
+.tribulation-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .tribulation-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tribulation-danger-block {
+  background: linear-gradient(145deg, rgba(28, 24, 38, 0.94), rgba(20, 16, 30, 0.96));
+  border: 1px solid rgba(179, 136, 255, 0.3);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #f3e5f5;
+}
+
+.tribulation-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tribulation-pill-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(179, 136, 255, 0.2);
+  color: #d1c4e9;
+}
+
+.tribulation-threat-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(239, 83, 80, 0.25);
+  color: #ef5350;
+  font-weight: bold;
+}
+
+.tribulation-name {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-family: "STKaiti", "KaiTi", serif;
+  color: #ffd54f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.thunder-icon {
+  color: #ffd54f;
+  animation: thunderFlicker 2s infinite;
+}
+
+@keyframes thunderFlicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.tribulation-desc {
+  margin: 0 0 10px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #b39ddb;
+}
+
+.tribulation-waves-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wave-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #ede7f6;
+}
+
+.dao-protection-block {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.protection-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.protection-title-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #233c30;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 14px;
+}
+
+.readiness-seal {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.readiness-万全通天 {
+  background: rgba(43, 99, 81, 0.15);
+  color: #2b6351;
+  border: 1px solid rgba(43, 99, 81, 0.4);
+}
+
+.readiness-底蕴深厚 {
+  background: rgba(54, 120, 95, 0.12);
+  color: #2b6351;
+}
+
+.readiness-稍备护道 {
+  background: rgba(186, 141, 60, 0.15);
+  color: #8c6020;
+}
+
+.readiness-单薄涉险 {
+  background: rgba(194, 65, 12, 0.12);
+  color: #c2410c;
+}
+
+.protection-grid-specs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: rgba(248, 245, 237, 0.8);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.prot-spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prot-spec-item small {
+  font-size: 10px;
+  color: #7b8e84;
+}
+
+.prot-spec-item strong {
+  font-size: 13px;
+  color: #1c3b2e;
+}
+
+.protection-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.artifact-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(186, 141, 60, 0.15);
+  color: #8c6020;
+  border: 1px solid rgba(186, 141, 60, 0.3);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.no-artifact-hint {
+  font-size: 10.5px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.dao-seal-tag {
+  font-size: 10px;
+  background: rgba(35, 60, 48, 0.06);
+  border: 1px solid rgba(35, 60, 48, 0.12);
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+

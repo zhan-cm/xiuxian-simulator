@@ -785,6 +785,9 @@ class GameEngine:
             except ValueError as exc:
                 return str(exc)
             self._advance_time()
+            trib_summary = result.tribulation_detail.get("summary_text", "") if hasattr(result, "tribulation_detail") else ""
+            trib_block = f"\n\n{trib_summary}" if trib_summary else ""
+
             if result.success:
                 choices = ProgressionEngine.destiny_choices(self.state)
                 self.state.pending_choices = choices
@@ -794,7 +797,7 @@ class GameEngine:
                 options = "\n".join(f"{index}. {trait}" for index, trait in enumerate(choices, 1))
                 return (
                     f"{self.state.time_label}\n{route}突破成功：{result.old_realm} → {result.new_realm}\n"
-                    f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}\n\n"
+                    f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}{trib_block}\n\n"
                     f"【逆天改命 · 三选一】\n{options}\n输入：选择 1（或直接输入天资名称）"
                 )
             self.state.remember(
@@ -807,11 +810,11 @@ class GameEngine:
                     f"{self.state.time_label}\n{route}突破失败，{result.failure_type}将你吞没。\n"
                     f"【陨落结局】{result.old_realm}，道途止于此地。"
                 )
-            injury_kind = "heart" if result.failure_type == "心魔劫" else ("foundation" if player.realm_index >= 2 else "meridian")
+            injury_kind = "heart" if "心魔" in result.failure_type else ("foundation" if player.realm_index >= 2 else "meridian")
             RecoveryEngine.register(self.state, injury_kind, 3 if player.realm_index >= 2 else 2, f"{route}突破·{result.failure_type}")
             return (
                 f"{self.state.time_label}\n{route}突破失败：败于{result.failure_type}。\n"
-                f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}\n\n"
+                f"心魔劫 {result.heart_roll}/{result.heart_chance}｜雷劫 {result.thunder_roll}/{result.thunder_chance}{trib_block}\n\n"
                 + self._status()
             )
         try:

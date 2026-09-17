@@ -69,6 +69,7 @@ class PlayerState:
     dao_points: int = 0
     dao_levels: dict[str, int] = field(default_factory=dict)
     dao_history: list[str] = field(default_factory=list)
+    lifebound_artifact: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

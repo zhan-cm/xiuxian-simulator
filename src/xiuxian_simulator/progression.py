@@ -3,7 +3,8 @@ from __future__ import annotations
 import hashlib
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from .dao import DaoEngine
 from .state import GameState, PlayerState
@@ -98,6 +99,7 @@ class MajorBreakthroughResult:
     thunder_chance: int
     failure_type: str = ""
     fatal: bool = False
+    tribulation_detail: dict[str, Any] = field(default_factory=dict)
 
 
 class ProgressionEngine:
@@ -272,9 +274,19 @@ class ProgressionEngine:
         old_realm = player.realm
         heart_roll = cls.deterministic_roll(state, f"heart-demon:{route}:{player.realm_index}")
         thunder_roll = cls.deterministic_roll(state, f"thunder:{route}:{player.realm_index}")
-        heart_pass = heart_roll <= heart_chance
-        thunder_pass = thunder_roll <= thunder_chance
-        success = heart_pass and thunder_pass
+
+        from .tribulation import TribulationEngine
+
+        trib_result = TribulationEngine.simulate_tribulation(
+            state,
+            route,
+            heart_roll=heart_roll,
+            thunder_roll=thunder_roll,
+            base_heart_chance=heart_chance,
+            base_thunder_chance=thunder_chance,
+        )
+
+        success = trib_result.success
         failure_type = ""
         fatal = False
 
@@ -284,9 +296,49 @@ class ProgressionEngine:
             player.cultivation = 0
             cls.sync_realm(player)
             cls._apply_route_reward(player, route)
+            # 雷罡神纹引雷淬器收益
+            lifebound = getattr(player, "lifebound_artifact", None) or {}
+            if lifebound.get("active") and "雷罡" in lifebound.get("inscriptions", []):
+                lifebound["affinity"] = min(100, int(lifebound.get("affinity", 0)) + 3)
         else:
-            failure_type = "心魔劫" if not heart_pass else "雷劫"
-            fatal = cls._apply_major_failure(state, failure_type)
+            if trib_result.life_saved:
+                failure_type = "雷劫（护命免死）" if trib_result.heart_trial_passed else "心魔劫（护命免死）"
+                player.health = max(1, round(player.health_max * 0.4))
+                player.condition = f"轻伤（渡劫未果·{trib_result.life_saved_source}保全）"
+                player.cultivation = round(player.cultivation_required * 0.75)
+                player.breakthrough_cooldown_months = 3
+                fatal = False
+            else:
+                failure_type = "心魔劫" if not trib_result.heart_trial_passed else "雷劫"
+                fatal = cls._apply_major_failure(state, failure_type)
+
+        trib_detail = {
+            "tier_name": trib_result.tier_name,
+            "route": trib_result.route,
+            "total_waves": trib_result.total_waves,
+            "waves": [
+                {
+                    "wave": w.wave,
+                    "name": w.name,
+                    "thunder_damage": w.thunder_damage,
+                    "mitigated_damage": w.mitigated_damage,
+                    "actual_damage": w.actual_damage,
+                    "player_health_before": w.player_health_before,
+                    "player_health_after": w.player_health_after,
+                    "triggers": w.triggers,
+                    "passed": w.passed,
+                    "description": w.description,
+                }
+                for w in trib_result.waves
+            ],
+            "fatal": trib_result.fatal,
+            "life_saved": trib_result.life_saved,
+            "life_saved_source": trib_result.life_saved_source,
+            "heart_trial_passed": trib_result.heart_trial_passed,
+            "summary_text": trib_result.summary_text,
+            "damage_total": trib_result.damage_total,
+            "mitigated_total": trib_result.mitigated_total,
+        }
 
         return MajorBreakthroughResult(
             success=success,
@@ -299,6 +351,7 @@ class ProgressionEngine:
             thunder_chance=thunder_chance,
             failure_type=failure_type,
             fatal=fatal,
+            tribulation_detail=trib_detail,
         )
 
     @staticmethod
