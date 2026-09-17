@@ -39,9 +39,10 @@ from .save_manager import SaveManager
 from .state import GameState
 from .encounters import RedDustEncounterEngine
 from .partner_system import DaoPartnerEngine
+from .ancient_tomb import AncientTombEngine
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 同修阁 仙家子嗣 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 同修阁 仙家子嗣 古墓探险 存档 帮助"
 
 
 class GameEngine:
@@ -390,6 +391,16 @@ class GameEngine:
             return self._conceive_partner_child(action)
         if action in {"仙家子嗣", "子嗣", "宗族谱牒"}:
             return self._partner_children_panel()
+        if action in {"古墓", "古墓探险", "太古秘境", "古墓秘境"}:
+            return self._ancient_tomb_panel()
+        if action.startswith("进入古墓"):
+            return self._enter_ancient_tomb(action)
+        if action.startswith("古墓移动"):
+            return self._move_ancient_tomb(action)
+        if action.startswith("古墓探索"):
+            return self._interact_ancient_tomb(action)
+        if action in {"古墓撤离", "离开古墓"}:
+            return self._retreat_ancient_tomb()
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -2762,6 +2773,114 @@ class GameEngine:
             + "\n".join(lines)
             + "\n\n年满十六岁后，子嗣将筑基出师，游历九州寻找天材地宝回报双亲。"
         )
+
+    def _ancient_tomb_panel(self) -> str:
+        tomb = self.state.active_tomb
+        if not tomb:
+            themes = AncientTombEngine.get_available_themes(self.state)
+            lines = []
+            for t in themes:
+                status = "【已可进入】" if t["unlocked"] else f"【需达到{t['recommended_realm']}】"
+                lines.append(f"· 【{t['name']}】（{status}，镇墓秘宝：{t['special_drop']}）\n  {t['description']}")
+            return (
+                "【太古大能秘境古墓】\n"
+                "九州大地沉睡着上古飞升大能与远古道尊遗冢，内藏无上仙缘，亦有噬骨墓煞与守陵凶灵！\n\n"
+                + "\n\n".join(lines)
+                + "\n\n指令：进入古墓 [剑冢/丹陵/冥宫] 或 进入古墓 1/2/3"
+            )
+
+        cx, cy = tomb["player_x"], tomb["player_y"]
+        cur_tile = next((t for t in tomb["grid"] if t["x"] == cx and t["y"] == cy), None)
+        tile_desc = f"{cur_tile['name']}（{'已勘破' if cur_tile['cleared'] else '未探明'}）" if cur_tile else "未知石室"
+        miasma_warn = "【墓煞严重】周身灵力受阻，需尽快调息驱散！" if tomb.get("miasma", 0) >= 60 else ""
+
+        # Draw ASCII map
+        grid_rows = []
+        for y in range(AncientTombEngine.GRID_HEIGHT):
+            row_symbols = []
+            for x in range(AncientTombEngine.GRID_WIDTH):
+                tile = next((t for t in tomb["grid"] if t["x"] == x and t["y"] == y), None)
+                if x == cx and y == cy:
+                    row_symbols.append("【你】")
+                elif not tile or not tile["revealed"]:
+                    row_symbols.append(" 雾 ")
+                elif tile["type"] == "entrance":
+                    row_symbols.append(" 入 ")
+                elif tile["type"] == "boss":
+                    row_symbols.append(" 殿 " if not tile["cleared"] else " 梯 ")
+                elif tile["cleared"]:
+                    row_symbols.append(" 〇 ")
+                elif tile["type"] == "treasure":
+                    row_symbols.append(" 匣 ")
+                elif tile["type"] == "trap":
+                    row_symbols.append(" 阵 ")
+                elif tile["type"] == "monster":
+                    row_symbols.append(" 兽 ")
+                elif tile["type"] == "altar":
+                    row_symbols.append(" 泉 ")
+                else:
+                    row_symbols.append(" · ")
+            grid_rows.append("".join(row_symbols))
+
+        map_str = "\n".join(grid_rows)
+        recent_log = "\n".join(tomb.get("log", [])[-3:])
+
+        return (
+            f"【{tomb['name']} · 第 {tomb['depth']}/{tomb['max_depth']} 层】\n"
+            f"位置：({cx}, {cy})｜石室：{tile_desc}\n"
+            f"墓煞侵蚀：{tomb.get('miasma', 0)}/100 {miasma_warn}\n"
+            f"已获秘宝：灵石 +{tomb.get('loot_stones', 0)}，神物 {len(tomb.get('loot_items', {}))} 种\n\n"
+            f"【迷雾灵图】（图例：你=当前，雾=迷雾，匣=宝匣，阵=机关，兽=守卫，泉=灵泉，殿=主墓）\n"
+            f"{map_str}\n\n"
+            f"【近况】\n{recent_log}\n\n"
+            f"指令：古墓移动 上／下／左／右｜古墓探索 [交互/开箱/破阵/诛灭/调息/下层]｜古墓撤离"
+        )
+
+    def _enter_ancient_tomb(self, action: str) -> str:
+        param = action.removeprefix("进入古墓").strip()
+        theme_id = "sword_crypt"
+        if "丹" in param or "2" in param:
+            theme_id = "alchemy_crypt"
+        elif "冥" in param or "鬼" in param or "3" in param:
+            theme_id = "ghost_crypt"
+        elif "剑" in param or "1" in param:
+            theme_id = "sword_crypt"
+
+        try:
+            res = AncientTombEngine.enter_tomb(self.state, theme_id)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return res["msg"] + "\n\n" + self._ancient_tomb_panel()
+
+    def _move_ancient_tomb(self, action: str) -> str:
+        direction = action.removeprefix("古墓移动").strip()
+        try:
+            res = AncientTombEngine.move(self.state, direction)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return res["msg"] + "\n\n" + self._ancient_tomb_panel()
+
+    def _interact_ancient_tomb(self, action: str) -> str:
+        param = action.removeprefix("古墓探索").strip()
+        try:
+            res = AncientTombEngine.interact(self.state, param)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        if not self.state.active_tomb:
+            return res.get("msg", "已离开古墓。")
+        return res.get("msg", "") + "\n\n" + self._ancient_tomb_panel()
+
+    def _retreat_ancient_tomb(self) -> str:
+        try:
+            res = AncientTombEngine.retreat(self.state)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return res["msg"] + "\n\n" + self._status()
+
 
 
     def _status(self) -> str:

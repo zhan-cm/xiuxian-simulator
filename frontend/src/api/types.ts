@@ -605,6 +605,7 @@ export interface Snapshot {
   tribulation?: TribulationSnapshot
   encounters?: EncounterSnapshot
   partner_system?: DaoPartnerSystemSnapshot
+  ancient_tomb?: AncientTombSnapshot
   output?: string
 }
 
@@ -973,4 +974,50 @@ export interface DaoPartnerSystemSnapshot {
   children: ChildDescendantData[]
   messages: PartnerMessageRecord[]
   active_blessings: Record<string, PartnerBlessingData>
+}
+
+export interface TombTileData {
+  x: number
+  y: number
+  type: 'entrance' | 'corridor' | 'treasure' | 'trap' | 'monster' | 'altar' | 'boss'
+  name: string
+  description: string
+  revealed: boolean
+  cleared: boolean
+  reward_stones?: number
+  reward_items?: Record<string, number>
+  enemy_power?: number
+  enemy_health?: number
+  trap_dc?: number
+}
+
+export interface TombThemeData {
+  id: string
+  name: string
+  description: string
+  recommended_realm: string
+  unlocked: boolean
+  special_drop: string
+}
+
+export interface ActiveTombData {
+  id: string
+  name: string
+  depth: number
+  max_depth: number
+  player_x: number
+  player_y: number
+  miasma: number
+  loot_items: Record<string, number>
+  loot_stones: number
+  completed: boolean
+  grid: TombTileData[]
+  log: string[]
+}
+
+export interface AncientTombSnapshot {
+  active: boolean
+  current_tomb?: ActiveTombData | null
+  themes: TombThemeData[]
+  history: string[]
 }

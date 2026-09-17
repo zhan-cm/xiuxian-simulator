@@ -40,6 +40,7 @@ import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { RedDustEncounterModal } from './components/RedDustEncounterModal'
 import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
+import { AncientTombModal } from './components/AncientTombModal'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -131,6 +132,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [lifeboundOpen, setLifeboundOpen] = useState(false)
   const [encounterOpen, setEncounterOpen] = useState(false)
   const [partnerChamberOpen, setPartnerChamberOpen] = useState(false)
+  const [ancientTombOpen, setAncientTombOpen] = useState(false)
 
   const pendingEncounter = snapshot.encounters?.pending
   useEffect(() => {
@@ -266,6 +268,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <HeartHandshake size={16} />
                   <span>仙侣同修阁</span>
+                </button>
+                <button
+                  className="archive-trigger ancient-tomb-topbar-trigger"
+                  type="button"
+                  onClick={() => setAncientTombOpen(true)}
+                  title="太古古墓秘境：Roguelike 走格子迷雾探险、破阵开匣、诛灭守灵与大能秘宝"
+                >
+                  <Compass size={16} />
+                  <span>古墓秘境</span>
                 </button>
               </>
             )}
@@ -561,6 +572,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           open={partnerChamberOpen}
           onOpenChange={setPartnerChamberOpen}
           partnerSystem={snapshot.partner_system}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
+          }}
+        />
+        <AncientTombModal
+          open={ancientTombOpen}
+          onOpenChange={setAncientTombOpen}
+          ancientTomb={snapshot.ancient_tomb}
           busy={busy}
           readOnly={showcase}
           onAction={(act) => {

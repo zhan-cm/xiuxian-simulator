@@ -11077,5 +11077,685 @@ body {
   padding-top: 6px;
 }
 
+/* ========================================================================== */
+/* 太古大能秘境古墓探索 · Roguelike 迷雾地宫样式 (Ancient Tomb Dungeon Modal)   */
+/* ========================================================================== */
+
+.tomb-dialog-overlay {
+  background: rgba(8, 14, 12, 0.85);
+  backdrop-filter: blur(8px);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.tomb-modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 94vw;
+  max-width: 980px;
+  max-height: 90vh;
+  background: linear-gradient(165deg, #18221d 0%, #111a15 60%, #0b130f 100%);
+  border: 1px solid rgba(195, 160, 100, 0.4);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 101;
+  color: #d6e2db;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.tomb-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: linear-gradient(90deg, rgba(28, 48, 38, 0.9) 0%, rgba(18, 30, 24, 0.95) 100%);
+  border-bottom: 1px solid rgba(190, 155, 95, 0.3);
+}
+
+.tomb-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tomb-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(180, 140, 80, 0.15);
+  color: #dfb26b;
+  border: 1px solid rgba(180, 140, 80, 0.3);
+}
+
+.tomb-modal-title {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5ede8;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.tomb-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #8fa69a;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.tomb-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* 主题选择界面 */
+.tomb-themes-view {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tomb-view-intro h3 {
+  font-family: "KaiTi", serif;
+  font-size: 22px;
+  color: #f1dfbf;
+  margin: 0 0 8px;
+}
+
+.tomb-view-intro p {
+  color: #8fa498;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.tomb-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.tomb-theme-card {
+  background: rgba(26, 38, 31, 0.7);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tomb-theme-card:hover {
+  border-color: rgba(210, 175, 110, 0.5);
+  background: rgba(32, 48, 39, 0.85);
+  transform: translateY(-2px);
+}
+
+.tomb-theme-card.selected {
+  border-color: #dfb26b;
+  box-shadow: 0 0 16px rgba(223, 178, 107, 0.2);
+}
+
+.tomb-theme-card.locked {
+  opacity: 0.6;
+}
+
+.theme-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.theme-name {
+  font-family: "KaiTi", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f5eedf;
+  margin: 0;
+}
+
+.theme-badge-unlocked {
+  font-size: 11px;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.theme-badge-locked {
+  font-size: 11px;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.theme-desc {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #9cb5a8;
+  margin: 0;
+  flex: 1;
+}
+
+.theme-loot-preview {
+  font-size: 12px;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.theme-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(223, 178, 107, 0.4);
+  background: linear-gradient(135deg, #8a6a32 0%, #634b22 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-enter-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a6803c 0%, #7a5e2a 100%);
+  transform: translateY(-1px);
+}
+
+.theme-enter-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tomb-history-ledger {
+  background: rgba(20, 30, 25, 0.6);
+  border: 1px solid rgba(180, 150, 100, 0.2);
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+
+.ledger-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #dfb26b;
+  margin-bottom: 8px;
+}
+
+.ledger-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #8fa69a;
+  line-height: 1.7;
+}
+
+/* 探险主台布局 */
+.tomb-explorer-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 20px 20px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.tomb-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(25, 38, 30, 0.8);
+  border: 1px solid rgba(190, 155, 95, 0.25);
+  border-radius: 12px;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.status-item span {
+  font-size: 10.5px;
+  color: #8fa69a;
+}
+
+.depth-badge strong {
+  font-size: 14px;
+  color: #f5eedf;
+}
+
+.miasma-item {
+  min-width: 160px;
+}
+
+.miasma-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.miasma-label-row strong {
+  font-size: 11.5px;
+  color: #d8b4e2;
+}
+
+.miasma-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.miasma-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.miasma-bar-fill.safe {
+  background: #34d399;
+}
+
+.miasma-bar-fill.warning {
+  background: #fbbf24;
+}
+
+.miasma-bar-fill.danger {
+  background: #f43f5e;
+}
+
+.loot-bag .loot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.loot-pill {
+  font-size: 11px;
+  color: #dfb26b;
+  background: rgba(223, 178, 107, 0.12);
+  border: 1px solid rgba(223, 178, 107, 0.25);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.loot-pill.item {
+  color: #a7f3d0;
+  background: rgba(167, 243, 208, 0.1);
+  border-color: rgba(167, 243, 208, 0.25);
+}
+
+.tomb-retreat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 100, 100, 0.35);
+  background: rgba(180, 50, 50, 0.2);
+  color: #fca5a5;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tomb-retreat-btn:hover:not(:disabled) {
+  background: rgba(180, 50, 50, 0.35);
+  color: #fff;
+}
+
+/* 中央舞台：网格与控制台 */
+.tomb-main-stage {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .tomb-main-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tomb-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tomb-grid-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 6px;
+  aspect-ratio: 1 / 1;
+  background: rgba(15, 24, 19, 0.95);
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(180, 150, 100, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) inset;
+}
+
+.tomb-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: default;
+  transition: all 0.15s ease;
+}
+
+.tomb-tile.fog {
+  background: #0d1612;
+  border-color: rgba(255, 255, 255, 0.03);
+}
+
+.tomb-tile.revealed {
+  background: linear-gradient(135deg, #1e2c24 0%, #15221b 100%);
+  border-color: rgba(180, 150, 100, 0.2);
+}
+
+.tomb-tile.current {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.45) inset, 0 0 8px rgba(52, 211, 153, 0.3);
+  background: linear-gradient(135deg, #224233 0%, #173125 100%);
+}
+
+.tomb-tile.adjacent {
+  cursor: pointer;
+  border-color: rgba(223, 178, 107, 0.45);
+  animation: adjacent-pulse 2s infinite ease-in-out;
+}
+
+.tomb-tile.adjacent:hover:not(:disabled) {
+  border-color: #dfb26b;
+  transform: scale(1.05);
+  background: #25382e;
+}
+
+.tomb-tile.cleared {
+  opacity: 0.55;
+}
+
+@keyframes adjacent-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(223, 178, 107, 0); }
+  50% { box-shadow: 0 0 8px rgba(223, 178, 107, 0.3); }
+}
+
+.current-marker {
+  position: absolute;
+  bottom: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.boss-tag {
+  position: absolute;
+  top: 2px;
+  font-size: 8.5px;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.2);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.tomb-grid-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: #7b9487;
+  padding: 4px 6px;
+}
+
+.tomb-grid-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* 右侧石室侦测面板 */
+.tomb-inspector-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chamber-card {
+  background: rgba(24, 38, 30, 0.7);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chamber-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chamber-name {
+  font-family: "KaiTi", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f5eedf;
+  margin: 0;
+}
+
+.chamber-coords {
+  font-size: 11px;
+  color: #728a7d;
+}
+
+.chamber-status-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.chamber-status-badge.cleared {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.chamber-status-badge.uncleared {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.chamber-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #9cb3a6;
+  margin: 0;
+}
+
+.chamber-action-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tomb-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.treasure-btn {
+  background: linear-gradient(135deg, #b4852e 0%, #825b16 100%);
+  color: #fff;
+  border-color: #dfb26b;
+}
+
+.treasure-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c79639 0%, #94691d 100%);
+}
+
+.trap-btn {
+  background: linear-gradient(135deg, #c2631a 0%, #8e4209 100%);
+  color: #fff;
+  border-color: #f97316;
+}
+
+.battle-btn {
+  background: linear-gradient(135deg, #a82b2b 0%, #7a1c1c 100%);
+  color: #fff;
+  border-color: #ef4444;
+}
+
+.altar-btn {
+  background: linear-gradient(135deg, #1b6d49 0%, #114c32 100%);
+  color: #fff;
+  border-color: #10b981;
+}
+
+.boss-btn {
+  background: linear-gradient(135deg, #7e22ce 0%, #581c87 100%);
+  color: #fff;
+  border-color: #a855f7;
+}
+
+.descend-btn {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border-color: #60a5fa;
+}
+
+.tomb-nav-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(20, 32, 25, 0.6);
+  border: 1px solid rgba(180, 150, 100, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.nav-title {
+  font-size: 12px;
+  color: #8fa69a;
+}
+
+.nav-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-row-middle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(180, 150, 100, 0.3);
+  background: rgba(30, 48, 38, 0.8);
+  color: #dfb26b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: #2b4537;
+  border-color: #dfb26b;
+  color: #fff;
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-center-dot {
+  color: #556c60;
+  font-size: 14px;
+}
+
+.tomb-log-stream {
+  background: rgba(15, 25, 20, 0.8);
+  border: 1px solid rgba(180, 150, 100, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.log-title {
+  font-size: 11px;
+  color: #7b9487;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.log-content p {
+  font-size: 11.5px;
+  color: #b5c7bd;
+  margin: 3px 0;
+  line-height: 1.5;
+}
+
+
 
 
