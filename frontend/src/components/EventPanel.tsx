@@ -7,6 +7,7 @@ import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from '
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
 import { NpcAvatar, deduceNpcAppearance } from './NpcAvatar'
 import { VisualNovelDialog } from './VisualNovelDialog'
+import { CaveDeductionStage, type FacilityItem } from './CaveDeductionStage'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -458,18 +459,17 @@ function FacilitiesBlock({ block, cave, readOnly, onAction }: { block: Presentat
           })}
           <p className="cave-landscape-hint">点击洞府实体建筑查看设施营建与工坊玄机</p>
         </div>
-        <aside className="cave-hotspot-inspector">
-          <header>
-            <span className="cave-inspector-emblem" aria-hidden="true">
-              <FacilityEntityIcon name={text(selectedFacility.name)} />
-            </span>
-            <div><small>当前设施</small><h3>{text(selectedFacility.name)}</h3></div>
-            <em>{Number(selectedFacility.level || 0) ? `${text(selectedFacility.level)} 级` : '尚未营造'}</em>
-          </header>
-          <p>{text(selectedFacility.description, facilityDescriptions[text(selectedFacility.name)] || `${text(selectedFacility.name)}承载着洞府的一项核心能力。`)}</p>
-          <dl><div><dt>当前层级</dt><dd>{text(selectedFacility.level, '0')} / 3</dd></div><div><dt>升级灵石</dt><dd>{text(selectedFacility.cost_stones, '—')}</dd></div><div><dt>所需材料</dt><dd>{selectedFacility.materials && typeof selectedFacility.materials === 'object' ? Object.entries(selectedFacility.materials as Record<string, unknown>).map(([name, count]) => `${name}×${count}`).join('、') || '无需材料' : '无需材料'}</dd></div></dl>
-          <button type="button" disabled={readOnly || selectedFacility.affordable !== true} title={readOnly ? '成果巡览仅供查看' : selectedFacility.affordable === true ? '升级会推进一个月' : text(selectedFacility.disabled_reason)} onClick={() => onAction(text(selectedFacility.action))}>{Number(selectedFacility.level || 0) >= 3 ? '已达最高层级' : selectedFacility.affordable === true ? `营造至 ${Number(selectedFacility.level || 0) + 1} 级` : text(selectedFacility.disabled_reason, '资粮不足')}</button>
-        </aside>
+        <CaveDeductionStage
+          facilityName={text(selectedFacility.name)}
+          facilityItem={{
+            ...(selectedFacility as unknown as FacilityItem),
+            description: text(selectedFacility.description, facilityDescriptions[text(selectedFacility.name)] || `${text(selectedFacility.name)}承载着洞府的一项核心能力。`),
+          }}
+          cave={cave}
+          cropsString={text(block.crops)}
+          readOnly={readOnly}
+          onAction={onAction}
+        />
       </div>}
       {cave && <>
         <div className="cave-overview">

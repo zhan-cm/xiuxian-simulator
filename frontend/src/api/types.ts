@@ -463,12 +463,25 @@ export interface CaveBlueprint {
   name: string; craft: string; facility: string; duration: number
   ingredients: Record<string, number>; output: string; output_count: number
   chance: number; available: boolean; disabled_reason: string; action: string
+  instant_action?: string; instant_available?: boolean; instant_disabled_reason?: string
+}
+
+export interface CaveCropData {
+  name: string
+  due_turn: number
+  remaining_months: number
+  ready: boolean
+  progress: number
+  stage: string
+  harvest_action: string
+  expected_yield: number
 }
 
 export interface CaveSnapshot {
   name: string; aura: string; spirit_energy: number; spirit_energy_cap: number
   monthly_generation: number; focus: string; focuses: CaveFocus[]
   capacity: number; active_jobs: number; jobs: CaveJob[]; blueprints: CaveBlueprint[]
+  crops?: CaveCropData[]; skills?: Record<string, string>; facilities?: Record<string, number>
   last_event: string; ledger: string[]; can_recuperate: boolean; recuperate_reason: string
 }
 

@@ -248,6 +248,9 @@ class CaveEngine:
                     "available": not reason,
                     "disabled_reason": reason,
                     "action": f"洞府生产 {recipe.name}",
+                    "instant_action": f"{recipe.craft} {recipe.name}",
+                    "instant_available": len(missing) == 0,
+                    "instant_disabled_reason": ("缺少 " + "、".join(missing)) if missing else "",
                 }
             )
 
@@ -265,6 +268,31 @@ class CaveEngine:
                 }
             )
 
+        crops_data: list[dict[str, Any]] = []
+        field_level = state.cave_facilities.get("灵田", 0)
+        for crop_name, due_turn in state.spirit_crops.items():
+            remaining = max(0, due_turn - state.turn)
+            total_duration = max(1, 4 - field_level)
+            progress = 100 if remaining == 0 else max(0, min(100, round((total_duration - remaining) / total_duration * 100)))
+            stage = "成熟待采" if remaining == 0 else ("孕灵期" if progress >= 60 else ("抽叶期" if progress >= 25 else "萌芽期"))
+            crops_data.append(
+                {
+                    "name": crop_name,
+                    "due_turn": due_turn,
+                    "remaining_months": remaining,
+                    "ready": remaining == 0,
+                    "progress": progress,
+                    "stage": stage,
+                    "harvest_action": f"收获 {crop_name}",
+                    "expected_yield": 3 + field_level,
+                }
+            )
+
+        skills: dict[str, str] = {
+            skill: CraftingEngine.skill_rank(state, skill)
+            for skill in ("炼丹", "炼器", "符箓", "阵法", "灵植")
+        }
+
         capacity = sum(cls.facility_capacity(state, facility) for facility in ("静室", "丹房", "器坊"))
         return {
             "name": state.cave_name,
@@ -278,6 +306,9 @@ class CaveEngine:
             "active_jobs": len(jobs),
             "jobs": jobs,
             "blueprints": blueprints,
+            "crops": crops_data,
+            "skills": skills,
+            "facilities": dict(state.cave_facilities),
             "last_event": state.last_cave_event,
             "ledger": list(reversed(state.cave_ledger[-8:])),
             "can_recuperate": state.cave_facilities.get("静室", 0) > 0 and state.cave_spirit_energy >= 10,
