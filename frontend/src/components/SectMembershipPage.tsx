@@ -6,6 +6,7 @@ interface Props {
   busy: boolean
   readOnly?: boolean
   onAction: (action: string) => void
+  onOpenSectGate?: (sectName?: string) => void
 }
 
 const ranks = ['外门弟子', '内门弟子', '真传弟子', '长老', '掌门']
@@ -33,7 +34,7 @@ export function SectMembershipEntry({ membership, busy, readOnly = false, onActi
   </button>
 }
 
-export function SectMembershipPage({ membership, busy, readOnly = false, onAction }: Props) {
+export function SectMembershipPage({ membership, busy, readOnly = false, onAction, onOpenSectGate }: Props) {
   if (!membership.member) return null
   const rankIndex = Math.max(0, ranks.indexOf(membership.rank))
   const promotion = membership.promotion
@@ -74,6 +75,31 @@ export function SectMembershipPage({ membership, busy, readOnly = false, onActio
     <footer className="sect-membership-footer">
       <div><Shield size={15} /><span><small>门中权限</small><strong>{membership.privileges.length ? membership.privileges.join(' · ') : '尚无额外权限'}</strong></span></div>
       <details><summary><History size={13} />离宗相关</summary><p>叛宗会清空宗门贡献、降低声望并增加业力，仍需在下一步亲自确认。</p><button type="button" disabled={busy || readOnly} onClick={() => onAction('叛宗')}>查看叛宗后果</button></details>
+      {onOpenSectGate && (
+        <button
+          type="button"
+          className="sect-gate-visit-link"
+          disabled={busy || readOnly}
+          onClick={() => onOpenSectGate()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            background: 'rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(186, 148, 75, 0.4)',
+            color: '#8c6020',
+            fontSize: '11px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            width: 'fit-content',
+          }}
+        >
+          <Landmark size={14} />
+          <span>游历九州仙门 · 拜山悬赏</span>
+        </button>
+      )}
       <p><BookOpenText size={13} />传承兑换与年度讲法请前往“宗门藏经阁”。</p>
     </footer>
   </section>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Landmark, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -33,6 +33,7 @@ import { BreakthroughAltar } from './components/BreakthroughAltar'
 import { CenterStageChronicle } from './components/CenterStageChronicle'
 import { CultivationGuideDialog } from './components/CultivationGuide'
 import { RealmsLadderDialog } from './components/RealmsLadderDialog'
+import { SectGateModal } from './components/SectGateModal'
 import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { findEncounterNpc } from './sceneLogic'
@@ -120,6 +121,13 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [guideOpen, setGuideOpen] = useState(false)
   const [realmsLadderOpen, setRealmsLadderOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [sectGateOpen, setSectGateOpen] = useState(false)
+  const [selectedSectGate, setSelectedSectGate] = useState<string | undefined>(undefined)
+
+  const handleOpenSectGate = (sectName?: string) => {
+    setSelectedSectGate(sectName)
+    setSectGateOpen(true)
+  }
 
   const isStartPhase = state.phase === 'new'
   const isCreationPhase = ['character_creation_basic', 'character_creation_traits'].includes(state.phase)
@@ -192,6 +200,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <Compass size={16} />
                   <span>仙途指津</span>
+                </button>
+                <button
+                  className="archive-trigger sect-gate-topbar-trigger"
+                  type="button"
+                  onClick={() => handleOpenSectGate()}
+                  title="九州仙门：拜山请益、求丹借宝、擂台演武与外务悬赏"
+                >
+                  <Landmark size={16} />
+                  <span>拜山请益</span>
                 </button>
               </>
             )}
@@ -294,6 +311,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           readOnly={showcase || busy}
                           immersive
                           onAction={onAction}
+                          onOpenSectGate={handleOpenSectGate}
                         />
                       </motion.div>
                     </AnimatePresence>
@@ -405,7 +423,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                   <InventoryDialog inventory={snapshot.inventory} busy={busy} canAct={canUseQuickActions} readOnly={showcase} onAction={onCodexAction} />
                 </section>
               }
-              pathways={<PathwaysCodex snapshot={snapshot} busy={busy || !canUseQuickActions} readOnly={showcase} onAction={onCodexAction} />}
+              pathways={<PathwaysCodex snapshot={snapshot} busy={busy || !canUseQuickActions} readOnly={showcase} onAction={onCodexAction} onOpenSectGate={handleOpenSectGate} />}
               world={
                 <section className="codex-column">
                   <Relations snapshot={snapshot} disabled={busy || showcase || !canUseQuickActions} onAction={onCodexAction} />
@@ -435,6 +453,17 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           onGoBreakthrough={() => {
             setViewBreakthrough(true)
             if (canUseQuickActions) onAction('突破')
+          }}
+        />
+        <SectGateModal
+          open={sectGateOpen}
+          onOpenChange={setSectGateOpen}
+          sectVisit={snapshot.sect_visit}
+          initialSect={selectedSectGate}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
           }}
         />
       </div>

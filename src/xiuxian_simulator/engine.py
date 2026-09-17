@@ -316,6 +316,14 @@ class GameEngine:
             return self._plant(action)
         if action.startswith("收获"):
             return self._harvest(action)
+        if action.startswith("拜山"):
+            return self._sect_visit(action)
+        if action.startswith("求丹借宝"):
+            return self._sect_acquire_treasure(action)
+        if action.startswith("山门演武"):
+            return self._sect_spar(action)
+        if action.startswith("山门历练"):
+            return self._sect_bounty(action)
         if action in {"情缘", "人物"}:
             return self._relationships()
         if action == "情劫":
@@ -1568,6 +1576,94 @@ class GameEngine:
             f"{self.state.time_label}\n【宗门任务 · {result.task}】{verdict}\n"
             f"判定：1d100={result.roll}，成功率 {result.chance}%｜结算：{reward_text}\n\n{self._status()}"
         )
+
+    def _sect_visit(self, action: str) -> str:
+        from .sect_visit import SectVisitEngine
+        sect_name = action.removeprefix("拜山").strip()
+        try:
+            result = SectVisitEngine.visit(self.state, sect_name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        gift_msg = f"，获赠仙门薄礼【{result['gift']}×{result['gift_count']}】" if result["gift"] else ""
+        verdict = (
+            f"【拜山请益 · {sect_name}】{'知客长老欣然接见并共论大道' if result['success'] else '守山执事奉茶并礼貌奉还金帖'}。\n"
+            f"声望 +{result['reputation_gain']}｜修为 +{result['cultivation_gain']}{gift_msg}\n"
+            f"道心印证判定：1d100={result['roll']}，顺遂率 {result['chance']}%"
+        )
+        self._autosave()
+        if died_of_age:
+            return f"拜山归途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{verdict}\n\n{self._status()}"
+
+    def _sect_acquire_treasure(self, action: str) -> str:
+        from .sect_visit import SectVisitEngine
+        raw = action.removeprefix("求丹借宝").strip()
+        parts = raw.split()
+        if len(parts) < 2:
+            return "格式错误：求丹借宝 [宗门名] [宝物标识]"
+        sect_name, treasure_id = parts[0], parts[1]
+        try:
+            result = SectVisitEngine.acquire_treasure(self.state, sect_name, treasure_id)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return f"【求丹借宝 · {sect_name}】\n成功求得【{result['treasure']}×{result['count']}】，耗费灵石 {result['cost']}，已纳入储物袋。\n\n{self._status()}"
+
+    def _sect_spar(self, action: str) -> str:
+        from .sect_visit import SectVisitEngine
+        sect_name = action.removeprefix("山门演武").strip()
+        try:
+            result = SectVisitEngine.spar(self.state, sect_name)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        verdict = (
+            f"【山门演武 · {sect_name}】{'剑势如虹，点到即止拔得头筹' if result['success'] else '同门较技，虽败犹荣砥砺道心'}。\n"
+            f"获得赏赐：灵石 +{result['reward_stones']}｜声望 +{result['reputation_gain']}\n"
+            f"较技胜算判定：1d100={result['roll']}，胜算率 {result['chance']}%"
+        )
+        self._autosave()
+        if died_of_age:
+            return f"演武较技后寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{verdict}\n\n{self._status()}"
+
+    def _sect_bounty(self, action: str) -> str:
+        from .sect_visit import SectVisitEngine
+        raw = action.removeprefix("山门历练").strip()
+        parts = raw.split()
+        if len(parts) < 2:
+            return "格式错误：山门历练 [宗门名] [悬赏标识]"
+        sect_name, bounty_id = parts[0], parts[1]
+        try:
+            result = SectVisitEngine.take_bounty(self.state, sect_name, bounty_id)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        rewards = []
+        if result["reward_stones"]:
+            rewards.append(f"灵石 +{result['reward_stones']}")
+        if result["reward_reputation"]:
+            rewards.append(f"声望 +{result['reward_reputation']}")
+        rewards.extend(f"{k} +{v}" for k, v in result["reward_items"].items())
+        reward_text = "、".join(rewards) if rewards else "无额外赏赐"
+        verdict = (
+            f"【山门历练 · {sect_name}】{result['title']}——{'功成圆满归山复命' if result['success'] else '途中遭遇凶险受阻'}。\n"
+            f"判定：1d100={result['roll']}，胜算率 {result['chance']}%｜获得赏赐：{reward_text}"
+        )
+        self._autosave()
+        if died_of_age:
+            return f"历练途中寿元耗尽。\n【陨落结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{verdict}\n\n{self._status()}"
 
     @staticmethod
     def _combatants() -> str:

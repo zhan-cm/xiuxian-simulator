@@ -547,7 +547,58 @@ export interface Snapshot {
   cave: CaveSnapshot
   npc_lives: NpcLifeSnapshot
   npc_network: NpcNetworkSnapshot
+  sect_visit?: SectVisitSnapshot
   output?: string
+}
+
+export interface SectTreasureItem {
+  id: string
+  name: string
+  cost_stones: number
+  category: string
+  reputation_req: number
+  count: number
+  summary: string
+  available: boolean
+  disabled_reason: string
+  action: string
+}
+
+export interface SectBountyItem {
+  id: string
+  title: string
+  risk: string
+  chance: number
+  reward_stones: number
+  reward_reputation: number
+  reward_items: Record<string, number>
+  summary: string
+  action: string
+}
+
+export interface SectGateData {
+  name: string
+  province: string
+  mark: string
+  doctrine: string
+  motto: string
+  description: string
+  welcome_gift: string
+  welcome_gift_count: number
+  can_visit: boolean
+  visit_action: string
+  spar_chance: number
+  spar_action: string
+  treasures: SectTreasureItem[]
+  bounties: SectBountyItem[]
+}
+
+export interface SectVisitSnapshot {
+  gift_cost: number
+  gates: SectGateData[]
+  player_sect: string
+  player_stones: number
+  player_reputation: number
 }
 
 export interface ShowcasePage {

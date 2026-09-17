@@ -1,4 +1,4 @@
-import { Compass, Mountain, ScrollText, Sparkles } from 'lucide-react'
+import { ChevronRight, Compass, Landmark, Mountain, ScrollText, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import type { Snapshot } from '../api/types'
 import { ArtMasteryCodex } from './ArtMasteryCodex'
@@ -15,9 +15,9 @@ import { SectMembershipEntry } from './SectMembershipPage'
 import { SpiritBeastSanctuary } from './SpiritBeastSanctuary'
 import { StoryChronicle } from './StoryChronicle'
 
-interface Props { snapshot: Snapshot; busy: boolean; readOnly: boolean; onAction: (action: string) => void }
+interface Props { snapshot: Snapshot; busy: boolean; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }
 
-export function PathwaysCodex({ snapshot, busy, readOnly, onAction }: Props) {
+export function PathwaysCodex({ snapshot, busy, readOnly, onAction, onOpenSectGate }: Props) {
   const { state } = snapshot
   const [section, setSection] = useState<'causality' | 'cultivation' | 'sect' | 'opportunity'>('causality')
   if (['new', 'character_creation_basic', 'character_creation_traits'].includes(state.phase)) {
@@ -50,6 +50,19 @@ export function PathwaysCodex({ snapshot, busy, readOnly, onAction }: Props) {
       <ArtifactForge artifacts={snapshot.artifacts} {...actions} />
     </section>}
     {current.id === 'sect' && <section className="pathways-surface" aria-labelledby="pathways-sect"><header><span>宗</span><div><small>山门有序</small><h3 id="pathways-sect">山门事务</h3><p>研读藏经，经营属于你的道统。</p></div></header>
+      {onOpenSectGate && (
+        <button
+          className="sect-membership-ribbon sect-gate-ribbon"
+          type="button"
+          disabled={actions.busy || actions.readOnly}
+          onClick={() => onOpenSectGate()}
+        >
+          <span><Landmark size={17} /></span>
+          <div><small>九州各大名门</small><strong>山门请益 · 外务悬赏</strong></div>
+          <p>叩关论道 · 求丹借宝 · 演武切磋 · 揭榜历练</p>
+          <em>六大宗门</em><ChevronRight size={16} />
+        </button>
+      )}
       <SectMembershipEntry membership={snapshot.sect_membership} {...actions} />
       <SectLibrary library={snapshot.sect_library} {...actions} />
       <SectDominion domain={snapshot.sect_domain} {...actions} />

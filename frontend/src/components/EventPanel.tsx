@@ -12,11 +12,12 @@ import { CaveDeductionStage, type FacilityItem } from './CaveDeductionStage'
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
 
-function SystemBlockHeader({ mark, eyebrow, title, description, meta, icon }: { mark: string; eyebrow: string; title: string; description?: unknown; meta?: string; icon: ReactNode }) {
+function SystemBlockHeader({ mark, eyebrow, title, description, meta, icon, extra }: { mark: string; eyebrow: string; title: string; description?: unknown; meta?: string; icon: ReactNode; extra?: ReactNode }) {
   return (
     <header className="system-block-header">
       <span className="system-block-mark" aria-hidden="true">{mark}</span>
       <div className="system-block-copy"><small>{eyebrow}</small><strong>{title}</strong>{text(description) && <p>{text(description)}</p>}</div>
+      {extra && <div className="system-block-extra">{extra}</div>}
       {meta && <em>{meta}</em>}
       <i aria-hidden="true">{icon}</i>
     </header>
@@ -526,13 +527,56 @@ function RecipesBlock({ block, readOnly, onAction }: { block: PresentationBlock;
   )
 }
 
-function SectsBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
+function SectsBlock({ block, readOnly, onAction, onOpenSectGate }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   const mottos: Record<string, string> = { 青云宗: '清正持剑，守望东洲', 丹霞谷: '丹火养生，济世求真', 玄剑门: '以战磨剑，锋芒证道' }
   return (
     <section className="semantic-block sect-block">
-      <SystemBlockHeader mark="宗" eyebrow="山门择路" title={block.title || '可选宗门'} description="道统各异，门规不同；入门试炼会推进一个月，也可能失败。" meta={`${block.items?.length || 0} 座山门`} icon={<Landmark size={21} />} />
+      <SystemBlockHeader
+        mark="宗"
+        eyebrow="山门择路"
+        title={block.title || '可选宗门'}
+        description="道统各异，门规不同；入门试炼会推进一个月，也可能失败。亦可随时递帖拜山论道、求丹借宝。"
+        meta={`${block.items?.length || 0} 座山门`}
+        icon={<Landmark size={21} />}
+        extra={onOpenSectGate ? (
+          <button type="button" className="sect-gate-all-trigger" onClick={() => onOpenSectGate()}>
+            九州各大宗门案席
+          </button>
+        ) : undefined}
+      />
       <div className="sect-grid">
-        {(block.items || []).map((item, index) => <article className="sect-card" key={text(item.name)} data-index={index}><span>{text(item.name, '宗').slice(0, 1)}</span><div><strong>{text(item.name)}</strong><small>{mottos[text(item.name)] || text(item.description)}</small><p>{text(item.description)}</p></div><button type="button" disabled={readOnly} title={readOnly ? '成果巡览仅供查看' : '申请入门试炼'} onClick={() => onAction(text(item.action))}><span>申请试炼</span><ArrowRight size={14} /></button></article>)}
+        {(block.items || []).map((item, index) => (
+          <article className="sect-card" key={text(item.name)} data-index={index}>
+            <span>{text(item.name, '宗').slice(0, 1)}</span>
+            <div>
+              <strong>{text(item.name)}</strong>
+              <small>{mottos[text(item.name)] || text(item.description)}</small>
+              <p>{text(item.description)}</p>
+            </div>
+            <div className="sect-card-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {onOpenSectGate && (
+                <button
+                  type="button"
+                  className="sect-visit-btn"
+                  disabled={readOnly}
+                  title="登门拜山：知客论道、求丹借宝与承接外务"
+                  onClick={() => onOpenSectGate(text(item.name))}
+                >
+                  登门拜山
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={readOnly}
+                title={readOnly ? '成果巡览仅供查看' : '申请入门试炼'}
+                onClick={() => onAction(text(item.action))}
+              >
+                <span>申请试炼</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   )
@@ -551,7 +595,7 @@ function GenericBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
-function Block({ block, cave, lives, readOnly, onAction }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
+function Block({ block, cave, lives, readOnly, onAction, onOpenSectGate }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
   if (block.type === 'people') return <PeopleBlock block={block} lives={lives} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'regions') return <RegionsBlock block={block} readOnly={readOnly} onAction={onAction} />
@@ -560,11 +604,11 @@ function Block({ block, cave, lives, readOnly, onAction }: { block: Presentation
   if (block.type === 'market') return <MarketBlock block={block} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'facilities') return <FacilitiesBlock block={block} cave={cave} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'recipes') return <RecipesBlock block={block} readOnly={readOnly} onAction={onAction} />
-  if (block.type === 'sects') return <SectsBlock block={block} readOnly={readOnly} onAction={onAction} />
+  if (block.type === 'sects') return <SectsBlock block={block} readOnly={readOnly} onAction={onAction} onOpenSectGate={onOpenSectGate} />
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, readOnly = false, immersive = false, onAction }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, readOnly = false, immersive = false, onAction, onOpenSectGate }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
   const showSectMembership = Boolean(sectMembership?.member && (['宗门', '申请晋升', '宗门大比'].includes(presentation.action) || presentation.action.startsWith('宗门任务')))
@@ -591,9 +635,9 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembe
         </div>
       )}
       <div className="event-blocks" aria-label="本次推演数据">
-        {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} key={`${block.type}-${index}`} />)}
+        {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} key={`${block.type}-${index}`} />)}
         {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={act} />}
-        {showSectMembership && sectMembership && <SectMembershipPage membership={sectMembership} busy={readOnly} readOnly={readOnly} onAction={act} />}
+        {showSectMembership && sectMembership && <SectMembershipPage membership={sectMembership} busy={readOnly} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} />}
       </div>
       {presentation.has_details && (
         <details className="full-record"><summary>查看完整推演记录</summary><pre>{presentation.details}</pre></details>

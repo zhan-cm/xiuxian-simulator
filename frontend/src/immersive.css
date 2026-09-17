@@ -7146,3 +7146,928 @@ body {
   transform: none;
 }
 
+
+/* ==========================================================================
+   V2 · 九州各大宗门拜山与外务历练系统 (SectGateModal)
+   ========================================================================== */
+
+.sect-gate-dialog {
+  max-width: 920px;
+  width: 94vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 24px 28px;
+  background: linear-gradient(165deg, #fdfbf7 0%, #f7f3e8 45%, #f2ebd9 100%);
+  border: 1.5px solid rgba(186, 148, 75, 0.38);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(35, 60, 48, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+.sect-gate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(186, 148, 75, 0.25);
+}
+
+.sect-gate-title-box {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.sect-gate-seal {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #a63428, #7a2016);
+  color: #fff8eb;
+  font-size: 22px;
+  font-family: "STKaiti", "KaiTi", serif;
+  border: 1.5px solid rgba(220, 180, 120, 0.6);
+  box-shadow: 0 4px 12px rgba(122, 32, 22, 0.25);
+  flex-shrink: 0;
+}
+
+.sect-gate-title-box small {
+  font-size: 10px;
+  color: #9c7838;
+  letter-spacing: 0.16em;
+  display: block;
+}
+
+.sect-gate-title {
+  font-size: 20px;
+  color: #1c4235;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.sect-gate-desc {
+  font-size: 11px;
+  color: #5c7468;
+  margin-top: 4px;
+}
+
+.sect-gate-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(70, 110, 90, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+  color: #4b6659;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.sect-gate-close:hover {
+  background: #fff;
+  border-color: rgba(186, 148, 75, 0.5);
+  color: #17382b;
+}
+
+.sect-gate-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(186, 148, 75, 0.22);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  font-size: 11px;
+  color: #435b50;
+}
+
+.sect-gate-status-bar .status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sect-gate-status-bar .status-item strong {
+  color: #1e4537;
+  font-weight: 600;
+}
+
+.sect-gate-status-bar .gift-cost-item strong {
+  color: #96691c;
+}
+
+.sect-gate-selector-nav {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sect-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(70, 110, 90, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  text-align: left;
+}
+
+.sect-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(186, 148, 75, 0.5);
+  transform: translateY(-1px);
+}
+
+.sect-pill-btn.active {
+  background: linear-gradient(135deg, rgba(245, 240, 225, 0.95), rgba(255, 255, 255, 0.95));
+  border: 1.5px solid #a67c38;
+  box-shadow: 0 4px 12px rgba(166, 124, 56, 0.15);
+}
+
+.sect-mark-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #2f5d4a;
+  color: #fff8eb;
+  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+  flex-shrink: 0;
+}
+
+.sect-pill-info strong {
+  display: block;
+  font-size: 12px;
+  color: #1c3c2f;
+  white-space: nowrap;
+}
+
+.sect-pill-info small {
+  display: block;
+  font-size: 9px;
+  color: #7f8f87;
+  white-space: nowrap;
+}
+
+.own-sect-tag {
+  position: absolute;
+  top: -5px;
+  right: 4px;
+  background: #a63428;
+  color: #fff;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.sect-gate-hero-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 20px;
+  background: linear-gradient(145deg, rgba(235, 244, 238, 0.75), rgba(248, 245, 235, 0.85));
+  border: 1.2px solid rgba(80, 130, 105, 0.25);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.hero-left {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-mark-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #2b5744, #1c3d2e);
+  color: #fff4d9;
+  font-size: 26px;
+  font-family: "STKaiti", "KaiTi", serif;
+  border: 1.5px solid rgba(212, 178, 102, 0.5);
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(28, 61, 46, 0.2);
+}
+
+.hero-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.hero-header-row h3 {
+  font-size: 18px;
+  color: #17382b;
+  font-family: "STKaiti", "KaiTi", serif;
+  margin: 0;
+  font-weight: 600;
+}
+
+.province-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  background: rgba(50, 95, 75, 0.1);
+  color: #2d5543;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.own-sect-banner {
+  font-size: 10px;
+  background: #8e2b20;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.hero-doctrine-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.doctrine-pill {
+  font-size: 10px;
+  color: #8a6524;
+  font-weight: 600;
+}
+
+.motto-text {
+  font-size: 11px;
+  color: #4e6b5d;
+  font-style: italic;
+}
+
+.hero-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #4b6357;
+  margin: 0;
+}
+
+.hero-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.welcome-gift-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px dashed rgba(186, 148, 75, 0.4);
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.gift-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #9c7530;
+}
+
+.welcome-gift-card strong {
+  font-size: 13px;
+  color: #1f4535;
+}
+
+.welcome-gift-card small {
+  font-size: 9px;
+  color: #7f9087;
+  max-width: 150px;
+}
+
+.sect-sub-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  border-bottom: 1.5px solid rgba(186, 148, 75, 0.25);
+  padding-bottom: 8px;
+}
+
+.sub-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: #4e695d;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.sub-tab-btn:hover {
+  color: #17382b;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.sub-tab-btn.active {
+  color: #143528;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(186, 148, 75, 0.4);
+  box-shadow: 0 2px 8px rgba(35, 60, 48, 0.08);
+  font-weight: 600;
+}
+
+.tab-count {
+  background: rgba(45, 85, 68, 0.12);
+  color: #2d5543;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.sect-gate-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.visit-intro-card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(80, 125, 100, 0.2);
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+
+.intro-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(50, 95, 75, 0.12);
+  color: #244b3c;
+  flex-shrink: 0;
+}
+
+.intro-text h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #193f31;
+}
+
+.intro-text p {
+  margin: 0;
+  font-size: 11px;
+  color: #556e62;
+}
+
+.visit-outcomes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.outcome-card {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+}
+
+.outcome-card.success-outcome {
+  border-color: rgba(60, 140, 100, 0.35);
+  background: linear-gradient(145deg, rgba(240, 250, 245, 0.8), rgba(255, 255, 255, 0.9));
+}
+
+.outcome-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1a4233;
+}
+
+.outcome-card ul {
+  margin: 8px 0 10px;
+  padding-left: 18px;
+  font-size: 11px;
+  color: #355345;
+  line-height: 1.6;
+}
+
+.outcome-card small {
+  display: block;
+  font-size: 9.5px;
+  color: #7f9087;
+}
+
+.visit-action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.visit-warning-text {
+  color: #b03a2e;
+  font-size: 11px;
+  margin: 0;
+}
+
+.btn-primary-visit {
+  min-height: 42px;
+  padding: 0 28px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff9ed;
+  background: linear-gradient(135deg, #2b614b, #1e4536);
+  border: 1.5px solid rgba(220, 185, 120, 0.5);
+  box-shadow: 0 6px 18px rgba(30, 69, 54, 0.22);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary-visit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #35755b, #245240);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(30, 69, 54, 0.28);
+}
+
+.btn-primary-visit:disabled {
+  background: #d4dad6;
+  color: #87928c;
+  border-color: transparent;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Treasures */
+.panel-sub-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 4px;
+}
+
+.panel-sub-header h4 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: #17382b;
+}
+
+.panel-sub-header p {
+  margin: 0;
+  font-size: 11px;
+  color: #556e62;
+}
+
+.treasures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.treasure-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1.2px solid rgba(186, 148, 75, 0.25);
+  box-shadow: 0 4px 12px rgba(35, 60, 48, 0.05);
+}
+
+.treasure-card[data-available="true"] {
+  border-color: rgba(186, 148, 75, 0.6);
+  box-shadow: 0 6px 16px rgba(186, 148, 75, 0.12);
+}
+
+.treasure-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.category-tag {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(45, 85, 68, 0.1);
+  color: #2a5542;
+  font-weight: 600;
+}
+
+.treasure-card h5 {
+  font-size: 14px;
+  color: #1c3c2f;
+  margin: 0;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+
+.treasure-summary {
+  font-size: 11px;
+  color: #4e6659;
+  line-height: 1.45;
+  margin: 6px 0 12px;
+  flex-grow: 1;
+}
+
+.treasure-cost-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  margin-bottom: 12px;
+  padding: 6px 8px;
+  background: rgba(245, 248, 243, 0.85);
+  border-radius: 6px;
+}
+
+.cost-stone {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #8e6220;
+  font-weight: 600;
+}
+
+.req-rep {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #325846;
+}
+
+.btn-acquire-treasure {
+  min-height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff9ed;
+  background: linear-gradient(135deg, #37654f, #284e3c);
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.btn-acquire-treasure:hover:not(:disabled) {
+  background: linear-gradient(135deg, #42785e, #2e5944);
+  transform: translateY(-1px);
+}
+
+.btn-acquire-treasure:disabled {
+  background: #e2e6e3;
+  color: #8e9992;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Spar Arena */
+.spar-hero-box {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(80, 125, 100, 0.2);
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+
+.spar-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(140, 45, 35, 0.12);
+  color: #8c251a;
+  flex-shrink: 0;
+}
+
+.spar-text h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #193f31;
+}
+
+.spar-text p {
+  margin: 0;
+  font-size: 11px;
+  color: #556e62;
+  line-height: 1.5;
+}
+
+.spar-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.spar-metric-card {
+  padding: 14px;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spar-metric-card small {
+  font-size: 10px;
+  color: #7b8e84;
+}
+
+.spar-metric-card strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.chance-val {
+  color: #2b7053;
+}
+
+.reward-val {
+  color: #a3651d;
+}
+
+.consolation-val {
+  color: #556c60;
+}
+
+.spar-metric-card span {
+  font-size: 9.5px;
+  color: #6a7f74;
+}
+
+.spar-action-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn-primary-spar {
+  min-height: 42px;
+  padding: 0 32px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff9ed;
+  background: linear-gradient(135deg, #882b20, #631c14);
+  border: 1.5px solid rgba(220, 185, 120, 0.5);
+  box-shadow: 0 6px 18px rgba(124, 43, 34, 0.22);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary-spar:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9e3427, #742219);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(124, 43, 34, 0.28);
+}
+
+.btn-primary-spar:disabled {
+  background: #d4dad6;
+  color: #87928c;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Bounties */
+.bounties-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.bounty-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.2px solid rgba(186, 148, 75, 0.3);
+  position: relative;
+}
+
+.bounty-card[data-risk="稳健"] {
+  border-left: 4px solid #3c8c64;
+}
+
+.bounty-card[data-risk="普通"] {
+  border-left: 4px solid #b88628;
+}
+
+.bounty-card[data-risk="凶险"] {
+  border-left: 4px solid #ab2d23;
+}
+
+.bounty-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.bounty-title-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.risk-稳健 {
+  background: rgba(60, 140, 100, 0.15);
+  color: #236544;
+}
+
+.risk-普通 {
+  background: rgba(184, 134, 40, 0.15);
+  color: #8e6216;
+}
+
+.risk-凶险 {
+  background: rgba(171, 45, 35, 0.15);
+  color: #8f2017;
+}
+
+.bounty-card h5 {
+  font-size: 14px;
+  color: #17382b;
+  margin: 0;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+
+.bounty-chance-badge {
+  font-size: 10px;
+  color: #2b7053;
+  font-weight: 600;
+  background: rgba(43, 112, 83, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.bounty-summary {
+  font-size: 11px;
+  color: #4e6659;
+  line-height: 1.45;
+  margin: 4px 0 10px;
+}
+
+.bounty-rewards-block {
+  background: rgba(245, 248, 243, 0.85);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 10.5px;
+}
+
+.reward-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8e6220;
+  font-weight: 600;
+}
+
+.dot-sep {
+  color: #9daea6;
+}
+
+.reward-items-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: #2e5542;
+}
+
+.bounty-danger-warning {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  color: #9e2b20;
+  margin-bottom: 10px;
+}
+
+.btn-take-bounty {
+  min-height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff9ed;
+  background: linear-gradient(135deg, #37654f, #284e3c);
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.btn-take-bounty:hover:not(:disabled) {
+  background: linear-gradient(135deg, #42785e, #2e5944);
+  transform: translateY(-1px);
+}
+
+.btn-take-bounty:disabled {
+  background: #e2e6e3;
+  color: #8e9992;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Ribbons & Triggers */
+.sect-visit-btn {
+  margin-left: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  background: rgba(255, 255, 255, 0.85);
+  color: #8c6020;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.sect-visit-btn:hover {
+  background: #fff;
+  border-color: #a67c38;
+}
+
+.sect-gate-all-trigger {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(50, 95, 75, 0.25);
+  background: rgba(240, 246, 242, 0.8);
+  color: #2b5d49;
+  font-size: 10.5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.sect-gate-all-trigger:hover {
+  background: #fff;
+  border-color: rgba(50, 95, 75, 0.5);
+}
+
+.sect-gate-ribbon {
+  margin-top: 8px;
+}

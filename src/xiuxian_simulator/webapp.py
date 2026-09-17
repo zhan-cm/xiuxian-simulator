@@ -32,6 +32,7 @@ from .legacy import LegacyEngine
 from .sect_foundation import SectFoundationEngine
 from .sect_diplomacy import SectDiplomacyEngine
 from .world import SectProgressionEngine
+from .sect_visit import SectVisitEngine
 
 
 class WebApplication:
@@ -102,6 +103,7 @@ class WebApplication:
             "cave": CaveEngine.snapshot(self.engine.state),
             "npc_lives": npc_lives,
             "npc_network": npc_network,
+            "sect_visit": SectVisitEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:
