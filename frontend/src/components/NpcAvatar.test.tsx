@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
@@ -12,6 +12,7 @@ describe('NpcAvatar dual-mode portrait engine', () => {
     expect(NPC_PORTRAIT_IMAGES['顾清玄']).toBeDefined()
     expect(NPC_PORTRAIT_IMAGES['白凝霜']).toBeDefined()
     expect(NPC_PORTRAIT_IMAGES['云栖']).toBeDefined()
+    expect(NPC_PORTRAIT_IMAGES['谢无咎']).toBeDefined()
   })
 
   it('renders high-res anime artwork image for registered core characters', () => {
@@ -29,12 +30,17 @@ describe('NpcAvatar dual-mode portrait engine', () => {
     const guImg = screen.getByRole('img', { name: '顾清玄立绘' })
     expect(guImg).toBeInTheDocument()
     expect(guImg).toHaveAttribute('src', NPC_PORTRAIT_IMAGES['顾清玄'])
+
+    rerender(<NpcAvatar item={{ name: '谢无咎' }} size="large" />)
+    const xieImg = screen.getByRole('img', { name: '谢无咎立绘' })
+    expect(xieImg).toBeInTheDocument()
+    expect(xieImg).toHaveAttribute('src', NPC_PORTRAIT_IMAGES['谢无咎'])
   })
 
   it('renders bespoke SVG vector portrait for characters without raster artwork', () => {
-    render(<NpcAvatar item={{ name: '谢无咎' }} size="medium" />)
-    expect(screen.queryByRole('img', { name: '谢无咎立绘' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('谢无咎肖像')).toBeInTheDocument()
+    render(<NpcAvatar item={{ name: '墨尘' }} size="medium" />)
+    expect(screen.queryByRole('img', { name: '墨尘立绘' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('墨尘肖像')).toBeInTheDocument()
   })
 
   it('deduces correct known profiles and lore descriptions', () => {

@@ -3,11 +3,13 @@ import type { NpcLifeProfile } from '../api/types'
 import guQingxuanImg from '../assets/avatars/gu_qingxuan.jpg'
 import baiNingshuangImg from '../assets/avatars/bai_ningshuang.jpg'
 import yunQiImg from '../assets/avatars/yun_qi.jpg'
+import xieWujiuImg from '../assets/avatars/xie_wujiu.jpg'
 
 export const NPC_PORTRAIT_IMAGES: Record<string, string> = {
   顾清玄: guQingxuanImg,
   白凝霜: baiNingshuangImg,
   云栖: yunQiImg,
+  谢无咎: xieWujiuImg,
 }
 
 export interface NpcAppearanceData {
@@ -591,21 +593,22 @@ export function NpcAvatar({
             <circle cx="120" cy="55" r="1.2" fill="#9ce0f5" />
           </g>
         )}
-        {/* 妖族：兽耳立于发顶 */}
-        {path === 'beast' && (
+        {/* 妖族 / 墨尘：发间微翘墨玉龙角 */}
+        {(path === 'beast' || name === '墨尘') && (
           <g>
-            <polygon points="46,38 34,14 58,28" fill={theme.hairColor} />
-            <polygon points="48,36 38,18 56,28" fill="#f4a8b8" opacity="0.75" />
-            <polygon points="114,38 126,14 102,28" fill={theme.hairColor} />
-            <polygon points="112,36 122,18 104,28" fill="#f4a8b8" opacity="0.75" />
+            <path d="M48 38 C40 26 34 16 37 10 C41 8 46 16 52 28 Z" fill="#181d16" stroke="#4a5a3a" strokeWidth="1.2" />
+            <path d="M112 38 C120 26 126 16 123 10 C119 8 114 16 108 28 Z" fill="#181d16" stroke="#4a5a3a" strokeWidth="1.2" />
+            <line x1="42" y1="20" x2="47" y2="24" stroke="#a8ba32" strokeWidth="1" opacity="0.7" />
+            <line x1="118" y1="20" x2="113" y2="24" stroke="#a8ba32" strokeWidth="1" opacity="0.7" />
           </g>
         )}
-        {/* 合欢/红尘：飘落桃花 */}
-        {path === 'charm' && (
-          <g fill="#f472b6" opacity="0.6">
-            <circle cx="28" cy="42" r="3" />
-            <circle cx="134" cy="52" r="2.5" />
-            <circle cx="124" cy="28" r="2" />
+        {/* 合欢 / 洛浅浅：飘落桃花与摄魄魅影灵光 */}
+        {(path === 'charm' || name === '洛浅浅') && (
+          <g opacity="0.75">
+            <path d="M28 42 Q33 37 36 42 Q38 47 33 49 Q28 47 28 42 Z" fill="#fb7185" />
+            <path d="M132 50 Q137 45 140 50 Q142 55 137 57 Q132 55 132 50 Z" fill="#fb7185" />
+            <circle cx="124" cy="28" r="2.2" fill="#f472b6" />
+            <circle cx="34" cy="74" r="1.8" fill="#fda4af" />
           </g>
         )}
 
@@ -639,9 +642,18 @@ export function NpcAvatar({
         <path d="M62 135 L82 163" stroke="#e8c76b" strokeWidth="1.2" opacity="0.75" />
         <path d="M80 166 V200" stroke={theme.robeTrim} strokeWidth="2.2" />
 
-        {/* 胸前佩玉吊坠 */}
-        <circle cx="80" cy="172" r="3.5" fill={theme.sealColor} />
-        <path d="M80 175 V184" stroke={theme.sealColor} strokeWidth="1.2" />
+        {/* 胸前佩玉吊坠 / 墨尘玄骨链坠 */}
+        {name === '墨尘' ? (
+          <g>
+            <path d="M72 166 L80 178 L88 166" stroke="#4a3b2c" strokeWidth="1.2" fill="none" />
+            <polygon points="77,176 80,188 83,176" fill="#fdfbf7" stroke="#bda682" strokeWidth="1" />
+          </g>
+        ) : (
+          <>
+            <circle cx="80" cy="172" r="3.5" fill={theme.sealColor} />
+            <path d="M80 175 V184" stroke={theme.sealColor} strokeWidth="1.2" />
+          </>
+        )}
 
         {/* 5. 动漫精致 V 脸下颌与面部基底 */}
         <path
@@ -661,14 +673,16 @@ export function NpcAvatar({
           />
         )}
 
-        {/* 精致耳廓 */}
+        {/* 精致耳廓与耳饰 */}
         <path d="M49 74 C46 74 45 84 50 88 M111 74 C114 74 115 84 110 88" stroke="#cca78f" strokeWidth="1.2" fill={theme.skinColor} />
         {isFemale && (
-          <g fill={theme.sealColor}>
+          <g fill={name === '洛浅浅' ? '#e2e8f0' : theme.sealColor}>
             <circle cx="47" cy="90" r="1.8" />
-            <path d="M47 91 L47 96" stroke={theme.sealColor} strokeWidth="0.9" />
+            <path d="M47 91 L47 96" stroke={name === '洛浅浅' ? '#f43f5e' : theme.sealColor} strokeWidth="0.9" />
+            {name === '洛浅浅' && <circle cx="47" cy="97" r="2.2" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.6" />}
             <circle cx="113" cy="90" r="1.8" />
-            <path d="M113 91 L113 96" stroke={theme.sealColor} strokeWidth="0.9" />
+            <path d="M113 91 L113 96" stroke={name === '洛浅浅' ? '#f43f5e' : theme.sealColor} strokeWidth="0.9" />
+            {name === '洛浅浅' && <circle cx="113" cy="97" r="2.2" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.6" />}
           </g>
         )}
 
