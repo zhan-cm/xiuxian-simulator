@@ -41,6 +41,7 @@ import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { RedDustEncounterModal } from './components/RedDustEncounterModal'
 import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
 import { AncientTombModal } from './components/AncientTombModal'
+import { ArtifactSpiritModal } from './components/ArtifactSpiritModal'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -133,6 +134,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [encounterOpen, setEncounterOpen] = useState(false)
   const [partnerChamberOpen, setPartnerChamberOpen] = useState(false)
   const [ancientTombOpen, setAncientTombOpen] = useState(false)
+  const [artifactSpiritOpen, setArtifactSpiritOpen] = useState(false)
 
   const pendingEncounter = snapshot.encounters?.pending
   useEffect(() => {
@@ -277,6 +279,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <Compass size={16} />
                   <span>古墓秘境</span>
+                </button>
+                <button
+                  className="archive-trigger artifact-spirit-topbar-trigger"
+                  type="button"
+                  onClick={() => setArtifactSpiritOpen(true)}
+                  title="本命器灵化形：本命法宝灵性觉醒、独立人形侍从伙伴、灵丹喂养与护道神通"
+                >
+                  <Sparkles size={16} />
+                  <span>器灵化形</span>
                 </button>
               </>
             )}
@@ -582,6 +593,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           open={ancientTombOpen}
           onOpenChange={setAncientTombOpen}
           ancientTomb={snapshot.ancient_tomb}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
+          }}
+        />
+        <ArtifactSpiritModal
+          open={artifactSpiritOpen}
+          onOpenChange={setArtifactSpiritOpen}
+          artifactSpirit={snapshot.artifact_spirit}
           busy={busy}
           readOnly={showcase}
           onAction={(act) => {

@@ -606,6 +606,7 @@ export interface Snapshot {
   encounters?: EncounterSnapshot
   partner_system?: DaoPartnerSystemSnapshot
   ancient_tomb?: AncientTombSnapshot
+  artifact_spirit?: ArtifactSpiritSnapshot
   output?: string
 }
 
@@ -1021,3 +1022,49 @@ export interface AncientTombSnapshot {
   themes: TombThemeData[]
   history: string[]
 }
+
+export interface SpiritArchetypeData {
+  id: string
+  name: string
+  title: string
+  description: string
+  personality: string
+  default_name: string
+  combat_skill_name: string
+  combat_skill_desc: string
+  attack_multiplier: number
+  defense_bonus: number
+  max_health_bonus: number
+}
+
+export interface ArtifactSpiritData {
+  name: string
+  artifact_name: string
+  archetype_id: string
+  archetype_name: string
+  title: string
+  description: string
+  personality: string
+  level: number
+  intimacy: number
+  exp: number
+  is_active: boolean
+  combat_skill_name: string
+  combat_skill_desc: string
+  skill_value: number
+  attack_multiplier: number
+  defense_bonus: number
+  max_health_bonus: number
+  dialogue_history: string[]
+}
+
+export interface ArtifactSpiritSnapshot {
+  bonded_artifact: string
+  resonance: number
+  can_manifest: boolean
+  manifest_reason: string
+  spirit?: ArtifactSpiritData | null
+  archetypes: SpiritArchetypeData[]
+  history: string[]
+}
+

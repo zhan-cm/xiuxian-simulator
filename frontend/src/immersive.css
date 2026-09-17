@@ -11756,6 +11756,862 @@ body {
   line-height: 1.5;
 }
 
+/* ========================================================
+   本命法宝 · 器灵独立化形秀台样式
+   ======================================================== */
+
+.artifact-spirit-modal-content {
+  max-width: 960px;
+  width: 94vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(170deg, #15201c 0%, #0d1512 100%);
+  border: 1px solid rgba(223, 178, 107, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(100, 200, 160, 0.08);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  color: #d6e3dc;
+  font-family: inherit;
+}
+
+.spirit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: linear-gradient(90deg, rgba(30, 48, 40, 0.8) 0%, rgba(20, 32, 26, 0.6) 100%);
+  border-bottom: 1px solid rgba(223, 178, 107, 0.25);
+}
+
+.header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(223, 178, 107, 0.25), rgba(70, 140, 110, 0.35));
+  border: 1px solid rgba(223, 178, 107, 0.4);
+  color: #ffd98a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(223, 178, 107, 0.25);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f7e6c4;
+  margin: 0;
+  letter-spacing: 0.06em;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: #8fa89b;
+  margin: 3px 0 0 0;
+}
+
+.btn-close-modal {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #9ab0a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.spirit-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* --- 化形前界面 (ManifestationView) --- */
+.spirit-bonded-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(35, 55, 45, 0.6) 0%, rgba(20, 35, 28, 0.8) 100%);
+  border: 1px solid rgba(223, 178, 107, 0.25);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+}
+
+.banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banner-label {
+  font-size: 11px;
+  color: #8ba597;
+}
+
+.bonded-title {
+  margin: 0;
+  font-size: 17px;
+  color: #f5e4bd;
+  letter-spacing: 0.04em;
+}
+
+.resonance-bar-wrapper {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.resonance-text {
+  font-size: 11px;
+  color: #a7c0b3;
+}
+
+.resonance-track {
+  width: 200px;
+  height: 6px;
+  background: rgba(10, 20, 16, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(223, 178, 107, 0.2);
+}
+
+.resonance-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3aa876 0%, #dfb26b 100%);
+  transition: width 0.3s ease;
+}
+
+.manifest-status.ready {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.manifest-status.locked {
+  font-size: 12px;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.spirit-intro-card {
+  background: rgba(20, 32, 26, 0.5);
+  border: 1px dashed rgba(223, 178, 107, 0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.spirit-intro-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #dfb26b;
+}
+
+.spirit-intro-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #a3baa8;
+}
+
+.archetypes-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #e5ede8;
+}
+
+.archetype-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.archetype-card {
+  background: rgba(25, 40, 32, 0.6);
+  border: 1px solid rgba(223, 178, 107, 0.18);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.archetype-card:hover {
+  background: rgba(35, 55, 45, 0.8);
+  border-color: rgba(223, 178, 107, 0.45);
+  transform: translateY(-2px);
+}
+
+.archetype-card.selected {
+  background: rgba(40, 65, 52, 0.9);
+  border: 1px solid #dfb26b;
+  box-shadow: 0 0 16px rgba(223, 178, 107, 0.25);
+}
+
+.arch-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.arch-identity h5 {
+  margin: 0;
+  font-size: 15px;
+  color: #f7e6c4;
+}
+
+.arch-title {
+  font-size: 11px;
+  color: #8da89b;
+}
+
+.arch-personality-tag {
+  font-size: 10px;
+  background: rgba(223, 178, 107, 0.12);
+  color: #dfb26b;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.arch-desc {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #b5c7bc;
+  margin: 0;
+  flex: 1;
+}
+
+.arch-skill-box {
+  background: rgba(12, 22, 17, 0.7);
+  border-radius: 6px;
+  padding: 8px;
+  border-left: 2px solid #dfb26b;
+}
+
+.skill-tag {
+  font-size: 10px;
+  color: #dfb26b;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.skill-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.skill-desc {
+  margin: 3px 0 0 0;
+  font-size: 11px;
+  color: #8fa89b;
+  line-height: 1.4;
+}
+
+.arch-stat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stat-pill {
+  font-size: 10px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+}
+
+.stat-pill.atk {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.stat-pill.def {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stat-pill.hp {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.manifest-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(223, 178, 107, 0.2);
+}
+
+.custom-name-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-name-field label {
+  font-size: 12px;
+  color: #a4beaf;
+}
+
+.spirit-name-input {
+  background: rgba(15, 25, 20, 0.8);
+  border: 1px solid rgba(223, 178, 107, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  padding: 7px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.spirit-name-input:focus {
+  border-color: #dfb26b;
+}
+
+.btn-manifest-ceremony {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #dfb26b 0%, #b8863b 100%);
+  color: #17241d;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(223, 178, 107, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-manifest-ceremony:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(223, 178, 107, 0.45);
+}
+
+.btn-manifest-ceremony:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- 化形后主界面 (ActiveSpiritView) --- */
+.active-spirit-view {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 800px) {
+  .active-spirit-view {
+    grid-template-columns: 1fr;
+  }
+}
+
+.spirit-profile-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spirit-avatar-showcase {
+  background: linear-gradient(180deg, rgba(35, 55, 45, 0.7) 0%, rgba(18, 30, 24, 0.9) 100%);
+  border: 1px solid rgba(223, 178, 107, 0.25);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(223, 178, 107, 0.3) 0%, rgba(30, 60, 48, 0.6) 100%);
+  border: 2px solid rgba(223, 178, 107, 0.6);
+  box-shadow: 0 0 24px rgba(223, 178, 107, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffd98a;
+  margin-bottom: 12px;
+}
+
+.sparkle-orbit {
+  animation: pulse-glow 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 8px #ffd98a); }
+}
+
+.spirit-hero-meta {
+  margin-bottom: 12px;
+}
+
+.hero-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hero-name-row h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #fff2d6;
+  font-weight: 700;
+}
+
+.hero-stage-badge {
+  font-size: 11px;
+  background: rgba(223, 178, 107, 0.2);
+  color: #dfb26b;
+  border: 1px solid rgba(223, 178, 107, 0.4);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.hero-archetype {
+  display: block;
+  font-size: 12px;
+  color: #8da89b;
+  margin-top: 3px;
+}
+
+.hero-personality {
+  display: block;
+  font-size: 11.5px;
+  color: #b7ccbf;
+  margin-top: 4px;
+}
+
+.active-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.status-pill {
+  font-size: 11px;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: 600;
+}
+
+.status-pill.active {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.status-pill.idle {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.btn-toggle-active {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-active.deploy {
+  background: rgba(74, 222, 128, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.btn-toggle-active.deploy:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.35);
+}
+
+.btn-toggle-active.recall {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-toggle-active.recall:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.spirit-stats-card {
+  background: rgba(20, 32, 26, 0.6);
+  border: 1px solid rgba(223, 178, 107, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-progress-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #9cb5a8;
+}
+
+.progress-header span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 7px;
+  background: rgba(10, 20, 16, 0.8);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar-fill.exp {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill.intimacy {
+  height: 100%;
+  background: linear-gradient(90deg, #ec4899 0%, #f43f5e 100%);
+  transition: width 0.3s ease;
+}
+
+.spirit-combat-specs h5 {
+  margin: 4px 0 8px 0;
+  font-size: 12.5px;
+  color: #dfb26b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.spec-item {
+  background: rgba(12, 20, 16, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spec-label {
+  font-size: 10px;
+  color: #7d9689;
+}
+
+.spec-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f3ece1;
+}
+
+.spirit-active-skill {
+  background: rgba(15, 25, 20, 0.8);
+  border-radius: 8px;
+  padding: 10px;
+  border-left: 3px solid #dfb26b;
+}
+
+.active-skill-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-icon {
+  color: #dfb26b;
+}
+
+.skill-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.skill-detail {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: #9cb5a8;
+  line-height: 1.5;
+}
+
+/* --- 右栏：喂养与心印交互 --- */
+.spirit-interaction-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.interaction-section {
+  background: rgba(22, 36, 29, 0.6);
+  border: 1px solid rgba(223, 178, 107, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.interaction-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  color: #f7e6c4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-tip {
+  margin: 0 0 12px 0;
+  font-size: 11.5px;
+  color: #8da89b;
+}
+
+.feed-buttons-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feed-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 25, 20, 0.85);
+  border: 1px solid rgba(223, 178, 107, 0.25);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #d1e3d9;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.feed-btn:hover:not(:disabled) {
+  background: rgba(35, 55, 45, 0.9);
+  border-color: #dfb26b;
+  transform: translateY(-1px);
+}
+
+.feed-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.feed-reward {
+  font-size: 10px;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 2px;
+}
+
+.dialogue-chat-box {
+  background: rgba(12, 20, 16, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 220px;
+  min-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chat-bubble-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-bubble {
+  background: rgba(28, 44, 36, 0.8);
+  border: 1px solid rgba(223, 178, 107, 0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.chat-content {
+  margin: 0;
+  font-family: inherit;
+  font-size: 12px;
+  color: #c9ded3;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty-dialogue {
+  color: #698375;
+  font-size: 12px;
+  text-align: center;
+  margin: auto;
+  padding: 20px 0;
+}
+
+.quick-topics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.topic-pill {
+  background: rgba(15, 25, 20, 0.7);
+  border: 1px solid rgba(223, 178, 107, 0.2);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #a7c0b3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.topic-pill:hover:not(:disabled) {
+  border-color: #dfb26b;
+  color: #ffd98a;
+  background: rgba(30, 48, 38, 0.9);
+}
+
+.talk-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.talk-text-input {
+  flex: 1;
+  background: rgba(12, 20, 16, 0.85);
+  border: 1px solid rgba(223, 178, 107, 0.25);
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.talk-text-input:focus {
+  border-color: #dfb26b;
+}
+
+.btn-send-talk {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #dfb26b 0%, #b8863b 100%);
+  color: #17241d;
+  font-weight: 700;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-send-talk:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.spirit-history-footer {
+  padding: 8px 24px;
+  background: rgba(10, 16, 13, 0.95);
+  border-top: 1px solid rgba(223, 178, 107, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
+.history-label {
+  color: #dfb26b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.history-text {
+  color: #8da89b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
 
 
 

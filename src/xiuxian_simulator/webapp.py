@@ -39,6 +39,7 @@ from .tribulation import TribulationEngine
 from .encounters import RedDustEncounterEngine
 from .partner_system import DaoPartnerEngine
 from .ancient_tomb import AncientTombEngine
+from .artifact_spirit import ArtifactSpiritEngine
 
 
 class WebApplication:
@@ -116,6 +117,7 @@ class WebApplication:
             "encounters": RedDustEncounterEngine.snapshot(self.engine.state),
             "partner_system": DaoPartnerEngine.snapshot(self.engine.state),
             "ancient_tomb": AncientTombEngine.snapshot(self.engine.state),
+            "artifact_spirit": ArtifactSpiritEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:

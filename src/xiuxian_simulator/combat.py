@@ -8,6 +8,7 @@ from .dao import DaoEngine
 from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .artifact_growth import ArtifactGrowthEngine
+from .artifact_spirit import ArtifactSpiritEngine
 from .recovery import RecoveryEngine
 from .progression import ProgressionEngine, REALMS, STAGES
 from .state import GameState
@@ -225,12 +226,16 @@ class CombatEngine:
             partner_attack_mult *= float(b.get("attack_multiplier", 1.0))
             partner_lifesteal += float(b.get("lifesteal_percent", 0.0))
 
+        spirit = state.artifact_spirit
+        spirit_atk_mult = float(spirit.get("attack_multiplier", 1.0)) if spirit and spirit.get("is_active") else 1.0
+
         base = 14 + player.aptitude + player.realm_index * 14 + player.stage_index * 3
         arts_multiplier = (
             ArtsEngine.attack_multiplier(player, state)
             * SpiritBeastEngine.attack_multiplier(state)
             * RecoveryEngine.combat_multiplier(state)
             * partner_attack_mult
+            * spirit_atk_mult
         )
         damage = max(
             1,
@@ -277,7 +282,9 @@ class CombatEngine:
         critical = critical_roll <= 10
         raw_damage = round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0))
         partner_def_bonus = sum(int(b.get("defense_bonus", 0)) for b in state.active_partner_blessings.values())
-        guarded_damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state) - partner_def_bonus)
+        spirit = state.artifact_spirit
+        spirit_def_bonus = int(spirit.get("defense_bonus", 0)) if spirit and spirit.get("is_active") else 0
+        guarded_damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state) - partner_def_bonus - spirit_def_bonus)
         damage = max(1, round(guarded_damage * RecoveryEngine.damage_taken_multiplier(state)))
         enemy_bound = bool(combat.pop("enemy_bound", False))
         if enemy_bound:
@@ -399,6 +406,11 @@ class CombatEngine:
             player_text = cls._strike_text("你催动火球符", strike) + "，火球符 -1"
         else:
             raise ValueError("战斗中请选择：攻击、施法、防御、召唤战宠、催动阵法、冷静观察、蓄势、绝技、遁走、用丹或用符。")
+
+        # 本命器灵助战
+        assist = ArtifactSpiritEngine.combat_assist(state, int(combat["round"]))
+        if assist:
+            player_text += f"\n{assist['text']}"
 
         if int(combat["enemy_health"]) <= 0:
             return CombatRoundResult(action, player_text, f"{combat['enemy_name']}失去战力。", victory=True)

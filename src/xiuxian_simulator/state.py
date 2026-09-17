@@ -194,6 +194,8 @@ class GameState:
     artifact_refinements: dict[str, dict[str, Any]] = field(default_factory=dict)
     bonded_artifact: str = ""
     artifact_history: list[str] = field(default_factory=list)
+    artifact_spirit: dict[str, Any] = field(default_factory=dict)
+    artifact_spirit_history: list[str] = field(default_factory=list)
     technique_mastery: dict[str, int] = field(default_factory=dict)
     spell_mastery: dict[str, int] = field(default_factory=dict)
     art_mastery_history: list[str] = field(default_factory=list)

@@ -40,9 +40,10 @@ from .state import GameState
 from .encounters import RedDustEncounterEngine
 from .partner_system import DaoPartnerEngine
 from .ancient_tomb import AncientTombEngine
+from .artifact_spirit import ArtifactSpiritEngine
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 同修阁 仙家子嗣 古墓探险 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 同修阁 仙家子嗣 古墓探险 器灵化形 存档 帮助"
 
 
 class GameEngine:
@@ -401,6 +402,16 @@ class GameEngine:
             return self._interact_ancient_tomb(action)
         if action in {"古墓撤离", "离开古墓"}:
             return self._retreat_ancient_tomb()
+        if action in {"器灵", "器灵阁", "器灵化形"}:
+            return self._artifact_spirit_panel()
+        if action.startswith("唤醒器灵") or action.startswith("器灵化形"):
+            return self._manifest_artifact_spirit(action)
+        if action.startswith("器灵交谈") or action.startswith("与器灵交谈"):
+            return self._talk_artifact_spirit(action)
+        if action.startswith("器灵喂养") or action.startswith("喂养器灵"):
+            return self._feed_artifact_spirit(action)
+        if action in {"器灵出战", "召回器灵", "切换器灵出战"}:
+            return self._toggle_artifact_spirit()
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -2881,7 +2892,86 @@ class GameEngine:
         self._autosave()
         return res["msg"] + "\n\n" + self._status()
 
+    def _artifact_spirit_panel(self) -> str:
+        snap = ArtifactSpiritEngine.snapshot(self.state)
+        spirit = snap["spirit"]
+        bonded = snap["bonded_artifact"]
+        resonance = snap["resonance"]
+        if not spirit:
+            lines = [
+                "【本命法宝 · 器灵化形阁】",
+                f"当前本命法宝：【{bonded or '暂无'}】（器心契合度：{resonance}/100）",
+            ]
+            if not bonded:
+                lines.append("尚未祭炼【本命法宝】。请先在【法宝谱】中认主一件本命法宝。")
+            elif resonance < 30:
+                lines.append(f"契合度尚不足 30（当前 {resonance}/100）。多在斗法中运用本命法宝或进行温养，即可唤醒真灵。")
+            else:
+                lines.append("本命法宝器心明澈，已可举行化形大典！可选化形原型：")
+                for a in snap["archetypes"]:
+                    lines.append(f"· 【{a['name']}】（{a['personality']}）：神通《{a['combat_skill_name']}》（{a['combat_skill_desc']}）")
+                lines.append("\n化形指令：器灵化形 [剑仙/雷灵/雪姬/赤灵] [自定义姓名(可选)]")
+            return "\n".join(lines)
 
+        active_text = "出战护主中" if spirit.get("is_active") else "于识海温养中"
+        return (
+            f"【本命器灵化形 · {spirit['name']}】\n"
+            f"原型：{spirit['archetype_name']}（{spirit['personality']}）｜本命所依：【{spirit['artifact_name']}】\n"
+            f"位阶：{spirit['level']} 阶（修为 {spirit.get('exp', 0)}/{spirit['level'] * 100}）｜灵犀默契：{spirit['intimacy']}/100\n"
+            f"侍从状态：{active_text}（攻击加成 ×{spirit['attack_multiplier']}，防御加护 +{spirit['defense_bonus']}）\n"
+            f"本命神通：【{spirit['combat_skill_name']}】（{spirit['combat_skill_desc']}，威能 {spirit['skill_value']}）\n\n"
+            f"【心印语录】\n“{spirit.get('dialogue_history', ['暂无'])[-1]}”\n\n"
+            "指令：器灵交谈 [心声]｜器灵喂养 [聚气丹/筑基丹/灵石]｜器灵出战 / 召回器灵"
+        )
+
+    def _manifest_artifact_spirit(self, action: str) -> str:
+        parts = action.removeprefix("器灵化形").removeprefix("唤醒器灵").strip().split()
+        archetype_id = "sword_fairy"
+        custom_name = ""
+        if parts:
+            p = parts[0]
+            if "雷" in p or "紫" in p:
+                archetype_id = "thunder_child"
+            elif "镜" in p or "雪" in p:
+                archetype_id = "mirror_maiden"
+            elif "鼎" in p or "赤" in p or "火" in p:
+                archetype_id = "cauldron_spirit"
+            elif "剑" in p or "仙" in p:
+                archetype_id = "sword_fairy"
+            if len(parts) > 1:
+                custom_name = parts[1]
+        try:
+            res = ArtifactSpiritEngine.manifest(self.state, archetype_id, custom_name)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return res["msg"] + "\n\n" + self._artifact_spirit_panel()
+
+    def _talk_artifact_spirit(self, action: str) -> str:
+        question = action.removeprefix("器灵交谈").removeprefix("与器灵交谈").strip()
+        try:
+            res = ArtifactSpiritEngine.talk(self.state, question)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return f"{self.state.time_label}\n" + res["msg"] + "\n\n" + self._artifact_spirit_panel()
+
+    def _feed_artifact_spirit(self, action: str) -> str:
+        item_name = action.removeprefix("器灵喂养").removeprefix("喂养器灵").strip() or "聚气丹"
+        try:
+            res = ArtifactSpiritEngine.feed(self.state, item_name)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return f"{self.state.time_label}\n" + res["msg"] + "\n\n" + self._artifact_spirit_panel()
+
+    def _toggle_artifact_spirit(self) -> str:
+        try:
+            res = ArtifactSpiritEngine.toggle_active(self.state)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return res["msg"] + "\n\n" + self._artifact_spirit_panel()
 
     def _status(self) -> str:
         p = self.state.player
@@ -2894,6 +2984,11 @@ class GameEngine:
         formation_text = (
             f"{active_formation[0].name}·阵基{active_formation[1].get('integrity', 0)}/{FormationEngine.MAX_INTEGRITY}"
             if active_formation else "无"
+        )
+        spirit = self.state.artifact_spirit
+        spirit_text = (
+            f"{spirit['name']}·{spirit['level']}阶·{'出战' if spirit.get('is_active') else '静养'}"
+            if spirit else "无"
         )
         return (
             f"【状态卡 · 第 {self.state.turn} 回合 · {self.state.time_label}】\n"
@@ -2911,7 +3006,7 @@ class GameEngine:
             f"战宠：{beast_text}｜兽苑 {len(self.state.spirit_beasts)} 只\n"
             f"阵盘：{formation_text}｜阵图 {len(self.state.formation_arrays)} 卷\n"
             f"主修 {p.primary_technique}｜法术 {p.equipped_spell or '无'}｜武器 {p.equipped_weapon or '无'}｜护甲 {p.equipped_armor or '无'}\n"
-            f"道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
+            f"器灵：{spirit_text}｜道侣：{'、'.join(self.state.dao_partners) if self.state.dao_partners else '无'}\n"
             f"尘缘波澜：{self.state.relationship_tension}/100｜情劫记录 {len(self.state.relationship_events)}\n"
             f"人物动态：{self.state.last_npc_event or '众生各循其道'}\n"
             f"天下大势：{self.state.last_world_event or '灵气潮汐尚在暗中酝酿'}｜局势 {self.state.world_tension}\n"
