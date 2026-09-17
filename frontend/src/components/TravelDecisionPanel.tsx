@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { Clock3, Coins, Feather, LoaderCircle, LockKeyhole, MapPin, Route, ShieldCheck, Sparkles, Wind } from 'lucide-react'
+import { Clock3, Coins, Compass, Feather, LoaderCircle, LockKeyhole, MapPin, Route, ShieldCheck, Sparkles, Wind, Zap } from 'lucide-react'
 import type { Decision, DecisionChoice, TravelSnapshot } from '../api/types'
 import { GameTooltip } from './GameTooltip'
 
@@ -17,7 +17,13 @@ const pendingText = (travel: TravelSnapshot, key: string) => {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : ''
 }
 
-const methodFor = (choice: DecisionChoice) => choice.action.endsWith('caravan') ? 'caravan' : choice.action.endsWith('swift') ? 'swift' : 'cancel'
+const methodFor = (choice: DecisionChoice) => {
+  if (choice.action.endsWith('caravan')) return 'caravan'
+  if (choice.action.endsWith('swift')) return 'swift'
+  if (choice.action.includes('cloud_ship') || choice.label.includes('灵舟') || choice.label.includes('仙舟')) return 'cloud_ship'
+  if (choice.action.includes('teleport') || choice.label.includes('挪移') || choice.label.includes('阵')) return 'teleport'
+  return 'cancel'
+}
 const monthsFor = (choice: DecisionChoice) => Number(choice.label.match(/(\d+)\s*月/)?.[1] || 0)
 const costFor = (choice: DecisionChoice) => {
   const value = choice.summary?.match(/(\d+)\s*(灵石|灵力)/)
@@ -54,7 +60,8 @@ export function TravelDecisionPanel({ decision, travel, activeAction, busy, read
           const selected = busy && activeAction === choice.action
           const disabled = busy || readOnly || Boolean(choice.disabled)
           const cost = costFor(choice)
-          const Icon = method === 'caravan' ? ShieldCheck : Wind
+          const Icon = method === 'caravan' ? ShieldCheck : method === 'cloud_ship' ? Compass : method === 'teleport' ? Zap : Wind
+          const subtitle = method === 'caravan' ? '稳妥之选' : method === 'cloud_ship' ? '破浪仙舟' : method === 'teleport' ? '虚空横渡' : '独行之选'
           const button = (
             <motion.button
               type="button"
@@ -69,7 +76,7 @@ export function TravelDecisionPanel({ decision, travel, activeAction, busy, read
               onClick={() => onChoose(choice.action)}
             >
               <span className="travel-method-mark">{selected ? <LoaderCircle className="animate-spin" size={20} /> : choice.disabled ? <LockKeyhole size={20} /> : <Icon size={20} />}</span>
-              <div className="travel-method-copy"><small>{method === 'caravan' ? '稳妥之选' : '独行之选'}</small><strong>{choice.label.replace(/\s*·.*$/, '')}</strong><p>{choice.description}</p></div>
+              <div className="travel-method-copy"><small>{subtitle}</small><strong>{choice.label.replace(/\s*·.*$/, '')}</strong><p>{choice.description}</p></div>
               <dl><div><dt><Clock3 size={12} />耗时</dt><dd>{monthsFor(choice)} 个月</dd></div><div><dt>{cost.unit === '灵石' ? <Coins size={12} /> : <Sparkles size={12} />}消耗</dt><dd>{cost.amount} {cost.unit}</dd></div></dl>
               <i>{selected ? '正在启程' : choice.disabled ? '资粮不足' : readOnly ? '巡览只读' : '选择此路'}</i>
             </motion.button>

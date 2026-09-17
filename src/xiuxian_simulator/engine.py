@@ -324,6 +324,18 @@ class GameEngine:
             return self._sect_spar(action)
         if action.startswith("山门历练"):
             return self._sect_bounty(action)
+        if action.startswith("胜境悟道"):
+            return self._natural_meditate(action)
+        if action.startswith("胜境采灵"):
+            return self._natural_harvest(action)
+        if action.startswith("胜境探幽"):
+            return self._natural_explore_secret(action)
+        if action.startswith("渡海灵舟"):
+            return self._ferry_cloud_ship(action)
+        if action.startswith("古阵挪移"):
+            return self._ancient_teleport(action)
+        if action in {"胜境", "名山", "名胜", "胜境探幽"}:
+            return self._natural_landmarks_text()
         if action in {"情缘", "人物"}:
             return self._relationships()
         if action == "情劫":
@@ -1664,6 +1676,104 @@ class GameEngine:
         if died_of_age:
             return f"历练途中寿元耗尽。\n【陨落结局】享年 {self.state.player.age} 岁。"
         return f"{self.state.time_label}\n{verdict}\n\n{self._status()}"
+
+    def _natural_landmarks_text(self) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        lm = NaturalExplorationEngine.current_landmark(self.state)
+        return (
+            f"【九州名山胜境 · {lm.name}】（{lm.province} · {lm.title}）\n"
+            f"{lm.scenery}\n"
+            f"灵脉特产：{'、'.join(lm.specialties)}\n"
+            f"仙港渡口：{lm.ferry_name}——{lm.ferry_desc}\n\n"
+            f"可进行行动：\n"
+            f"- 胜境悟道 {lm.id}：坐照观想，纳天地灵机，参悟道韵\n"
+            f"- 胜境采灵 {lm.id}：巡山探宝，采集天产灵草矿珍\n"
+            f"- 胜境探幽 {lm.id}：破入古仙禁制洞窟寻幽探秘\n\n{self._status()}"
+        )
+
+    def _natural_meditate(self, action: str) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        target = action.removeprefix("胜境悟道").strip()
+        try:
+            result = NaturalExplorationEngine.meditate(self.state, target)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"胜境悟道中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{result['msg']}\n\n{self._status()}"
+
+    def _natural_harvest(self, action: str) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        target = action.removeprefix("胜境采灵").strip()
+        try:
+            result = NaturalExplorationEngine.harvest(self.state, target)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"搜山采灵途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{result['msg']}\n\n{self._status()}"
+
+    def _natural_explore_secret(self, action: str) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        target = action.removeprefix("胜境探幽").strip()
+        try:
+            result = NaturalExplorationEngine.explore_secret(self.state, target)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"破禁探幽途中寿元耗尽。\n【陨落结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{result['msg']}\n\n{self._status()}"
+
+    def _ferry_cloud_ship(self, action: str) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        dest = action.removeprefix("渡海灵舟").strip()
+        try:
+            result = NaturalExplorationEngine.ferry_cloud_ship(self.state, dest)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = False
+        for _ in range(result["months"]):
+            if self._advance_time():
+                died_of_age = True
+                break
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"渡海远航途中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n【渡海灵舟 · 航程抵达】\n{result['event']}\n耗费船资 {result['cost_stones']} 灵石，航行历时 {result['months']} 个月。\n\n{self._status()}"
+
+    def _ancient_teleport(self, action: str) -> str:
+        from .natural_exploration import NaturalExplorationEngine
+        dest = action.removeprefix("古阵挪移").strip()
+        try:
+            result = NaturalExplorationEngine.ancient_teleport(self.state, dest)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"古阵挪移中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n【太古挪移大阵 · 虚空横渡】\n{result['event']}\n耗费阵基灵石 {result['cost_stones']}，历时 1 个月。\n\n{self._status()}"
 
     @staticmethod
     def _combatants() -> str:

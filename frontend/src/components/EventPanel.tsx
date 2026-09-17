@@ -1,7 +1,7 @@
-import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
+import type { CaveSnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
@@ -159,7 +159,7 @@ function LocationsBlock({ block, readOnly, onAction }: { block: PresentationBloc
   )
 }
 
-function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
+function RegionsBlock({ block, naturalExploration, readOnly, onAction }: { block: PresentationBlock; naturalExploration?: NaturalExplorationSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
   const backendItems = useMemo(() => (block.items || []) as RegionAtlasItem[], [block.items])
   const items = useMemo(() => {
     const merged = [...backendItems]
@@ -199,6 +199,10 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
           const accessible = selected.accessible === true
           const visited = selected.visited === true
           const isSealed = selected.sealed === true
+          const selKey = text(selected.key)
+          const landmark = naturalExploration?.landmarks?.find(
+            (lm) => lm.province === selKey || selKey.startsWith(lm.province) || lm.province.startsWith(selKey)
+          )
           return (
             <aside className="region-atlas-detail" data-tone={text(selected.tone, 'safe')} aria-label={`${text(selected.name)}地域详情`}>
               <div className="region-detail-section region-detail-overview">
@@ -241,6 +245,24 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
                     <dd>{words(selected.demands).join(' · ') || '行情平稳'}</dd>
                   </div>
                 </dl>
+                {landmark && (
+                  <div className="region-landmark-card">
+                    <div className="landmark-card-head">
+                      <span className="landmark-badge"><Mountain size={11} />{landmark.category}</span>
+                      <strong>{landmark.name}</strong>
+                      <small>{landmark.title}</small>
+                    </div>
+                    <p className="landmark-scenery">{landmark.scenery}</p>
+                    <div className="landmark-field">
+                      <small>胜境奇珍：</small>
+                      <span>{landmark.specialties.join(' · ')}</span>
+                    </div>
+                    <div className="landmark-field">
+                      <small>仙渡港埠：</small>
+                      <span><strong>{landmark.ferry_name}</strong> · {landmark.ferry_desc}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="region-detail-section region-detail-actions">
@@ -253,6 +275,7 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
                 )}
                 <button
                   type="button"
+                  className="region-travel-main-btn"
                   disabled={readOnly || !accessible}
                   title={readOnly ? '成果巡览仅供查看' : accessible ? '规划跨域行程' : text(selected.locked_reason)}
                   onClick={() => onAction(text(selected.action))}
@@ -265,6 +288,79 @@ function RegionsBlock({ block, readOnly, onAction }: { block: PresentationBlock;
                     <><LockKeyhole size={13} />{text(selected.locked_reason, '尚未解锁')}</>
                   )}
                 </button>
+
+                {current && landmark && (
+                  <div className="landmark-actions-box">
+                    <div className="landmark-actions-heading">
+                      <Sparkles size={11} />
+                      <span>名山胜境探索</span>
+                      <small>{landmark.requirement_label}</small>
+                    </div>
+                    <div className="landmark-actions-row">
+                      <button
+                        type="button"
+                        className="landmark-action-btn meditate-btn"
+                        disabled={readOnly || !landmark.accessible}
+                        title={readOnly ? '成果巡览仅供查看' : !landmark.accessible ? `需修至${landmark.requirement_label}` : '在胜境坐照观想吸纳灵机，有几率顿悟道点'}
+                        onClick={() => onAction(landmark.actions.meditate)}
+                      >
+                        <Sun size={12} />
+                        <span>悟道</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="landmark-action-btn harvest-btn"
+                        disabled={readOnly || !landmark.accessible}
+                        title={readOnly ? '成果巡览仅供查看' : !landmark.accessible ? `需修至${landmark.requirement_label}` : '御使神识搜山采灵，消耗15点灵力采集灵珍'}
+                        onClick={() => onAction(landmark.actions.harvest)}
+                      >
+                        <Sparkles size={12} />
+                        <span>采灵</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="landmark-action-btn secret-btn"
+                        disabled={readOnly || !landmark.accessible}
+                        title={readOnly ? '成果巡览仅供查看' : !landmark.accessible ? `需修至${landmark.requirement_label}` : '破解古仙禁制洞窟，获大量灵石与灵珍'}
+                        onClick={() => onAction(landmark.actions.explore_secret)}
+                      >
+                        <Compass size={12} />
+                        <span>探幽</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!current && accessible && landmark && (
+                  <div className="landmark-fast-travel-box">
+                    <div className="landmark-actions-heading">
+                      <Wind size={11} />
+                      <span>仙港渡口与虚空阵坛</span>
+                    </div>
+                    <div className="fast-travel-row">
+                      <button
+                        type="button"
+                        className="landmark-action-btn ferry-action"
+                        disabled={readOnly}
+                        title={readOnly ? '成果巡览仅供查看' : `乘坐渡海灵舟直达${landmark.province}`}
+                        onClick={() => onAction(`渡海灵舟 ${landmark.province}`)}
+                      >
+                        <Compass size={12} />
+                        <span>渡海灵舟</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="landmark-action-btn teleport-action"
+                        disabled={readOnly}
+                        title={readOnly ? '成果巡览仅供查看' : `开启太古挪移大阵瞬息横渡至${landmark.province}`}
+                        onClick={() => onAction(`古阵挪移 ${landmark.province}`)}
+                      >
+                        <Zap size={12} />
+                        <span>古阵挪移</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </aside>
           )
@@ -595,10 +691,10 @@ function GenericBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
-function Block({ block, cave, lives, readOnly, onAction, onOpenSectGate }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
+function Block({ block, cave, lives, naturalExploration, readOnly, onAction, onOpenSectGate }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; naturalExploration?: NaturalExplorationSnapshot; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
   if (block.type === 'people') return <PeopleBlock block={block} lives={lives} readOnly={readOnly} onAction={onAction} />
-  if (block.type === 'regions') return <RegionsBlock block={block} readOnly={readOnly} onAction={onAction} />
+  if (block.type === 'regions') return <RegionsBlock block={block} naturalExploration={naturalExploration} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'locations') return <LocationsBlock block={block} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'meter') return <MeterBlock block={block} />
   if (block.type === 'market') return <MarketBlock block={block} readOnly={readOnly} onAction={onAction} />
@@ -608,7 +704,7 @@ function Block({ block, cave, lives, readOnly, onAction, onOpenSectGate }: { blo
   return <GenericBlock block={block} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, readOnly = false, immersive = false, onAction, onOpenSectGate }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
+export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, naturalExploration, readOnly = false, immersive = false, onAction, onOpenSectGate }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; naturalExploration?: NaturalExplorationSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
   const showSectMembership = Boolean(sectMembership?.member && (['宗门', '申请晋升', '宗门大比'].includes(presentation.action) || presentation.action.startsWith('宗门任务')))
@@ -635,7 +731,7 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembe
         </div>
       )}
       <div className="event-blocks" aria-label="本次推演数据">
-        {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} key={`${block.type}-${index}`} />)}
+        {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} naturalExploration={naturalExploration} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} key={`${block.type}-${index}`} />)}
         {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={act} />}
         {showSectMembership && sectMembership && <SectMembershipPage membership={sectMembership} busy={readOnly} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} />}
       </div>

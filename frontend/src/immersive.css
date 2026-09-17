@@ -800,6 +800,135 @@ body {
   transform: none;
 }
 
+/* 本域天地奇景 · 名山胜境卡片 */
+.region-landmark-card {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(245, 241, 227, 0.88);
+  border: 1px solid rgba(138, 102, 48, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.landmark-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.landmark-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(69, 107, 87, 0.12);
+  color: #38604d;
+  font-size: 7.5px;
+  font-weight: 600;
+}
+.landmark-card-head > strong {
+  font-family: "KaiTi", serif;
+  font-size: 11px;
+  color: #2b4f3c;
+  font-weight: 600;
+}
+.landmark-card-head > small {
+  margin-left: auto;
+  font-size: 7.5px;
+  color: #8c7853;
+}
+.landmark-scenery {
+  margin: 0;
+  font-size: 7.5px;
+  color: #556c60;
+  line-height: 1.45;
+  font-style: italic;
+}
+.landmark-field {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 7.5px;
+  color: #4a6154;
+}
+.landmark-field small {
+  color: #8b7956;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.landmark-field span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 胜境历练交互区域 */
+.landmark-actions-box,
+.landmark-fast-travel-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(240, 244, 238, 0.85);
+  border: 1px dashed rgba(60, 105, 82, 0.22);
+}
+.landmark-actions-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 600;
+  color: #345c47;
+}
+.landmark-actions-heading small {
+  margin-left: auto;
+  font-size: 7px;
+  color: #8b7752;
+  background: rgba(184, 145, 73, 0.12);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.landmark-actions-row,
+.fast-travel-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.fast-travel-row {
+  grid-template-columns: repeat(2, 1fr);
+}
+.region-detail-actions .landmark-action-btn {
+  min-height: 28px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 500;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(44, 60, 50, 0.1);
+}
+.region-detail-actions .meditate-btn {
+  background: linear-gradient(135deg, #446857, #315143);
+}
+.region-detail-actions .harvest-btn {
+  background: linear-gradient(135deg, #7c683b, #614f29);
+}
+.region-detail-actions .secret-btn {
+  background: linear-gradient(135deg, #3d586e, #2a4153);
+}
+.region-detail-actions .ferry-action {
+  background: linear-gradient(135deg, #38676d, #254a4f);
+}
+.region-detail-actions .teleport-action {
+  background: linear-gradient(135deg, #5b4673, #433257);
+}
+.region-detail-actions .landmark-action-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 880px) {
   .region-atlas-detail {
     grid-template-columns: 1fr;

@@ -33,6 +33,7 @@ from .sect_foundation import SectFoundationEngine
 from .sect_diplomacy import SectDiplomacyEngine
 from .world import SectProgressionEngine
 from .sect_visit import SectVisitEngine
+from .natural_exploration import NaturalExplorationEngine
 
 
 class WebApplication:
@@ -104,6 +105,7 @@ class WebApplication:
             "npc_lives": npc_lives,
             "npc_network": npc_network,
             "sect_visit": SectVisitEngine.snapshot(self.engine.state),
+            "natural_exploration": NaturalExplorationEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:

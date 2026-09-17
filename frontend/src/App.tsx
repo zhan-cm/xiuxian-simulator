@@ -308,6 +308,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           npcLives={snapshot.npc_lives}
                           npcNetwork={snapshot.npc_network}
                           sectMembership={snapshot.sect_membership}
+                          naturalExploration={snapshot.natural_exploration}
                           readOnly={showcase || busy}
                           immersive
                           onAction={onAction}

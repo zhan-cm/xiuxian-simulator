@@ -548,6 +548,7 @@ export interface Snapshot {
   npc_lives: NpcLifeSnapshot
   npc_network: NpcNetworkSnapshot
   sect_visit?: SectVisitSnapshot
+  natural_exploration?: NaturalExplorationSnapshot
   output?: string
 }
 
@@ -599,6 +600,55 @@ export interface SectVisitSnapshot {
   player_sect: string
   player_stones: number
   player_reputation: number
+}
+
+export interface KyushuLandmarkData {
+  id: string
+  province: string
+  name: string
+  title: string
+  category: string
+  required_realm: number
+  requirement_label: string
+  scenery: string
+  specialties: string[]
+  ferry_name: string
+  ferry_desc: string
+  is_current: boolean
+  accessible: boolean
+  actions: {
+    meditate: string
+    harvest: string
+    explore_secret: string
+  }
+}
+
+export interface FerryRouteData {
+  destination: string
+  destination_name: string
+  months: number
+  cost_stones: number
+  can_travel: boolean
+  action: string
+}
+
+export interface NaturalExplorationSnapshot {
+  current_region: string
+  current_landmark: {
+    id: string
+    province: string
+    name: string
+    title: string
+    category: string
+    scenery: string
+    specialties: string[]
+    ferry_name: string
+    ferry_desc: string
+  }
+  landmarks: KyushuLandmarkData[]
+  ferry_routes: FerryRouteData[]
+  player_realm_index: number
+  player_stones: number
 }
 
 export interface ShowcasePage {
