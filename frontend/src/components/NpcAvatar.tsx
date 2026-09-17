@@ -486,7 +486,7 @@ export function NpcAvatar({
 }: {
   profile?: Partial<NpcLifeProfile>
   item?: { name?: string; identity?: string; descriptor?: string; realm?: string; affinity?: number }
-  size?: 'small' | 'medium' | 'large'
+  size?: 'small' | 'medium' | 'large' | 'vn'
   className?: string
 }) {
   const data = useMemo(() => deduceNpcAppearance(profile, item), [profile, item])

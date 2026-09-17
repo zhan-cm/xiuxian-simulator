@@ -1,5 +1,4 @@
-import * as Dialog from '@radix-ui/react-dialog'
-import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, HeartPulse, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Swords, UserRound, Waypoints, Wind, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CaveSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
@@ -7,6 +6,7 @@ import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
 import { NpcAvatar, deduceNpcAppearance } from './NpcAvatar'
+import { VisualNovelDialog } from './VisualNovelDialog'
 
 const text = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
 const words = (value: unknown) => Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : []
@@ -24,43 +24,14 @@ function SystemBlockHeader({ mark, eyebrow, title, description, meta, icon }: { 
 
 function PersonProfileDialog({ profile, readOnly, onClose, onAction }: { profile?: NpcLifeProfile; readOnly: boolean; onClose: () => void; onAction: (action: string) => void }) {
   if (!profile) return null
-  const remaining = Math.max(0, 100 - profile.life_percent)
-  const act = (action: string) => { onClose(); onAction(action) }
-  const appearance = deduceNpcAppearance(profile)
   return (
-    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="character-dialog npc-profile-dialog" aria-describedby={`npc-profile-${profile.name}`}>
-          <header><div><p>浮生一页 · 众生有迹</p><Dialog.Title>{profile.name}</Dialog.Title><Dialog.Description id={`npc-profile-${profile.name}`}>{profile.identity}</Dialog.Description></div><Dialog.Close aria-label="关闭人物档案"><X size={20} /></Dialog.Close></header>
-          <div className="npc-profile-hero" data-alive={profile.alive || undefined}>
-            <NpcAvatar profile={profile} size="medium" />
-            <div><small>{profile.gender}修 · {profile.relation}</small><strong>{profile.realm}</strong><p><MapPin size={13} />{profile.location} · {profile.activity}</p></div>
-            <em data-danger={profile.wounded || !profile.alive || undefined}>{profile.status}</em>
-          </div>
-          <div className="npc-profile-facts">
-            <span><small>年岁</small><strong>{profile.age} 岁</strong></span>
-            <span><small>寿元</small><strong>{profile.lifespan} 年</strong></span>
-            <span><small>好感</small><strong>{profile.affinity}</strong></span>
-            <span><small>缘分</small><strong>{profile.relation}</strong></span>
-          </div>
-          <section className="npc-profile-appearance">
-            <header>
-              <Sparkles size={15} />
-              <div>
-                <strong>相貌风仪</strong>
-                <small>{appearance.archetypeLabel} · {appearance.temperamentLabel}</small>
-              </div>
-            </header>
-            <p>{appearance.description}</p>
-          </section>
-          <section className="npc-profile-life"><header><HeartPulse size={15} /><div><strong>{profile.alive ? `尚余约 ${profile.years_remaining} 年` : '此生已落幕'}</strong><small>{profile.cause_of_death || '岁月会随每一次跨年真实流逝'}</small></div><em>{remaining}%</em></header><i><b style={{ width: `${Math.max(3, remaining)}%` }} /></i></section>
-          <section className="npc-profile-preferences"><strong>性情所好</strong><div>{profile.likes.length ? profile.likes.map((like) => <span key={like}>{like}</span>) : <span>尚待相知</span>}</div></section>
-          <section className="npc-profile-chronicle"><header><ScrollText size={15} /><strong>近世行迹</strong></header>{profile.life_events.length ? <ol>{profile.life_events.slice(-5).reverse().map((entry, index) => <li key={`${entry}-${index}`}><span>{index + 1}</span><p>{entry}</p></li>)}</ol> : <p>此人的故事尚未留下更多笔墨。</p>}</section>
-          <footer><Dialog.Close>返回人物卷</Dialog.Close>{profile.alive && <><button type="button" disabled={readOnly} onClick={() => act(`对话 ${profile.name}`)}>前往交谈</button><button type="button" disabled={readOnly} onClick={() => act(`论道 ${profile.name}`)}>论道印证</button></>}</footer>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <VisualNovelDialog
+      npc={profile}
+      open={Boolean(profile)}
+      readOnly={readOnly}
+      onClose={onClose}
+      onAction={onAction}
+    />
   )
 }
 

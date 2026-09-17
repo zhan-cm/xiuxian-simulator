@@ -4,6 +4,7 @@ import { useMemo, useState, type RefObject } from 'react'
 import type { GameState, InventorySnapshot, NpcLifeProfile, NpcProfile, PlayerState, Presentation } from '../api/types'
 import { findEncounterNpc } from '../sceneLogic'
 import { NpcAvatar } from './NpcAvatar'
+import { VisualNovelDialog } from './VisualNovelDialog'
 
 const sceneFrom = (state: GameState, presentation: Presentation) => {
   const action = presentation.action || ''
@@ -98,6 +99,7 @@ interface SocialActionBarProps {
 }
 
 export function SocialActionBar({ npc, inventory, disabled = false, onAction }: SocialActionBarProps) {
+  const [vnOpen, setVnOpen] = useState(false)
   const gifts = useMemo(() => inventory.items.filter((item) => item.category === '礼物' && item.count > 0), [inventory.items])
   const [selectedGift, setSelectedGift] = useState('')
   const gift = gifts.some((item) => item.name === selectedGift) ? selectedGift : gifts[0]?.name || ''
@@ -108,19 +110,46 @@ export function SocialActionBar({ npc, inventory, disabled = false, onAction }: 
     : npc.affinity >= 80
       ? { label: '结道侣契', action: `结为道侣 ${npc.name}` }
       : null
-  return <section className="social-action-bar" aria-label={`与${npc.name}互动`}>
-    <header><span>{npc.name.slice(0, 1)}</span><div><small>此刻相逢</small><strong>接下来想与{npc.name}做什么？</strong></div></header>
-    <div className="social-primary-actions">
-      <button type="button" disabled={unavailable} onClick={() => onAction(`对话 ${npc.name}`)}><MessageCircleMore size={16} /><span><strong>继续交谈</strong><small>推进一月 · 增进了解</small></span></button>
-      <button type="button" disabled={unavailable} onClick={() => onAction(`论道 ${npc.name}`)}><Swords size={16} /><span><strong>论道印证</strong><small>真实判定 · 获得感悟</small></span></button>
-      {relationAction && <button type="button" disabled={unavailable} onClick={() => onAction(relationAction.action)}><Sparkles size={16} /><span><strong>{relationAction.label}</strong><small>{npc.relation === '道侣' ? '共同修行 · 增长修为' : '需要好感达到 80'}</small></span></button>}
-    </div>
-    <div className="social-gift-action">
-      <label htmlFor="encounter-gift"><Gift size={15} /><span><strong>赠一份心意</strong><small>{gifts.length ? `袋中有 ${gifts.length} 种礼物` : '乾坤袋中暂无礼物'}</small></span></label>
-      <select id="encounter-gift" value={gift} disabled={unavailable || !gifts.length} onChange={(event) => setSelectedGift(event.target.value)}>{gifts.map((item) => <option key={item.name} value={item.name}>{item.name} ×{item.count}</option>)}</select>
-      <button type="button" disabled={unavailable || !gift} title={gift ? `${npc.name}喜欢：${npc.likes.join('、') || '尚待了解'}` : '先从探索或坊市获得礼物'} onClick={() => onAction(`送礼 ${npc.name} ${gift}`)}>送出</button>
-    </div>
-  </section>
+  return (
+    <>
+      <section className="social-action-bar" aria-label={`与${npc.name}互动`}>
+        <header>
+          <span>{npc.name.slice(0, 1)}</span>
+          <div>
+            <small>此刻相逢</small>
+            <strong>接下来想与{npc.name}做什么？</strong>
+          </div>
+          <button
+            type="button"
+            className="social-vn-open-btn"
+            title="展开全景立绘会面与对谈案卷"
+            onClick={() => setVnOpen(true)}
+          >
+            <Sparkles size={14} />
+            <span>立绘案卷</span>
+          </button>
+        </header>
+        <div className="social-primary-actions">
+          <button type="button" disabled={unavailable} onClick={() => onAction(`对话 ${npc.name}`)}><MessageCircleMore size={16} /><span><strong>继续交谈</strong><small>推进一月 · 增进了解</small></span></button>
+          <button type="button" disabled={unavailable} onClick={() => onAction(`论道 ${npc.name}`)}><Swords size={16} /><span><strong>论道印证</strong><small>真实判定 · 获得感悟</small></span></button>
+          {relationAction && <button type="button" disabled={unavailable} onClick={() => onAction(relationAction.action)}><Sparkles size={16} /><span><strong>{relationAction.label}</strong><small>{npc.relation === '道侣' ? '共同修行 · 增长修为' : '需要好感达到 80'}</small></span></button>}
+        </div>
+        <div className="social-gift-action">
+          <label htmlFor="encounter-gift"><Gift size={15} /><span><strong>赠一份心意</strong><small>{gifts.length ? `袋中有 ${gifts.length} 种礼物` : '乾坤袋中暂无礼物'}</small></span></label>
+          <select id="encounter-gift" value={gift} disabled={unavailable || !gifts.length} onChange={(event) => setSelectedGift(event.target.value)}>{gifts.map((item) => <option key={item.name} value={item.name}>{item.name} ×{item.count}</option>)}</select>
+          <button type="button" disabled={unavailable || !gift} title={gift ? `${npc.name}喜欢：${npc.likes.join('、') || '尚待了解'}` : '先从探索或坊市获得礼物'} onClick={() => onAction(`送礼 ${npc.name} ${gift}`)}>送出</button>
+        </div>
+      </section>
+      <VisualNovelDialog
+        npc={npc}
+        inventory={inventory}
+        open={vnOpen}
+        readOnly={disabled}
+        onClose={() => setVnOpen(false)}
+        onAction={onAction}
+      />
+    </>
+  )
 }
 
 interface CultivatorHudProps {

@@ -5567,3 +5567,845 @@ body {
   text-indent: 2em;
   letter-spacing: 0.02em;
 }
+
+/* ==========================================================================
+   Visual Novel (VN) 式立绘对话与对谈案卷系统
+   ========================================================================== */
+
+@keyframes vnBreathe {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.008);
+  }
+}
+
+.npc-avatar-box[data-size="vn"] {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.vn-dialog-overlay {
+  background: rgba(14, 25, 20, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 120;
+}
+
+.vn-dialog {
+  width: min(960px, calc(100vw - 32px)) !important;
+  max-height: min(720px, calc(100vh - 36px)) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  border: 2px solid rgba(186, 148, 75, 0.5) !important;
+  background: radial-gradient(circle at 100% 0%, rgba(198, 160, 85, 0.15) 0%, transparent 45%),
+              linear-gradient(175deg, #faf7ef 0%, #f3eee0 100%) !important;
+  box-shadow: 0 28px 70px rgba(12, 28, 20, 0.48), inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 121;
+}
+
+.vn-window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: rgba(243, 237, 222, 0.9);
+  border-bottom: 1px solid rgba(175, 138, 70, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.vn-scroll-tag {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  color: #7a5e24;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.vn-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(175, 138, 70, 0.35);
+  background: rgba(255, 255, 255, 0.6);
+  color: #5d461c;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vn-close-btn:hover {
+  background: #eedcb5;
+  color: #2b1f09;
+  transform: rotate(90deg);
+}
+
+.vn-dialog-body {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px 24px 24px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左侧：立绘舞台 */
+.vn-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.vn-stage-portrait-wrapper {
+  width: 100%;
+  height: 430px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid rgba(186, 148, 75, 0.55);
+  box-shadow: 0 14px 36px rgba(18, 40, 28, 0.26), inset 0 0 0 1.5px rgba(255, 255, 255, 0.4);
+  background: radial-gradient(circle at 50% 25%, rgba(65, 105, 85, 0.45), rgba(18, 32, 24, 0.95));
+  animation: vnBreathe 5s ease-in-out infinite;
+}
+
+.vn-stage-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.vn-stage-caption {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(186, 148, 75, 0.28);
+  box-shadow: 0 2px 8px rgba(35, 60, 45, 0.05);
+  text-align: center;
+}
+
+.vn-stage-tags {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vn-stage-path-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e2ede5;
+  border: 1px solid rgba(62, 124, 101, 0.3);
+  color: #275643;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.vn-stage-temperament-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fbf0dc;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  color: #8c631a;
+  font-size: 11px;
+}
+
+.vn-stage-summary {
+  margin: 0;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  color: #3b5a4a;
+  letter-spacing: 0.04em;
+}
+
+/* 右侧：宣纸对谈案卷 */
+.vn-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.vn-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.vn-scroll::-webkit-scrollbar-thumb {
+  background: rgba(186, 148, 75, 0.4);
+  border-radius: 99px;
+}
+
+.vn-profile-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(175, 138, 70, 0.2);
+}
+
+.vn-name-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vn-name-title {
+  margin: 0;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a382c;
+  letter-spacing: 0.08em;
+}
+
+.vn-realm-badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #376a54 0%, #204635 100%);
+  color: #f7f3e8;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(32, 70, 53, 0.25);
+}
+
+.vn-identity-badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: #efe8d4;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  color: #6a4f1d;
+  font-size: 11px;
+}
+
+.vn-location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #687970;
+  font-size: 11px;
+  margin-left: auto;
+}
+
+/* 好感度仪表 */
+.vn-affinity-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+}
+
+.vn-affinity-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vn-affinity-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #8c3b32;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.vn-heart-icon {
+  color: #e04848;
+  fill: #e04848;
+}
+
+.vn-affinity-num {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  color: #5c451b;
+}
+
+.vn-affinity-track {
+  height: 6px;
+  border-radius: 99px;
+  background: #dedcd4;
+  overflow: hidden;
+}
+
+.vn-affinity-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #437a63 0%, #c99f48 50%, #e04848 100%);
+  transition: width 0.4s ease;
+}
+
+/* 台词气泡 */
+.vn-speech-bubble {
+  position: relative;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffffff 0%, #fbf9f4 100%);
+  border: 1.5px solid rgba(186, 148, 75, 0.4);
+  box-shadow: 0 4px 16px rgba(45, 75, 60, 0.08);
+}
+
+.vn-speaker-tag {
+  position: absolute;
+  top: -11px;
+  left: 18px;
+  padding: 2px 12px;
+  border-radius: 6px;
+  background: #315846;
+  color: #f6f1e2;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 6px rgba(35, 65, 50, 0.25);
+}
+
+.vn-speech-text {
+  margin: 4px 0 0;
+  color: #1f3b2d;
+  font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+  font-size: 15px;
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+}
+
+/* 标签栏 */
+.vn-tab-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(175, 138, 70, 0.2);
+  padding-bottom: 8px;
+}
+
+.vn-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.45);
+  color: #5c6f64;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vn-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  color: #244636;
+}
+
+.vn-tab-btn.active {
+  background: #315c48;
+  color: #f7f3e6;
+  border-color: #204533;
+  box-shadow: 0 2px 8px rgba(32, 70, 50, 0.25);
+}
+
+/* 交互卡片栅格 */
+.vn-actions-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vn-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.vn-action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 245, 237, 0.95) 100%);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 3px 10px rgba(35, 65, 50, 0.05);
+}
+
+.vn-action-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: #ba944b;
+  box-shadow: 0 8px 20px rgba(35, 65, 50, 0.14);
+  background: #ffffff;
+}
+
+.vn-action-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.vn-action-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.interact-talk .vn-action-icon {
+  background: #e2ede7;
+  color: #2b6149;
+}
+
+.interact-discuss .vn-action-icon {
+  background: #fcf1d8;
+  color: #94691c;
+}
+
+.interact-spar .vn-action-icon {
+  background: #fde8e8;
+  color: #b52c2c;
+}
+
+.interact-gift-jump .vn-action-icon {
+  background: #f5eaf8;
+  color: #833496;
+}
+
+.vn-action-info strong {
+  display: block;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 15px;
+  color: #1d392c;
+  letter-spacing: 0.04em;
+}
+
+.vn-action-info small {
+  display: block;
+  font-size: 10.5px;
+  color: #718379;
+  margin-top: 2px;
+}
+
+/* 特殊心动行动 */
+.vn-special-action-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid;
+}
+
+.partner-box {
+  background: linear-gradient(135deg, #fef2f6 0%, #fff7fa 100%);
+  border-color: rgba(224, 72, 120, 0.45);
+  box-shadow: 0 4px 14px rgba(224, 72, 120, 0.1);
+}
+
+.partner-box .vn-special-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #a32252;
+}
+
+.partner-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #d82b68 0%, #af194e 100%);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(216, 43, 104, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.propose-box {
+  background: linear-gradient(135deg, #fbf7ea 0%, #fffbf0 100%);
+  border-color: rgba(201, 159, 72, 0.5);
+  box-shadow: 0 4px 14px rgba(201, 159, 72, 0.12);
+}
+
+.propose-box .vn-special-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8c6218;
+}
+
+.propose-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #c99f48 0%, #9e7526 100%);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(201, 159, 72, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.partner-btn:hover:not(:disabled),
+.propose-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.guard-box {
+  background: #f6ede9;
+  border-color: rgba(186, 92, 70, 0.45);
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.vn-guard-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.vn-guard-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 92, 70, 0.3);
+  background: #ffffff;
+  color: #793424;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.vn-guard-btn.highlight {
+  background: #963a24;
+  color: #ffffff;
+  border: none;
+}
+
+.vn-feedback-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #edf5f0;
+  border: 1px solid rgba(62, 124, 101, 0.25);
+  color: #275943;
+  font-size: 12px;
+}
+
+/* 礼物奉赠抽屉 */
+.vn-gifts-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vn-preferences-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+}
+
+.vn-pref-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vn-pref-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #785a21;
+}
+
+.vn-pref-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vn-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+
+.vn-chip.like {
+  background: #fdf2f4;
+  border: 1px solid rgba(224, 72, 120, 0.3);
+  color: #b02353;
+}
+
+.vn-chip.dislike {
+  background: #f1f3f2;
+  border: 1px solid rgba(110, 125, 118, 0.3);
+  color: #61736a;
+}
+
+.vn-chip.muted {
+  color: #8c9b93;
+  font-size: 10.5px;
+}
+
+.vn-gifts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.vn-empty-gifts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  color: #879b90;
+  text-align: center;
+  border: 1.5px dashed rgba(186, 148, 75, 0.3);
+  border-radius: 12px;
+}
+
+.vn-empty-gifts p {
+  margin: 10px 0 4px;
+  color: #3b584a;
+  font-size: 14px;
+}
+
+.vn-empty-gifts small {
+  font-size: 11px;
+  color: #778c81;
+}
+
+.vn-gift-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.28);
+  transition: border-color 0.2s ease;
+}
+
+.vn-gift-row[data-liked="true"] {
+  border-color: rgba(224, 72, 120, 0.45);
+  background: #fffbfa;
+}
+
+.vn-gift-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f7eedb;
+  color: #8c6218;
+  display: grid;
+  place-items: center;
+}
+
+.vn-gift-meta strong {
+  display: block;
+  font-size: 13.5px;
+  color: #1f3b2d;
+}
+
+.vn-gift-meta small {
+  color: #788c81;
+  font-size: 10.5px;
+}
+
+.vn-reaction-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+}
+
+.vn-reaction-tag.liked {
+  background: #fde8ee;
+  color: #c0285a;
+  font-weight: 600;
+}
+
+.vn-reaction-tag.disliked {
+  background: #f1f3f2;
+  color: #61736a;
+}
+
+.vn-reaction-tag.regular {
+  background: #eef4f0;
+  color: #3f6853;
+}
+
+.vn-send-gift-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: #35624e;
+  color: #f6f2e4;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.vn-send-gift-btn:hover:not(:disabled) {
+  background: #254b3b;
+}
+
+/* 生平与相貌案卷 */
+.vn-bio-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vn-bio-card {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.28);
+}
+
+.vn-bio-card header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c6820;
+  margin-bottom: 6px;
+}
+
+.vn-bio-card header strong {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 14px;
+  color: #1f3d30;
+}
+
+.vn-bio-card header small {
+  margin-left: auto;
+  font-size: 11px;
+  color: #788c81;
+}
+
+.vn-bio-desc {
+  margin: 0;
+  color: #375345;
+  font-size: 12.5px;
+  line-height: 1.75;
+  font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+  text-indent: 2em;
+}
+
+.vn-lifespan-track {
+  height: 6px;
+  border-radius: 99px;
+  background: #e5e3dc;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.vn-lifespan-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #48826a 0%, #c49942 60%, #b83c34 100%);
+}
+
+.vn-lifespan-note {
+  margin: 0;
+  font-size: 11px;
+  color: #74877e;
+}
+
+.vn-chronicle-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vn-chronicle-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #385546;
+}
+
+.vn-chronicle-index {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eef3ef;
+  color: #436e59;
+  font-size: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vn-chronicle-list p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 场景立绘交互触发器 */
+.scene-vn-trigger {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(186, 148, 75, 0.22);
+  border: 1px solid rgba(186, 148, 75, 0.45);
+  color: #3d2f14;
+  font-size: 10.5px;
+  font-family: "STKaiti", "KaiTi", serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.scene-vn-trigger:hover {
+  background: #ba944b;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .vn-dialog-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .vn-stage-portrait-wrapper {
+    height: 320px;
+  }
+  .vn-action-grid {
+    grid-template-columns: 1fr;
+  }
+}
