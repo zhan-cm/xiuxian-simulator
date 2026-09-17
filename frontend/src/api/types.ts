@@ -549,6 +549,7 @@ export interface Snapshot {
   npc_network: NpcNetworkSnapshot
   sect_visit?: SectVisitSnapshot
   natural_exploration?: NaturalExplorationSnapshot
+  tianji_rankings?: TianjiSnapshot
   output?: string
 }
 
@@ -649,6 +650,70 @@ export interface NaturalExplorationSnapshot {
   ferry_routes: FerryRouteData[]
   player_realm_index: number
   player_stones: number
+}
+
+export interface ProdigyRankItem {
+  id: string
+  rank: number
+  name: string
+  dao_name: string
+  sect: string
+  province: string
+  realm: string
+  realm_index: number
+  power: number
+  title: string
+  specialty: string
+  description: string
+  is_npc: boolean
+  npc_name: string
+  personality: string
+  is_player: boolean
+  can_challenge: boolean
+  challenge_action: string
+}
+
+export interface OverlordRankItem {
+  rank: number
+  name: string
+  dao_name: string
+  sect: string
+  realm: string
+  power: number
+  title: string
+  legend: string
+}
+
+export interface SectPrestigeItem {
+  rank: number
+  name: string
+  province: string
+  doctrine: string
+  prestige: number
+  trend: string
+  leader: string
+}
+
+export interface TianjiTreasureItem {
+  id: string
+  name: string
+  category: string
+  token_cost: number
+  effect: string
+  summary: string
+  affordable: boolean
+  action: string
+}
+
+export interface TianjiSnapshot {
+  player_rank: number
+  player_power: number
+  tokens: number
+  prodigies: ProdigyRankItem[]
+  overlords: OverlordRankItem[]
+  sects: SectPrestigeItem[]
+  treasures: TianjiTreasureItem[]
+  news: string[]
 }
 
 export interface ShowcasePage {

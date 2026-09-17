@@ -34,6 +34,7 @@ from .sect_diplomacy import SectDiplomacyEngine
 from .world import SectProgressionEngine
 from .sect_visit import SectVisitEngine
 from .natural_exploration import NaturalExplorationEngine
+from .tianji_rankings import TianjiRankingsEngine
 
 
 class WebApplication:
@@ -106,6 +107,7 @@ class WebApplication:
             "npc_network": npc_network,
             "sect_visit": SectVisitEngine.snapshot(self.engine.state),
             "natural_exploration": NaturalExplorationEngine.snapshot(self.engine.state),
+            "tianji_rankings": TianjiRankingsEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:

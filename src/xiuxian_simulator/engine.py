@@ -336,6 +336,12 @@ class GameEngine:
             return self._ancient_teleport(action)
         if action in {"胜境", "名山", "名胜", "胜境探幽"}:
             return self._natural_landmarks_text()
+        if action in {"天机榜", "风云榜", "百晓榜", "潜龙榜"}:
+            return self._tianji_rankings_text()
+        if action.startswith("登榜问剑"):
+            return self._tianji_challenge(action)
+        if action.startswith("天机兑换"):
+            return self._tianji_redeem(action)
         if action in {"情缘", "人物"}:
             return self._relationships()
         if action == "情劫":
@@ -1774,6 +1780,49 @@ class GameEngine:
         if died_of_age:
             return f"古阵挪移中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
         return f"{self.state.time_label}\n【太古挪移大阵 · 虚空横渡】\n{result['event']}\n耗费阵基灵石 {result['cost_stones']}，历时 1 个月。\n\n{self._status()}"
+
+    def _tianji_rankings_text(self) -> str:
+        from .tianji_rankings import TianjiRankingsEngine
+        snap = TianjiRankingsEngine.snapshot(self.state)
+        prodigies = snap["prodigies"][:10]
+        lines = [
+            "【天机阁 · 百晓风云谱】",
+            f"修士排位：青云潜龙榜 第 {snap['player_rank']} 名｜综合战力指数：{snap['player_power']}｜持有天机令：{snap['tokens']} 枚\n",
+            "【青云潜龙榜 · 前十座次】",
+        ]
+        for p in prodigies:
+            prefix = "★ [你]" if p.get("is_player") else f"#{p['rank']}"
+            lines.append(f"{prefix} {p['name']}（{p['realm']} · {p['sect']}）——战力 {p['power']}｜绝学：{p['specialty']}")
+
+        lines.append(f"\n挑战指令：登榜问剑 <修士ID>（如：登榜问剑 {prodigies[0]['id']}）")
+        lines.append("兑换指令：天机兑换 <宝物ID>（如：天机兑换 tj-pill）")
+        return "\n".join(lines) + f"\n\n{self._status()}"
+
+    def _tianji_challenge(self, action: str) -> str:
+        from .tianji_rankings import TianjiRankingsEngine
+        target = action.removeprefix("登榜问剑").strip()
+        try:
+            result = TianjiRankingsEngine.challenge_prodigy(self.state, target)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "寿元耗尽"
+        self._autosave()
+        if died_of_age:
+            return f"问剑激战中寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
+        return f"{self.state.time_label}\n{result['msg']}\n\n{self._status()}"
+
+    def _tianji_redeem(self, action: str) -> str:
+        from .tianji_rankings import TianjiRankingsEngine
+        treasure_id = action.removeprefix("天机兑换").strip()
+        try:
+            result = TianjiRankingsEngine.redeem_treasure(self.state, treasure_id)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return f"{self.state.time_label}\n{result['msg']}\n\n{self._status()}"
 
     @staticmethod
     def _combatants() -> str:

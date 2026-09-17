@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Landmark, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Landmark, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, Trophy, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -34,6 +34,7 @@ import { CenterStageChronicle } from './components/CenterStageChronicle'
 import { CultivationGuideDialog } from './components/CultivationGuide'
 import { RealmsLadderDialog } from './components/RealmsLadderDialog'
 import { SectGateModal } from './components/SectGateModal'
+import { TianjiRankModal } from './components/TianjiRankModal'
 import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { findEncounterNpc } from './sceneLogic'
@@ -123,6 +124,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [sectGateOpen, setSectGateOpen] = useState(false)
   const [selectedSectGate, setSelectedSectGate] = useState<string | undefined>(undefined)
+  const [tianjiOpen, setTianjiOpen] = useState(false)
 
   const handleOpenSectGate = (sectName?: string) => {
     setSelectedSectGate(sectName)
@@ -209,6 +211,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <Landmark size={16} />
                   <span>拜山请益</span>
+                </button>
+                <button
+                  className="archive-trigger tianji-topbar-trigger"
+                  type="button"
+                  onClick={() => setTianjiOpen(true)}
+                  title="天机阁百晓风云谱：青云潜龙榜、九天巨擘榜、九州宗门榜与天机宝阁"
+                >
+                  <Trophy size={16} />
+                  <span>天机风云谱</span>
                 </button>
               </>
             )}
@@ -465,6 +476,19 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           readOnly={showcase}
           onAction={(act) => {
             onAction(act)
+          }}
+        />
+        <TianjiRankModal
+          open={tianjiOpen}
+          onOpenChange={setTianjiOpen}
+          tianji={snapshot.tianji_rankings}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
+          }}
+          onOpenNpc={(name) => {
+            onAction('拜访 ' + name)
           }}
         />
       </div>
