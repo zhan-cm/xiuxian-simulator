@@ -1,9 +1,13 @@
 import { useMemo } from 'react'
 import type { NpcLifeProfile } from '../api/types'
 import guQingxuanImg from '../assets/avatars/gu_qingxuan.jpg'
+import baiNingshuangImg from '../assets/avatars/bai_ningshuang.jpg'
+import yunQiImg from '../assets/avatars/yun_qi.jpg'
 
 export const NPC_PORTRAIT_IMAGES: Record<string, string> = {
   顾清玄: guQingxuanImg,
+  白凝霜: baiNingshuangImg,
+  云栖: yunQiImg,
 }
 
 export interface NpcAppearanceData {
