@@ -17,6 +17,7 @@ from .beasts import SpiritBeastEngine
 from .formations import FormationEngine
 from .legacy import LegacyEngine
 from .sect_foundation import SectFoundationEngine
+from .encounters import RedDustEncounterEngine
 
 
 class DecisionCatalog:
@@ -199,6 +200,8 @@ class DecisionCatalog:
             return TravelEngine.decision(state)
         if state.phase == "regional_choice":
             return RegionalEngine.decision(state)
+        if state.phase == "encounter_choice":
+            return RedDustEncounterEngine.decision(state)
         if state.phase == "major_breakthrough_choice":
             return self._major_breakthrough(state)
         if state.phase == "breakthrough_talent_choice":

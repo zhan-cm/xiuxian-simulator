@@ -36,6 +36,7 @@ from .sect_visit import SectVisitEngine
 from .natural_exploration import NaturalExplorationEngine
 from .tianji_rankings import TianjiRankingsEngine
 from .tribulation import TribulationEngine
+from .encounters import RedDustEncounterEngine
 
 
 class WebApplication:
@@ -110,6 +111,7 @@ class WebApplication:
             "natural_exploration": NaturalExplorationEngine.snapshot(self.engine.state),
             "tianji_rankings": TianjiRankingsEngine.snapshot(self.engine.state),
             "tribulation": TribulationEngine.snapshot(self.engine.state),
+            "encounters": RedDustEncounterEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:

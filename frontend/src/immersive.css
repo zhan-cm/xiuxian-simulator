@@ -9937,4 +9937,386 @@ body {
   border-radius: 4px;
 }
 
+/* ==========================================================================
+   Red Dust Encounter & Ancient Secret Realm Visual Novel Stage
+   ========================================================================== */
+.encounter-dialog-overlay {
+  background: rgba(10, 18, 14, 0.78);
+  backdrop-filter: blur(6px);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.encounter-modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(940px, 94vw);
+  max-height: min(88vh, 800px);
+  background: linear-gradient(170deg, #fbfbf6 0%, #f4f3ea 100%);
+  border: 1.5px solid rgba(178, 146, 85, 0.45);
+  box-shadow: 0 24px 64px rgba(16, 28, 22, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  border-radius: 18px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #21352a;
+  font-family: inherit;
+}
+
+.encounter-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: linear-gradient(90deg, rgba(38, 71, 56, 0.08) 0%, rgba(186, 148, 80, 0.06) 100%);
+  border-bottom: 1px solid rgba(178, 146, 85, 0.25);
+}
+
+.encounter-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.encounter-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #2e5944, #1b382b);
+  color: #f1ebd8;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(27, 56, 43, 0.2);
+}
+
+.encounter-modal-title {
+  font-family: "KaiTi", "STKaiti", "Songti SC", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a3327;
+  letter-spacing: 1px;
+}
+
+.encounter-close-btn {
+  background: rgba(30, 50, 40, 0.06);
+  border: 1px solid rgba(30, 50, 40, 0.12);
+  color: #55665d;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.encounter-close-btn:hover {
+  background: rgba(200, 60, 60, 0.12);
+  color: #a02020;
+  border-color: rgba(200, 60, 60, 0.25);
+}
+
+.encounter-stage-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .encounter-stage-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.encounter-actor-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(240, 244, 238, 0.5) 100%);
+  border: 1px solid rgba(160, 140, 100, 0.22);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.encounter-avatar-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.encounter-avatar-wrapper .npc-avatar-box {
+  width: 220px;
+  height: 280px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(22, 40, 30, 0.16);
+  border: 2px solid rgba(190, 155, 80, 0.35);
+}
+
+.encounter-actor-card {
+  text-align: center;
+  width: 100%;
+}
+
+.encounter-actor-name {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #173225;
+  margin-bottom: 6px;
+}
+
+.encounter-actor-meta {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actor-identity-tag {
+  background: rgba(45, 85, 65, 0.1);
+  color: #23543d;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(45, 85, 65, 0.2);
+}
+
+.actor-realm-tag {
+  background: rgba(186, 141, 60, 0.12);
+  color: #8c6020;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 141, 60, 0.25);
+}
+
+.encounter-narrative-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.encounter-speech-bubble {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(252, 250, 242, 0.9));
+  border: 1px solid rgba(180, 150, 90, 0.35);
+  border-left: 4px solid #b88636;
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 14px rgba(35, 55, 45, 0.06);
+}
+
+.speech-speaker-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a6424;
+  margin-bottom: 6px;
+}
+
+.speech-text {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #1e3529;
+  font-style: italic;
+  margin: 0;
+}
+
+.encounter-scene-box {
+  background: rgba(40, 70, 55, 0.04);
+  border: 1px solid rgba(40, 70, 55, 0.12);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.scene-box-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a6657;
+  margin-bottom: 6px;
+}
+
+.scene-box-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #384e42;
+  margin: 0;
+}
+
+.encounter-choices-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.choices-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c3629;
+}
+
+.choices-heading small {
+  font-size: 11px;
+  font-weight: normal;
+  color: #728277;
+}
+
+.encounter-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.encounter-choice-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1.5px solid rgba(180, 155, 100, 0.3);
+  box-shadow: 0 2px 6px rgba(25, 45, 35, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.encounter-choice-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(25, 45, 35, 0.12);
+  border-color: #b88636;
+}
+
+.encounter-choice-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: rgba(240, 240, 235, 0.6);
+  border-color: rgba(180, 180, 170, 0.3);
+}
+
+.encounter-choice-card.tone-safe {
+  border-left: 5px solid #2e7d56;
+}
+.encounter-choice-card.tone-safe:hover:not(:disabled) {
+  background: linear-gradient(90deg, #f4faf6 0%, #ffffff 100%);
+  border-color: #2e7d56;
+}
+
+.encounter-choice-card.tone-primary {
+  border-left: 5px solid #b88636;
+}
+.encounter-choice-card.tone-primary:hover:not(:disabled) {
+  background: linear-gradient(90deg, #fcf8ee 0%, #ffffff 100%);
+  border-color: #b88636;
+}
+
+.encounter-choice-card.tone-danger {
+  border-left: 5px solid #c0392b;
+}
+.encounter-choice-card.tone-danger:hover:not(:disabled) {
+  background: linear-gradient(90deg, #fdf4f3 0%, #ffffff 100%);
+  border-color: #c0392b;
+}
+
+.encounter-choice-card.tone-quiet {
+  border-left: 5px solid #5a7366;
+}
+
+.choice-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.choice-stance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #634515;
+  background: rgba(186, 148, 80, 0.12);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.choice-card-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #173225;
+}
+
+.choice-disabled-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  font-size: 10.5px;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.choice-card-desc {
+  font-size: 12.5px;
+  color: #4b6255;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.choice-card-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #728479;
+  border-top: 1px dashed rgba(160, 140, 110, 0.2);
+  padding-top: 5px;
+}
+
+.choice-card-summary em {
+  font-style: normal;
+  color: #8c6020;
+  font-weight: 600;
+}
+
+.encounter-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(30, 50, 40, 0.03);
+  border-top: 1px solid rgba(180, 150, 90, 0.15);
+  font-size: 11px;
+  color: #6a7c72;
+}
+
 

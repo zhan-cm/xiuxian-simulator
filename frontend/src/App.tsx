@@ -38,6 +38,7 @@ import { TianjiRankModal } from './components/TianjiRankModal'
 import { LifeboundArtifactModal } from './components/LifeboundArtifactModal'
 import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
+import { RedDustEncounterModal } from './components/RedDustEncounterModal'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -127,6 +128,14 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [selectedSectGate, setSelectedSectGate] = useState<string | undefined>(undefined)
   const [tianjiOpen, setTianjiOpen] = useState(false)
   const [lifeboundOpen, setLifeboundOpen] = useState(false)
+  const [encounterOpen, setEncounterOpen] = useState(false)
+
+  const pendingEncounter = snapshot.encounters?.pending
+  useEffect(() => {
+    if (snapshot.encounters?.active && pendingEncounter) {
+      setEncounterOpen(true)
+    }
+  }, [snapshot.encounters?.active, pendingEncounter])
 
   const handleOpenSectGate = (sectName?: string) => {
     setSelectedSectGate(sectName)
@@ -231,6 +240,21 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <Sparkles size={16} />
                   <span>本命灵宝</span>
+                </button>
+                <button
+                  className="archive-trigger encounter-topbar-trigger"
+                  type="button"
+                  onClick={() => {
+                    if (pendingEncounter) {
+                      setEncounterOpen(true)
+                    } else if (canUseQuickActions) {
+                      onAction('寻觅机缘')
+                    }
+                  }}
+                  title="红尘机缘：游历九州探寻仙魔古修遗蜕、神兽道缘与故人红尘奇遇"
+                >
+                  <ScrollText size={16} />
+                  <span>红尘奇遇</span>
                 </button>
               </>
             )}
@@ -506,6 +530,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           open={lifeboundOpen}
           onOpenChange={setLifeboundOpen}
           artifacts={snapshot.artifacts}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
+          }}
+        />
+        <RedDustEncounterModal
+          open={encounterOpen}
+          onOpenChange={setEncounterOpen}
+          encounter={pendingEncounter}
           busy={busy}
           readOnly={showcase}
           onAction={(act) => {

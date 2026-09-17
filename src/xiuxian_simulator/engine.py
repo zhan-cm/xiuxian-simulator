@@ -37,9 +37,10 @@ from .progression import ProgressionEngine
 from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
+from .encounters import RedDustEncounterEngine
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
 
 
 class GameEngine:
@@ -121,6 +122,8 @@ class GameEngine:
             return self._travel_choice(action)
         if self.state.phase == "regional_choice":
             return self._regional_choice(action)
+        if self.state.phase == "encounter_choice":
+            return self._encounter_choice(action)
         if self.state.phase == "beast_taming":
             return self._beast_taming(action)
 
@@ -211,6 +214,8 @@ class GameEngine:
             return RegionalEngine.panel_text(self.state)
         if action in {"地方机缘", "触发机缘"}:
             return self._begin_regional_encounter()
+        if action in {"奇遇", "红尘奇遇", "寻觅机缘", "机缘", "胜境机缘"}:
+            return self._seek_encounter()
         if action.startswith("前往 "):
             return self._prepare_travel(action)
         if action.startswith("探索"):
@@ -1000,6 +1005,36 @@ class GameEngine:
             f"({RegionalEngine.reputation(self.state, result.region):+d}){ending}"
         )
 
+    def _seek_encounter(self) -> str:
+        if self.state.phase != "playing":
+            return "当前正在处理其他抉择或处于非空闲状态，暂无法专心寻觅红尘机缘。"
+        enc_data = RedDustEncounterEngine.trigger_encounter(self.state, context="seek")
+        if not enc_data:
+            return "你运转神识周游方圆数百里，山川如常，未逢特殊机缘。"
+        self._autosave()
+        return RedDustEncounterEngine.text_panel(self.state)
+
+    def _encounter_choice(self, action: str) -> str:
+        raw = action.removeprefix("奇遇选择").removeprefix("选择").strip()
+        try:
+            result = RedDustEncounterEngine.resolve(self.state, raw)
+        except ValueError as exc:
+            return str(exc)
+        died_of_age = self._advance_time()
+        effects_text = "、".join(result["applied_effects"]) if result["applied_effects"] else "道心无澜"
+        if died_of_age:
+            self.state.phase = "ended"
+            self.state.player.condition = "红尘历练后寿元耗尽"
+        self._autosave()
+        ending = "\n你在机缘事了后寿元耗尽，道途止于此世。" if died_of_age else ""
+        return (
+            f"{self.state.time_label}\n【红尘奇遇 · {result['title']}】\n"
+            f"你遵从【{result['dao_stance']}】之道心，做出了抉择：{result['choice_label']}。\n"
+            f"结果：{result['outcome_text']}\n"
+            f"因果回响：{effects_text}{ending}\n\n"
+            f"{self._status()}"
+        )
+
     def _explore(self, action: str) -> str:
         area = action.removeprefix("探索").strip()
         if not area:
@@ -1037,9 +1072,18 @@ class GameEngine:
             ending = "寿元耗尽，坐化荒野" if died_of_age and not result.fatal else result.event
             return f"{self.state.time_label}\n{ending}。\n【陨落结局】道途止于 {result.area}。"
         regional_event = RegionalEngine.prepare(self.state, region_key)
-        if regional_event:
+        encounter_trigger = None
+        if not regional_event and self.state.phase == "playing":
+            roll = ProgressionEngine.deterministic_roll(self.state, f"explore-encounter:{self.state.turn}:{result.area}")
+            if roll <= 35:
+                encounter_trigger = RedDustEncounterEngine.trigger_encounter(self.state, context=result.area)
+        if regional_event or encounter_trigger:
             self._autosave()
-        encounter_text = f"\n\n{RegionalEngine.encounter_text(self.state, region_key)}" if regional_event else ""
+        encounter_text = ""
+        if regional_event:
+            encounter_text = f"\n\n{RegionalEngine.encounter_text(self.state, region_key)}"
+        elif encounter_trigger:
+            encounter_text = f"\n\n{RedDustEncounterEngine.text_panel(self.state)}"
         return (
             f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
             f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}{encounter_text}"

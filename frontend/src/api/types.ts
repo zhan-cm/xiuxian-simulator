@@ -603,6 +603,7 @@ export interface Snapshot {
   natural_exploration?: NaturalExplorationSnapshot
   tianji_rankings?: TianjiSnapshot
   tribulation?: TribulationSnapshot
+  encounters?: EncounterSnapshot
   output?: string
 }
 
@@ -866,4 +867,41 @@ export interface SaveImportResponse {
   realm: string
   turn: number
   save_summaries: Snapshot['save_summaries']
+}
+
+export interface EncounterChoiceOption {
+  id: string
+  label: string
+  dao_stance: string
+  tone: string
+  summary: string
+  description: string
+  disabled: boolean
+  disabled_reason: string
+}
+
+export interface EncounterCharacterInfo {
+  name: string
+  identity: string
+  realm: string
+  temperament: string
+  avatar_type: string
+  quote: string
+}
+
+export interface PendingEncounterData {
+  id: string
+  title: string
+  category: string
+  character: EncounterCharacterInfo
+  scene: string
+  choices: EncounterChoiceOption[]
+}
+
+export interface EncounterSnapshot {
+  active: boolean
+  pending?: PendingEncounterData | null
+  completed_count: number
+  completed_ids: string[]
+  history: string[]
 }
