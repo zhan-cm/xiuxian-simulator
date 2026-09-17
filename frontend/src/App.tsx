@@ -39,6 +39,7 @@ import { LifeboundArtifactModal } from './components/LifeboundArtifactModal'
 import { StartGamePortal } from './components/StartGamePortal'
 import { CharacterCreatorPortal } from './components/CharacterCreatorPortal'
 import { RedDustEncounterModal } from './components/RedDustEncounterModal'
+import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -129,6 +130,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [tianjiOpen, setTianjiOpen] = useState(false)
   const [lifeboundOpen, setLifeboundOpen] = useState(false)
   const [encounterOpen, setEncounterOpen] = useState(false)
+  const [partnerChamberOpen, setPartnerChamberOpen] = useState(false)
 
   const pendingEncounter = snapshot.encounters?.pending
   useEffect(() => {
@@ -255,6 +257,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 >
                   <ScrollText size={16} />
                   <span>红尘奇遇</span>
+                </button>
+                <button
+                  className="archive-trigger partner-chamber-topbar-trigger"
+                  type="button"
+                  onClick={() => setPartnerChamberOpen(true)}
+                  title="仙侣同修阁：道侣专属合道法印、本命心印传音回礼、情魔渡劫与仙家血脉繁衍"
+                >
+                  <HeartHandshake size={16} />
+                  <span>仙侣同修阁</span>
                 </button>
               </>
             )}
@@ -540,6 +551,16 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           open={encounterOpen}
           onOpenChange={setEncounterOpen}
           encounter={pendingEncounter}
+          busy={busy}
+          readOnly={showcase}
+          onAction={(act) => {
+            onAction(act)
+          }}
+        />
+        <DaoPartnerChamberModal
+          open={partnerChamberOpen}
+          onOpenChange={setPartnerChamberOpen}
+          partnerSystem={snapshot.partner_system}
           busy={busy}
           readOnly={showcase}
           onAction={(act) => {

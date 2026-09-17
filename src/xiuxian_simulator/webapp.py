@@ -37,6 +37,7 @@ from .natural_exploration import NaturalExplorationEngine
 from .tianji_rankings import TianjiRankingsEngine
 from .tribulation import TribulationEngine
 from .encounters import RedDustEncounterEngine
+from .partner_system import DaoPartnerEngine
 
 
 class WebApplication:
@@ -112,6 +113,7 @@ class WebApplication:
             "tianji_rankings": TianjiRankingsEngine.snapshot(self.engine.state),
             "tribulation": TribulationEngine.snapshot(self.engine.state),
             "encounters": RedDustEncounterEngine.snapshot(self.engine.state),
+            "partner_system": DaoPartnerEngine.snapshot(self.engine.state),
         }
 
     def perform_action(self, action: str) -> dict[str, Any]:

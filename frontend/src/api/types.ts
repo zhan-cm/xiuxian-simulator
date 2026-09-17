@@ -604,6 +604,7 @@ export interface Snapshot {
   tianji_rankings?: TianjiSnapshot
   tribulation?: TribulationSnapshot
   encounters?: EncounterSnapshot
+  partner_system?: DaoPartnerSystemSnapshot
   output?: string
 }
 
@@ -904,4 +905,72 @@ export interface EncounterSnapshot {
   completed_count: number
   completed_ids: string[]
   history: string[]
+}
+
+export interface PartnerBlessingData {
+  name: string
+  partner_name: string
+  description: string
+  remaining_months: number
+  attack_multiplier?: number
+  defense_bonus?: number
+  lifesteal_percent?: number
+  stone_multiplier?: number
+  max_health_bonus?: number
+  dao_insight_bonus?: number
+  heart_demon_resist?: number
+}
+
+export interface PartnerBlessingPreset {
+  name: string
+  description: string
+  duration_months: number
+  attack_multiplier?: number
+  defense_bonus?: number
+  lifesteal_percent?: number
+  stone_multiplier?: number
+}
+
+export interface DaoPartnerChamberPartner {
+  name: string
+  affinity: number
+  dual_count: number
+  preset_blessing: PartnerBlessingPreset
+  active_blessing?: PartnerBlessingData | null
+  can_conceive: boolean
+}
+
+export interface ChildDescendantData {
+  id: string
+  name: string
+  gender: string
+  partner: string
+  parent_player: string
+  birth_year: number
+  birth_turn: number
+  age: number
+  stage: string
+  spiritual_root: string
+  constitution: string
+  realm: string
+  cultivation: number
+  adventure_log: string[]
+}
+
+export interface PartnerMessageRecord {
+  turn: number
+  partner: string
+  user_text: string
+  reply: string
+  gift_item?: string
+  gift_count?: number
+  gift_stones?: number
+}
+
+export interface DaoPartnerSystemSnapshot {
+  has_partners: boolean
+  partners: DaoPartnerChamberPartner[]
+  children: ChildDescendantData[]
+  messages: PartnerMessageRecord[]
+  active_blessings: Record<string, PartnerBlessingData>
 }

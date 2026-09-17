@@ -10319,4 +10319,763 @@ body {
   color: #6a7c72;
 }
 
+/* ========================================================================== */
+/* 仙侣同修阁 · 阴阳合道与本命心印沉浸式模态 (Dao Partner Chamber Modal)        */
+/* ========================================================================== */
+
+.partner-chamber-overlay {
+  background: rgba(10, 18, 14, 0.78);
+  backdrop-filter: blur(8px);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.partner-chamber-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 92vw;
+  max-width: 960px;
+  max-height: 88vh;
+  background: linear-gradient(165deg, #fdfbf7 0%, #f6f1e7 60%, #ece5d6 100%);
+  border: 1px solid rgba(195, 165, 110, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(10, 25, 18, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 101;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: #2b3a32;
+}
+
+.partner-chamber-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: linear-gradient(90deg, rgba(220, 238, 226, 0.85) 0%, rgba(246, 241, 230, 0.95) 100%);
+  border-bottom: 1px solid rgba(180, 150, 95, 0.25);
+}
+
+.partner-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.partner-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(45, 95, 75, 0.12);
+  color: #1f5c43;
+  border: 1px solid rgba(45, 95, 75, 0.25);
+}
+
+.partner-modal-title {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a382b;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.partner-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #556c60;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.partner-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #182b22;
+}
+
+.partner-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 14px;
+}
+
+.partner-empty-icon {
+  color: #9bb3a6;
+}
+
+.partner-empty-state h3 {
+  font-family: "KaiTi", serif;
+  font-size: 22px;
+  color: #274839;
+  margin: 0;
+}
+
+.partner-empty-state p {
+  max-width: 480px;
+  color: #5d7065;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.partner-chamber-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 22px 20px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.partner-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid rgba(190, 160, 110, 0.2);
+  padding-bottom: 12px;
+}
+
+.partner-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.partner-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  color: #485c51;
+  transition: all 0.15s ease;
+}
+
+.partner-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f4735;
+}
+
+.partner-tab-btn.active {
+  background: linear-gradient(135deg, #2b614b 0%, #1c4735 100%);
+  border-color: #1c4735;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(28, 71, 53, 0.25);
+}
+
+.partner-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #5c7265;
+}
+
+.partner-pill-btn {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(180, 150, 100, 0.3);
+  background: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  cursor: pointer;
+  color: #3b5045;
+  transition: all 0.15s ease;
+}
+
+.partner-pill-btn.active {
+  background: #2b614b;
+  color: #fff;
+  border-color: #2b614b;
+}
+
+/* 合修静室网格 */
+.partner-chamber-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .partner-chamber-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.partner-portrait-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.partner-avatar-frame {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #2a5240, #13271e);
+  box-shadow: 0 4px 14px rgba(10, 30, 20, 0.2);
+}
+
+.partner-affinity-ribbon {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(20, 30, 25, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffd1dc;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 180, 200, 0.3);
+  white-space: nowrap;
+}
+
+.partner-stats-strip {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.strip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: 1px solid rgba(180, 150, 100, 0.15);
+}
+
+.strip-label {
+  font-size: 10px;
+  color: #72887b;
+}
+
+.strip-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #274839;
+  margin-top: 2px;
+}
+
+.partner-blessing-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.blessing-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(190, 160, 110, 0.35);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 10px rgba(40, 60, 50, 0.05);
+}
+
+.blessing-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.blessing-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blessing-name {
+  font-family: "KaiTi", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a382b;
+  margin: 0;
+}
+
+.blessing-origin-tag {
+  font-size: 11px;
+  color: #7a6642;
+  background: rgba(210, 180, 120, 0.2);
+  border: 1px solid rgba(180, 145, 90, 0.3);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.blessing-active-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0b7346;
+  background: #dcf5e7;
+  border: 1px solid #84d8ab;
+  padding: 2px 9px;
+  border-radius: 9999px;
+}
+
+.blessing-inactive-pill {
+  font-size: 11px;
+  color: #839189;
+  background: #ebeee9;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.blessing-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #495e53;
+  margin: 10px 0 14px;
+}
+
+.blessing-perks-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.blessing-perk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.perk-attack {
+  background: #feeceb;
+  color: #b92e2e;
+  border: 1px solid #f9bcbc;
+}
+
+.perk-def {
+  background: #ebf5fa;
+  color: #1d6e96;
+  border: 1px solid #b8dfef;
+}
+
+.perk-leech {
+  background: #fdf3e7;
+  color: #b05c10;
+  border: 1px solid #f6d1a8;
+}
+
+.perk-wealth {
+  background: #fefbe8;
+  color: #8a6508;
+  border: 1px solid #fae896;
+}
+
+.chamber-action-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chamber-primary-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px solid #1c4735;
+  background: linear-gradient(135deg, #2b614b 0%, #1b4533 100%);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(28, 71, 53, 0.25);
+}
+
+.chamber-primary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #327359 0%, #20533e 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(28, 71, 53, 0.35);
+}
+
+.chamber-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chamber-primary-btn strong {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.chamber-primary-btn small {
+  display: block;
+  font-size: 11.5px;
+  color: #aee0cb;
+  margin-top: 2px;
+}
+
+.chamber-secondary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.chamber-sub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.conceive-btn {
+  background: rgba(240, 230, 210, 0.6);
+  border: 1px solid rgba(190, 160, 110, 0.4);
+  color: #634b23;
+}
+
+.conceive-btn:hover:not(:disabled) {
+  background: rgba(240, 230, 210, 0.95);
+  border-color: #8c6820;
+}
+
+.conceive-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.trial-btn {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(180, 150, 100, 0.3);
+  color: #475a50;
+}
+
+.trial-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* 心印传音布局 */
+.partner-transmission-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 380px;
+}
+
+.transmission-chat-history {
+  flex: 1;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  border-radius: 12px;
+}
+
+.transmission-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 160px;
+  color: #7b8f83;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.transmission-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg-bubble {
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.user-bubble {
+  align-self: flex-end;
+  max-width: 80%;
+  background: #2b614b;
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+
+.user-bubble .msg-sender {
+  font-size: 11px;
+  color: #aee0cb;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.partner-bubble {
+  align-self: flex-start;
+  max-width: 85%;
+  background: #fdfbf6;
+  border: 1px solid rgba(190, 160, 110, 0.3);
+  color: #2b3a32;
+  border-bottom-left-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.partner-bubble .msg-sender {
+  font-size: 11px;
+  font-weight: 600;
+  color: #634b23;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.msg-gift-tag {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(190, 160, 110, 0.3);
+  font-size: 11.5px;
+  color: #8c6020;
+}
+
+.transmission-preset-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-label {
+  font-size: 11.5px;
+  color: #72887b;
+}
+
+.preset-msg-pill {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(180, 150, 100, 0.25);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  color: #3b5045;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-msg-pill:hover:not(:disabled) {
+  background: #f5eedf;
+  border-color: #9f7d45;
+  color: #1a382b;
+}
+
+.transmission-input-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.transmission-input {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(180, 150, 100, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  color: #2b3a32;
+  outline: none;
+}
+
+.transmission-input:focus {
+  border-color: #2b614b;
+  box-shadow: 0 0 0 2px rgba(43, 97, 75, 0.15);
+}
+
+.transmission-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #2b614b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transmission-send-btn:hover:not(:disabled) {
+  background: #327359;
+}
+
+/* 仙家子嗣谱牒布局 */
+.partner-lineage-layout {
+  min-height: 360px;
+}
+
+.lineage-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px dashed rgba(180, 150, 100, 0.35);
+  border-radius: 14px;
+}
+
+.lineage-empty-box h4 {
+  font-family: "KaiTi", serif;
+  font-size: 19px;
+  color: #274839;
+  margin: 0;
+}
+
+.lineage-empty-box p {
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #5c7265;
+  margin: 0;
+}
+
+.lineage-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+.lineage-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(190, 160, 110, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(30, 50, 40, 0.05);
+}
+
+.lineage-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(190, 160, 110, 0.2);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.lineage-child-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.child-name {
+  font-family: "KaiTi", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a382b;
+  margin: 0;
+}
+
+.child-gender-tag {
+  font-size: 10.5px;
+  color: #4b6256;
+  background: rgba(75, 98, 86, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.child-partner-tag {
+  font-size: 11px;
+  color: #8c6020;
+}
+
+.child-stage-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1c4735;
+  background: #dff2e8;
+  border: 1px solid #9ddac0;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.lineage-traits-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.trait-item {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  background: rgba(250, 246, 238, 0.85);
+  border-radius: 6px;
+  border: 1px solid rgba(190, 160, 110, 0.15);
+}
+
+.trait-key {
+  font-size: 10px;
+  color: #7b8f83;
+}
+
+.trait-val {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #274839;
+  margin-top: 1px;
+}
+
+.lineage-foot-note {
+  font-size: 11px;
+  line-height: 1.45;
+  border-top: 1px dashed rgba(190, 160, 110, 0.2);
+  padding-top: 6px;
+}
+
+
 

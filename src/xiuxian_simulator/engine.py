@@ -38,9 +38,10 @@ from .rules import RuleBook
 from .save_manager import SaveManager
 from .state import GameState
 from .encounters import RedDustEncounterEngine
+from .partner_system import DaoPartnerEngine
 
 
-COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 存档 帮助"
+COMMANDS = "面板 评传 轮回 伤势 静养 主线 新世 道途 委托 修炼 突破 悟道 道法 御兽 阵法 法宝谱 洞府 地图 九州 行旅 地方 秘境 奇遇 寻觅机缘 背包 坊市 宗门 宗门经营 宗门外交 开宗立派 藏经阁 护宗战 天下 干预天下 战斗 技艺 情缘 情劫 世情 人脉 对话 同修阁 仙家子嗣 存档 帮助"
 
 
 class GameEngine:
@@ -379,8 +380,16 @@ class GameEngine:
             return self._discuss_dao(action)
         if action.startswith("结为道侣"):
             return self._become_partners(action)
-        if action.startswith("双修"):
+        if action in {"同修阁", "仙侣阁", "同修"}:
+            return self._partner_chamber()
+        if action.startswith(("仙侣同修", "双修")):
             return self._dual_cultivate(action)
+        if action.startswith("传音"):
+            return self._send_partner_message(action)
+        if action.startswith("孕育仙胎"):
+            return self._conceive_partner_child(action)
+        if action in {"仙家子嗣", "子嗣", "宗族谱牒"}:
+            return self._partner_children_panel()
         if action == "战斗":
             return self._combatants()
         if action.startswith("挑战"):
@@ -2640,16 +2649,120 @@ class GameEngine:
             return "结契之后，你的寿元却已走到尽头。\n【坐化结局】"
         return f"{self.state.time_label}\n你与{name}自愿结下道侣之契。\n当前好感 {affinity}（道侣）。\n\n{self._relationships()}"
 
+    def _partner_chamber(self) -> str:
+        if not self.state.dao_partners:
+            return (
+                "【仙侣同修阁】\n"
+                "你当前尚未与任何红颜知己或挚友结下道侣之契。\n"
+                "与心仪修士好感达到 80 点后，可输入【结为道侣 [姓名]】正式合契。\n\n"
+                "指令：结为道侣 [姓名]／情缘／对话 [姓名]／送礼 [姓名] [物品]"
+            )
+
+        snap = DaoPartnerEngine.snapshot(self.state)
+        lines = []
+        for p in snap["partners"]:
+            name = p["name"]
+            aff = p["affinity"]
+            dual = p["dual_count"]
+            bless = p["active_blessing"]
+            b_text = f"生效中：【{bless['name']}】（余 {bless['remaining_months']} 月）" if bless else "暂无法印（合修可凝结）"
+            preset = p["preset_blessing"]
+            child_text = "可孕育仙胎" if p["can_conceive"] else "好感≥100且合修≥3次可孕育"
+            lines.append(
+                f"【{name}】好感 {aff}（结契道侣）｜合修 {dual} 次｜子嗣契机：{child_text}\n"
+                f"  道途专属法印：【{preset['name']}】（{preset['description']}）\n"
+                f"  当前法印状态：{b_text}"
+            )
+
+        children_count = len(self.state.partner_children)
+        return (
+            "【仙侣同修阁 · 阴阳互济与本命心印】\n"
+            + "\n\n".join(lines)
+            + f"\n\n【仙家血脉】已孕育子嗣 {children_count} 位。输入【仙家子嗣】查看谱牒生息。\n"
+            + "指令：仙侣同修 [姓名]／传音 [姓名] [内容]／孕育仙胎 [姓名]／仙家子嗣／情劫"
+        )
+
     def _dual_cultivate(self, action: str) -> str:
-        name = action.removeprefix("双修").strip()
+        name = action.removeprefix("仙侣同修").removeprefix("双修").strip()
+        if not name:
+            if len(self.state.dao_partners) == 1:
+                name = self.state.dao_partners[0]
+            else:
+                return "请指定合修道侣姓名。格式：仙侣同修 [姓名] 或 双修 [姓名]。\n\n" + self._partner_chamber()
         try:
-            gain, affinity = RelationshipEngine.dual_cultivate(self.state, name)
+            res = DaoPartnerEngine.dual_cultivate(self.state, name)
         except ValueError as exc:
             return str(exc)
-        died = self._finish_social_action(f"与{name}双修，修为+{gain}，好感{affinity}")
+        died = self._finish_social_action(f"与{name}双修合道，凝结【{res['blessing']}】，修为+{res['cultivation_gain']}，好感{res['new_affinity']}")
         if died:
-            return "双修结束后，你安然坐化。\n【坐化结局】"
-        return f"{self.state.time_label}\n你与{name}合修一月。\n修为 +{gain}｜好感 +3，当前 {affinity}。\n\n{self._status()}"
+            return "双修合道功行圆满之后，你的寿元走到尽头，与道侣相伴含笑坐化。\n【坐化结局】"
+        epiphany_txt = " 二人道心通达触碰阴阳玄机，获得悟道点 +1！" if res.get("epiphany") else ""
+        return (
+            f"{self.state.time_label}\n你与道侣【{name}】在合修静室阴阳互济，合修一月。\n"
+            f"凝结专属法印【{res['blessing']}】（持续 6 个月）｜修为 +{res['cultivation_gain']}｜"
+            f"气血灵力全复｜好感 +3，当前 {res['new_affinity']}。{epiphany_txt}\n\n{self._status()}"
+        )
+
+    def _send_partner_message(self, action: str) -> str:
+        content = action.removeprefix("传音").strip()
+        if not content:
+            return "格式：传音 [道侣姓名] [传音内容]（内容可留空由心感应）。"
+        parts = content.split(maxsplit=1)
+        name = parts[0]
+        user_msg = parts[1] if len(parts) > 1 else ""
+        try:
+            res = DaoPartnerEngine.send_message(self.state, name, user_msg)
+        except ValueError as exc:
+            return str(exc)
+        self._autosave()
+        return (
+            f"{self.state.time_label}\n【本命心印千里传音 · {name}】\n"
+            f"你传音道：“{res['user_text']}”\n\n"
+            f"{res['msg']}\n\n{self._partner_chamber()}"
+        )
+
+    def _conceive_partner_child(self, action: str) -> str:
+        name = action.removeprefix("孕育仙胎").strip()
+        if not name:
+            if len(self.state.dao_partners) == 1:
+                name = self.state.dao_partners[0]
+            else:
+                return "请指定孕育仙胎的道侣姓名。格式：孕育仙胎 [姓名]。"
+        try:
+            res = DaoPartnerEngine.conceive_child(self.state, name)
+        except ValueError as exc:
+            return str(exc)
+        died = self._finish_social_action(f"与道侣{name}孕育仙胎【{res['child']['name']}】")
+        if died:
+            return "麟儿方才降世，你的大限却已来到。\n【坐化结局】"
+        child = res["child"]
+        return (
+            f"{self.state.time_label}\n【天降祥瑞 · 仙胎降世】\n"
+            f"你与道侣【{name}】喜得麟儿【{child['name']}】（{child['gender']}）！\n"
+            f"血脉继承：{child['spiritual_root']}｜体质：{child['constitution']}。\n"
+            f"子嗣将随岁月吐纳成长，十六岁筑基可外出历练探宝孝敬双亲！\n\n"
+            + self._partner_children_panel()
+        )
+
+    def _partner_children_panel(self) -> str:
+        if not self.state.partner_children:
+            return (
+                "【仙家子嗣谱牒】\n"
+                "宗族尚无子嗣生息。\n"
+                "与道侣好感达 100 且合修 3 次以上，可由【孕育仙胎 [姓名]】诞生身具两大传承的非凡仙苗。"
+            )
+        lines = []
+        for i, c in enumerate(self.state.partner_children, 1):
+            lines.append(
+                f"{i}. 【{c['name']}】（{c['gender']} · 龄 {c['age']} 岁 · 与{c['partner']}所出）\n"
+                f"   阶段：{c['stage']}｜修为：{c['realm']}｜灵根：{c['spiritual_root']}｜体质：{c['constitution']}"
+            )
+        return (
+            "【仙家子嗣谱牒 · 血脉生息】\n"
+            + "\n".join(lines)
+            + "\n\n年满十六岁后，子嗣将筑基出师，游历九州寻找天材地宝回报双亲。"
+        )
+
 
     def _status(self) -> str:
         p = self.state.player
@@ -2848,6 +2961,9 @@ class GameEngine:
                 self.state.remember(f"伤势月报：{event}")
             for event in SectFoundationEngine.tick_month(self.state):
                 self.state.remember(f"山门月报：{event}")
+            DaoPartnerEngine.tick_blessings(self.state, 1)
+            for event in DaoPartnerEngine.grow_children(self.state, 1):
+                self.state.remember(f"子嗣家书：{event}")
         return died_of_age
 
     @staticmethod

@@ -174,6 +174,10 @@ class GameState:
     completed_encounters: list[str] = field(default_factory=list)
     pending_encounter: dict[str, Any] = field(default_factory=dict)
     encounter_history: list[str] = field(default_factory=list)
+    active_partner_blessings: dict[str, dict[str, Any]] = field(default_factory=dict)
+    partner_dual_counts: dict[str, int] = field(default_factory=dict)
+    partner_children: list[dict[str, Any]] = field(default_factory=list)
+    partner_message_history: list[dict[str, Any]] = field(default_factory=list)
     spirit_beasts: dict[str, dict[str, Any]] = field(default_factory=dict)
     active_spirit_beast: str = ""
     pending_spirit_beast: dict[str, Any] = field(default_factory=dict)

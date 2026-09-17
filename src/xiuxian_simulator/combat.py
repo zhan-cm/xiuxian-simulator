@@ -219,11 +219,18 @@ class CombatEngine:
         critical_roll = ProgressionEngine.deterministic_roll(state, f"combat-player-critical:{purpose}:{combat['round']}")
         critical = critical_roll <= max(5, min(35, 5 + player.fortune))
         critical_multiplier = 1.5 if critical else 1.0
+        partner_attack_mult = 1.0
+        partner_lifesteal = 0.0
+        for b in state.active_partner_blessings.values():
+            partner_attack_mult *= float(b.get("attack_multiplier", 1.0))
+            partner_lifesteal += float(b.get("lifesteal_percent", 0.0))
+
         base = 14 + player.aptitude + player.realm_index * 14 + player.stage_index * 3
         arts_multiplier = (
             ArtsEngine.attack_multiplier(player, state)
             * SpiritBeastEngine.attack_multiplier(state)
             * RecoveryEngine.combat_multiplier(state)
+            * partner_attack_mult
         )
         damage = max(
             1,
@@ -243,6 +250,9 @@ class CombatEngine:
         if "噬血" in weapon_inscriptions and damage > 0:
             leech = max(1, round(damage * 0.12))
             player.health = min(player.health_max, player.health + leech)
+        if partner_lifesteal > 0 and damage > 0:
+            partner_leech = max(1, round(damage * partner_lifesteal))
+            player.health = min(player.health_max, player.health + partner_leech)
         combat["enemy_health"] = max(0, int(combat["enemy_health"]) - damage)
         combat["player_observed"] = False
         return StrikeResult(True, hit_roll, hit_chance, critical, damage, realm, element)
@@ -266,7 +276,8 @@ class CombatEngine:
         critical_roll = ProgressionEngine.deterministic_roll(state, f"combat-enemy-critical:{combat['round']}")
         critical = critical_roll <= 10
         raw_damage = round(int(combat["enemy_power"]) * realm * element * (1.5 if critical else 1.0))
-        guarded_damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state))
+        partner_def_bonus = sum(int(b.get("defense_bonus", 0)) for b in state.active_partner_blessings.values())
+        guarded_damage = max(1, raw_damage - ArtsEngine.defense_bonus(player, state) - SpiritBeastEngine.defense_bonus(state) - partner_def_bonus)
         damage = max(1, round(guarded_damage * RecoveryEngine.damage_taken_multiplier(state)))
         enemy_bound = bool(combat.pop("enemy_bound", False))
         if enemy_bound:
