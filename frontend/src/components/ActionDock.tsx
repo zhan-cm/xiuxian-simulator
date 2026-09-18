@@ -13,6 +13,7 @@ import {
   Hammer,
   Heart,
   Landmark,
+  Layers,
   Map,
   MoonStar,
   MountainSnow,
@@ -97,6 +98,13 @@ export const CATEGORY_ACTIONS: Record<ActionCategory, SelectableActionItem[]> = 
   ],
 }
 
+export const CORE_FOCUS_ACTIONS: SelectableActionItem[] = [
+  { action: '修炼', label: '吐纳修炼', desc: '纳天地灵气，增进当前修为', icon: Sparkles },
+  { action: '闭关3月', label: '闭关三月', desc: '避世清修悟道，加速道行破关', icon: MoonStar },
+  { action: '探索 青岳山麓', label: '巡游历练', desc: '巡游近郊灵山，搜寻药草灵物', icon: MountainSnow },
+  { action: '坊市', label: '前往坊市', desc: '步入修士坊市，买卖丹药法宝', icon: Store },
+]
+
 interface ActionDockProps {
   busy: boolean
   canQuickAct: boolean
@@ -105,6 +113,7 @@ interface ActionDockProps {
   recovery?: RecoverySnapshot
   contextActions?: ContextAction[]
   pendingEncounter?: PendingEncounterData | null
+  initialMode?: 'focus' | 'all'
   onOpenEncounterModal?: () => void
   onAction: (action: string) => void
 }
@@ -117,10 +126,12 @@ export function ActionDock({
   recovery,
   contextActions = [],
   pendingEncounter,
+  initialMode = 'all',
   onOpenEncounterModal,
   onAction,
 }: ActionDockProps) {
   const [activeCategory, setActiveCategory] = useState<ActionCategory>('cultivation')
+  const [viewMode, setViewMode] = useState<'focus' | 'all'>(initialMode)
   const [customDraftOpen, setCustomDraftOpen] = useState(false)
   const { draft, setDraft, clearDraft } = useUiStore()
 
@@ -205,43 +216,53 @@ export function ActionDock({
         </div>
       )}
 
-      {/* 意境导引标题 */}
+      {/* 意境导引标题与模式切换 */}
       <div className="dock-header">
         <span className="dock-title">
           <Sparkles size={14} />
-          <strong>心念定决</strong>
+          <strong>{viewMode === 'focus' ? '日常潜修' : '万象罗盘'}</strong>
         </span>
-        <span className="dock-subtitle">点选心念即可随念推演</span>
+        <button
+          type="button"
+          className="dock-viewmode-toggle-btn"
+          onClick={() => setViewMode((prev) => (prev === 'focus' ? 'all' : 'focus'))}
+          title={viewMode === 'focus' ? '展开全量24门心念罗盘' : '收起为极简日常潜修模式'}
+        >
+          <Layers size={13} />
+          <span>{viewMode === 'focus' ? '展开万象' : '极简修行'}</span>
+        </button>
       </div>
 
-      {/* 分类心念选项卡 */}
-      <div className="dock-category-bar" role="tablist" aria-label="行动分类选项">
-        {CATEGORIES.map((cat) => {
-          const CatIcon = cat.icon
-          const isActive = activeCategory === cat.id
-          return (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              key={cat.id}
-              className={`dock-category-tab ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat.id)}
-            >
-              <CatIcon size={13} />
-              <span>{cat.name}</span>
-            </button>
-          )
-        })}
-      </div>
+      {/* 分类心念选项卡（仅在万象模式下展示） */}
+      {viewMode === 'all' && (
+        <div className="dock-category-bar" role="tablist" aria-label="行动分类选项">
+          {CATEGORIES.map((cat) => {
+            const CatIcon = cat.icon
+            const isActive = activeCategory === cat.id
+            return (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                key={cat.id}
+                className={`dock-category-tab ${isActive ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat.id)}
+              >
+                <CatIcon size={13} />
+                <span>{cat.name}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* 可选心念卡片网格 */}
       <div
-        className="dock-action-grid"
+        className={`dock-action-grid ${viewMode === 'focus' ? 'mode-focus' : 'mode-all'}`}
         role="tabpanel"
-        aria-label={`${CATEGORIES.find((c) => c.id === activeCategory)?.name}心念`}
+        aria-label={viewMode === 'focus' ? '日常潜修心念' : `${CATEGORIES.find((c) => c.id === activeCategory)?.name}心念`}
       >
-        {currentActions.map((item) => {
+        {(viewMode === 'focus' ? CORE_FOCUS_ACTIONS : currentActions).map((item) => {
           const ActionIcon = item.icon
           return (
             <button

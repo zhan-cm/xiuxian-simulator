@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CircleAlert, CloudSun, Compass, Eye, HeartHandshake, History, Landmark, Leaf, LoaderCircle, Mountain, RotateCcw, ScrollText, Shield, Sparkles, Trophy, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -42,6 +42,8 @@ import { RedDustEncounterModal } from './components/RedDustEncounterModal'
 import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
 import { AncientTombModal } from './components/AncientTombModal'
 import { ArtifactSpiritModal } from './components/ArtifactSpiritModal'
+import { TopbarNavRibbon } from './components/TopbarNavRibbon'
+import { TianjiFocusCard } from './components/TianjiFocusCard'
 import { findEncounterNpc } from './sceneLogic'
 import { useUiStore } from './store/ui'
 
@@ -217,95 +219,25 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           </div>
 
           {!isIntroOrCreation && (
-            <nav className="xianxia-nav-ribbon" aria-label="九州修真核心功能">
-              <button
-                className="archive-trigger ladder-topbar-trigger"
-                type="button"
-                onClick={() => setRealmsLadderOpen(true)}
-                title="仙道十重天：展示所有境界，低境界在下，高境界在上"
-              >
-                <Mountain size={15} />
-                <span>通天仙阶</span>
-              </button>
-              <button
-                className="archive-trigger guide-topbar-trigger"
-                type="button"
-                onClick={() => setGuideOpen(true)}
-                title="仙途指津：如果想要怎么，你可以去哪里干什么"
-              >
-                <Compass size={15} />
-                <span>仙途指津</span>
-              </button>
-              <button
-                className="archive-trigger sect-gate-topbar-trigger"
-                type="button"
-                onClick={() => handleOpenSectGate()}
-                title="九州仙门：拜山请益、求丹借宝、擂台演武与外务悬赏"
-              >
-                <Landmark size={15} />
-                <span>拜山请益</span>
-              </button>
-              <button
-                className="archive-trigger tianji-topbar-trigger"
-                type="button"
-                onClick={() => setTianjiOpen(true)}
-                title="天机阁百晓风云谱：青云潜龙榜、九天巨擘榜、九州宗门榜与天机宝阁"
-              >
-                <Trophy size={15} />
-                <span>天机风云谱</span>
-              </button>
-              <button
-                className="archive-trigger lifebound-topbar-trigger"
-                type="button"
-                onClick={() => setLifeboundOpen(true)}
-                title="本命灵宝阁：九重太古器纹铭刻、神料熔铸、器灵通微与性命温养"
-              >
-                <Sparkles size={15} />
-                <span>本命灵宝</span>
-              </button>
-              <button
-                className="archive-trigger artifact-spirit-topbar-trigger"
-                type="button"
-                onClick={() => setArtifactSpiritOpen(true)}
-                title="本命器灵化形：本命法宝灵性觉醒、独立人形侍从伙伴、灵丹喂养与护道神通"
-              >
-                <Sparkles size={15} />
-                <span>器灵化形</span>
-              </button>
-              <button
-                className="archive-trigger encounter-topbar-trigger"
-                type="button"
-                onClick={() => {
-                  if (pendingEncounter) {
-                    setEncounterOpen(true)
-                  } else if (canUseQuickActions) {
-                    onAction('寻觅机缘')
-                  }
-                }}
-                title="红尘机缘：游历九州探寻仙魔古修遗蜕、神兽道缘与故人红尘奇遇"
-              >
-                <ScrollText size={15} />
-                <span>红尘奇遇</span>
-              </button>
-              <button
-                className="archive-trigger partner-chamber-topbar-trigger"
-                type="button"
-                onClick={() => setPartnerChamberOpen(true)}
-                title="仙侣同修阁：道侣专属合道法印、本命心印传音回礼、情魔渡劫与仙家血脉繁衍"
-              >
-                <HeartHandshake size={15} />
-                <span>仙侣同修阁</span>
-              </button>
-              <button
-                className="archive-trigger ancient-tomb-topbar-trigger"
-                type="button"
-                onClick={() => setAncientTombOpen(true)}
-                title="太古古墓秘境：Roguelike 走格子迷雾探险、破阵开匣、诛灭守灵与大能秘宝"
-              >
-                <Compass size={15} />
-                <span>古墓秘境</span>
-              </button>
-            </nav>
+            <TopbarNavRibbon
+              hasPendingEncounter={Boolean(pendingEncounter)}
+              onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
+              onOpenGuide={() => setGuideOpen(true)}
+              onOpenSectGate={handleOpenSectGate}
+              onOpenTianji={() => setTianjiOpen(true)}
+              onOpenLifebound={() => setLifeboundOpen(true)}
+              onOpenArtifactSpirit={() => setArtifactSpiritOpen(true)}
+              onOpenEncounter={() => {
+                if (pendingEncounter) {
+                  setEncounterOpen(true)
+                } else if (canUseQuickActions) {
+                  onAction('寻觅机缘')
+                }
+              }}
+              onOpenPartnerChamber={() => setPartnerChamberOpen(true)}
+              onOpenAncientTomb={() => setAncientTombOpen(true)}
+              onToggleCodex={toggleCodex}
+            />
           )}
         </header>
 
@@ -376,6 +308,27 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                   />
                 ) : (
                   <>
+                    {/* 天机司南 · 当务之急焦点卡与道阶里程碑 */}
+                    <TianjiFocusCard
+                      player={player}
+                      state={state}
+                      snapshot={snapshot}
+                      pendingEncounter={pendingEncounter}
+                      busy={busy}
+                      readOnly={showcase}
+                      canQuickAct={canUseQuickActions}
+                      onAction={onAction}
+                      onOpenGuide={() => setGuideOpen(true)}
+                      onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
+                      onOpenEncounter={() => {
+                        if (pendingEncounter) {
+                          setEncounterOpen(true)
+                        } else if (canUseQuickActions) {
+                          onAction('寻觅机缘')
+                        }
+                      }}
+                    />
+
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={`${state.turn}-${presentation.title}`}
@@ -464,6 +417,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 recovery={snapshot.recovery}
                 contextActions={contextActions}
                 pendingEncounter={pendingEncounter}
+                initialMode="focus"
                 onOpenEncounterModal={() => setEncounterOpen(true)}
                 onAction={onAction}
               />

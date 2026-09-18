@@ -13158,4 +13158,460 @@ body {
   color: #fff;
 }
 
+/* ========================================================
+   顶栏三大仙道灵宫聚合导引 (Topbar Sanctuary Nav & Popovers)
+   ======================================================== */
+.xianxia-sanctuary-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sanctuary-capsule-wrap {
+  position: relative;
+}
+
+.sanctuary-capsule-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(246, 238, 222, 0.9));
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  font-size: 12px;
+  font-weight: 600;
+  color: #2e5547;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(35, 45, 38, 0.06);
+  transition: all 0.2s ease;
+}
+
+.sanctuary-capsule-trigger:hover {
+  border-color: #ba8d3c;
+  background: linear-gradient(135deg, #fffcf5, #f5ebd3);
+  color: #8e6224;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(186, 141, 60, 0.16);
+}
+
+.sanctuary-capsule-wrap.open .sanctuary-capsule-trigger {
+  border-color: #ba8d3c;
+  background: #fbf5e6;
+  color: #8e6224;
+  box-shadow: inset 0 1px 3px rgba(186, 141, 60, 0.2);
+}
+
+.capsule-icon {
+  color: #ba8d3c;
+}
+
+.capsule-arrow {
+  color: #8c7348;
+  transition: transform 0.2s ease;
+}
+
+.sanctuary-capsule-wrap.open .capsule-arrow {
+  transform: rotate(180deg);
+}
+
+.capsule-urgent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e04f4f;
+  box-shadow: 0 0 6px #e04f4f;
+  animation: pulse 1.5s infinite;
+}
+
+.pulse-urgent {
+  border-color: rgba(224, 79, 79, 0.6) !important;
+  box-shadow: 0 0 10px rgba(224, 79, 79, 0.25) !important;
+}
+
+.sanctuary-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 270px;
+  background: #faf7ef;
+  border: 1px solid rgba(186, 148, 75, 0.38);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(24, 38, 29, 0.22);
+  z-index: 95;
+  padding: 8px;
+  animation: dialog-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(12px);
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid rgba(186, 148, 75, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+  color: #8e6328;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.popover-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.popover-item:hover {
+  background: rgba(186, 148, 75, 0.12);
+  transform: translateX(2px);
+}
+
+.popover-item-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #f0ebe0;
+  display: grid;
+  place-items: center;
+  color: #3b604e;
+  flex-shrink: 0;
+  border: 1px solid rgba(90, 110, 95, 0.15);
+  margin-top: 2px;
+}
+
+.popover-item:hover .popover-item-icon {
+  background: #ba8d3c;
+  color: #fff;
+  border-color: #ba8d3c;
+}
+
+.popover-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popover-item-text strong {
+  font-size: 13px;
+  color: #274838;
+  font-weight: 600;
+}
+
+.popover-item-text small {
+  font-size: 11px;
+  color: #6d8075;
+  line-height: 1.35;
+}
+
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.urgent-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fde8e8;
+  color: #c82333;
+  font-weight: 600;
+  border: 1px solid rgba(200, 35, 51, 0.25);
+}
+
+.highlight-item {
+  background: rgba(224, 79, 79, 0.06);
+}
+
+/* ========================================================
+   天机司南 · 当务之急焦点卡 (Tianji Focus Card & Milestones)
+   ======================================================== */
+.tianji-focus-card {
+  margin: 10px 0 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: linear-gradient(145deg, #fffdfa 0%, #fbf6ec 100%);
+  box-shadow: 0 8px 24px rgba(35, 45, 38, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.tianji-focus-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ba8d3c, #4a7c59, #ba8d3c);
+}
+
+.tianji-focus-card.tone-danger {
+  border-color: rgba(214, 85, 85, 0.45);
+  background: linear-gradient(145deg, #fffbfb 0%, #fdf0f0 100%);
+}
+
+.tianji-focus-card.tone-breakthrough {
+  border-color: rgba(186, 141, 60, 0.6);
+  background: linear-gradient(145deg, #fffdf5 0%, #f7ecd2 100%);
+  box-shadow: 0 10px 30px rgba(186, 141, 60, 0.16);
+}
+
+.tianji-focus-card.tone-warning {
+  border-color: rgba(222, 137, 47, 0.45);
+  background: linear-gradient(145deg, #fffdf8 0%, #fdf4e7 100%);
+}
+
+.tianji-focus-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .tianji-focus-inner {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .tianji-focus-actions {
+    align-items: stretch !important;
+  }
+}
+
+.tianji-compass-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  min-width: 54px;
+}
+
+.tianji-crest-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(186, 141, 60, 0.25), transparent 70%);
+  filter: blur(4px);
+  animation: pulse 3s infinite;
+}
+
+.tianji-crest-icon {
+  color: #ba8d3c;
+  z-index: 1;
+}
+
+.tianji-focus-card.tone-danger .tianji-crest-icon {
+  color: #d65555;
+}
+
+.tianji-focus-card.tone-warning .tianji-crest-icon {
+  color: #de892f;
+}
+
+.tianji-badge-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(186, 148, 75, 0.15);
+  color: #8c6020;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  z-index: 1;
+}
+
+.tianji-focus-card.tone-danger .tianji-badge-tag {
+  background: rgba(214, 85, 85, 0.15);
+  color: #b03232;
+  border-color: rgba(214, 85, 85, 0.3);
+}
+
+.tianji-focus-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tianji-focus-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8c6328;
+}
+
+.tianji-focus-title {
+  margin: 0;
+  font-family: 'KaiTi', 'SimSun', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #244637;
+}
+
+.tianji-focus-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #52675c;
+  line-height: 1.5;
+}
+
+.tianji-focus-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tianji-primary-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #ba8d3c;
+  background: linear-gradient(135deg, #ba8d3c, #9d7122);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(186, 141, 60, 0.28);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tianji-primary-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(186, 141, 60, 0.4);
+  background: linear-gradient(135deg, #c79944, #aa7c29);
+}
+
+.tianji-primary-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tianji-sub-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.tianji-sub-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  background: #fff;
+  color: #765627;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.tianji-sub-action-btn:hover {
+  background: #fdf5e6;
+  border-color: #ba8d3c;
+}
+
+.tianji-milestones-bar {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(186, 148, 75, 0.25);
+}
+
+.tianji-milestone-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #634316;
+  cursor: pointer;
+}
+
+.tianji-milestone-toggle:hover {
+  color: #ba8d3c;
+}
+
+.tianji-milestone-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tianji-milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(90, 110, 95, 0.15);
+  font-size: 11px;
+  color: #40584c;
+}
+
+.tianji-milestone-item.completed {
+  background: rgba(235, 245, 238, 0.85);
+  border-color: rgba(46, 125, 80, 0.3);
+  color: #23583d;
+  font-weight: 600;
+}
+
+/* ========================================================
+   心念决策台模式切换 (ActionDock Mode Toggle & Focus Grid)
+   ======================================================== */
+.dock-viewmode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  background: #fff;
+  color: #7f5c27;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.dock-viewmode-toggle-btn:hover {
+  background: #fbf3e0;
+  border-color: #ba8d3c;
+  color: #ba8d3c;
+}
+
+.dock-action-grid.mode-focus {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+
 
