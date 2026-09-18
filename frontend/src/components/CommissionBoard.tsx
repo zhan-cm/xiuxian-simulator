@@ -6,21 +6,39 @@ interface CommissionBoardProps {
   commissions: CommissionSnapshot
   busy: boolean
   readOnly?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
   onAction: (action: string) => void
 }
 
-export function CommissionBoard({ commissions, busy, readOnly = false, onAction }: CommissionBoardProps) {
-  const ready = commissions.active.filter((item) => item.ready).length
+export function CommissionBoard({
+  commissions,
+  busy,
+  readOnly = false,
+  open,
+  onOpenChange,
+  showTrigger = true,
+  onAction,
+}: CommissionBoardProps) {
+  const ready = commissions?.active?.filter((item) => item.ready).length || 0
+  const isControlled = open !== undefined
+
   return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>
-        <button className="commission-ribbon" type="button" data-ready={ready > 0 || undefined}>
-          <span><ClipboardList size={17} /></span>
-          <div><small>东洲悬榜</small><strong>{commissions.active_count ? `${commissions.active_count} 份委托在途` : '寻一桩合意差事'}</strong></div>
-          <p>{ready ? `${ready} 份报酬待领取` : commissions.rotation_label}</p>
-          <em>{commissions.active_count}/{commissions.active_limit}</em>
-        </button>
-      </Dialog.Trigger>
+    <Dialog.Root
+      open={isControlled ? open : undefined}
+      onOpenChange={isControlled ? onOpenChange : undefined}
+    >
+      {showTrigger && (
+        <Dialog.Trigger asChild>
+          <button className="commission-ribbon" type="button" data-ready={ready > 0 || undefined}>
+            <span><ClipboardList size={17} /></span>
+            <div><small>东洲悬榜</small><strong>{commissions?.active_count ? `${commissions.active_count} 份委托在途` : '寻一桩合意差事'}</strong></div>
+            <p>{ready ? `${ready} 份报酬待领取` : commissions?.rotation_label || '悬榜定期轮换'}</p>
+            <em>{commissions?.active_count ?? 0}/{commissions?.active_limit ?? 2}</em>
+          </button>
+        </Dialog.Trigger>
+      )}
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
         <Dialog.Content className="character-dialog commission-dialog">

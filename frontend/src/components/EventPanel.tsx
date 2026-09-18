@@ -390,7 +390,26 @@ function MarketBlock({ block, readOnly, onAction }: { block: PresentationBlock; 
   const selected = shown.find((item) => text(item.name) === selectedName) || shown[0]
   return (
     <section className="semantic-block market-block">
-      <SystemBlockHeader mark="市" eyebrow="青岳商路" title={block.title || '坊市货架'} description="辨行情、择灵物，每一次买卖都会真实计入行囊与商路账目。" meta={`持有 ${text(block.currency, '0')} 灵石`} icon={<ShoppingBag size={21} />} />
+      <SystemBlockHeader
+        mark="市"
+        eyebrow="青岳商路"
+        title={block.title || '坊市货架'}
+        description="辨行情、择灵物，每一次买卖都会真实计入行囊与商路账目。"
+        meta={`持有 ${text(block.currency, '0')} 灵石`}
+        icon={<ShoppingBag size={21} />}
+        extra={
+          <button
+            type="button"
+            className="market-liquidate-btn"
+            disabled={readOnly}
+            title="将背囊中闲置的妖材、灵药、矿石等按坊市行情批量变现换取灵石"
+            onClick={() => onAction('一键变现')}
+          >
+            <Coins size={13} />
+            <span>一键变现杂物</span>
+          </button>
+        }
+      />
       <div className="market-context"><span><small>本地特产</small>{text(block.specialties, '行情平稳')}</span><span><small>热门求购</small>{text(block.demands, '暂无异动')}</span><span><small>地方声望</small>{text(block.standing, '初来乍到 · +0')}</span><span data-profit={Number(block.trade_profit || 0) >= 0 ? 'gain' : 'loss'}><small>商路累计</small>{Number(block.trade_profit || 0) >= 0 ? '+' : ''}{text(block.trade_profit, '0')} 灵石</span></div>
       <nav className="market-tabs" aria-label="货架分类">
         {categories.map((name) => <button type="button" data-active={category === name || undefined} onClick={() => setCategory(name)} key={name}>{name}</button>)}

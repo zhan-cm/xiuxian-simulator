@@ -1,6 +1,7 @@
 import {
   BookOpen,
   ChevronDown,
+  ClipboardList,
   Compass,
   HeartHandshake,
   Landmark,
@@ -13,9 +14,11 @@ import { useEffect, useRef, useState } from 'react'
 
 export interface TopbarNavRibbonProps {
   hasPendingEncounter?: boolean
+  hasReadyCommission?: boolean
   onOpenRealmsLadder: () => void
   onOpenGuide: () => void
   onOpenSectGate: (sectName?: string) => void
+  onOpenCommissionBoard?: () => void
   onOpenTianji: () => void
   onOpenLifebound: () => void
   onOpenArtifactSpirit: () => void
@@ -29,9 +32,11 @@ type SanctuaryId = 'chronicle' | 'world' | 'mysteries' | null
 
 export function TopbarNavRibbon({
   hasPendingEncounter = false,
+  hasReadyCommission = false,
   onOpenRealmsLadder,
   onOpenGuide,
   onOpenSectGate,
+  onOpenCommissionBoard,
   onOpenTianji,
   onOpenLifebound,
   onOpenArtifactSpirit,
@@ -201,6 +206,26 @@ export function TopbarNavRibbon({
                 <small>太古秘境古仙遗蜕、故人因果与灵宠奇遇画卷</small>
               </div>
             </button>
+            {onOpenCommissionBoard && (
+              <button
+                type="button"
+                className={`popover-item ${hasReadyCommission ? 'highlight-item' : ''}`}
+                onClick={() => handleSelect(onOpenCommissionBoard)}
+              >
+                <div className="popover-item-icon">
+                  <ClipboardList size={16} />
+                </div>
+                <div className="popover-item-text">
+                  <div className="item-title-row">
+                    <strong>东洲悬榜</strong>
+                    {hasReadyCommission && (
+                      <span className="urgent-badge">有酬待领</span>
+                    )}
+                  </div>
+                  <small>揭阅四方悬赏生财，接取采药除祟差事赚取丰厚灵石</small>
+                </div>
+              </button>
+            )}
           </div>
         )}
       </div>

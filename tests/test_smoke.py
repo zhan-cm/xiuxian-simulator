@@ -3095,6 +3095,30 @@ class SimulatorSmokeTests(unittest.TestCase):
         self.assertLessEqual(len(left.world_milestones), 50)
         self.assertLessEqual(len(left.sect_war_history), 30)
 
+    def test_liquidate_tradeables_and_sect_stipend(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            engine.state.player.resources["妖兽材料"] = 2
+            engine.state.player.resources["灵药"] = 3
+            engine.state.player.resources["筑基丹"] = 1
+            initial_stones = engine.state.player.spirit_stones
+            res = engine.process("一键变现")
+            self.assertIn("一键变现", res)
+            self.assertIn("妖兽材料×2", res)
+            self.assertIn("灵药×3", res)
+            self.assertNotIn("筑基丹", res)
+            self.assertGreater(engine.state.player.spirit_stones, initial_stones)
+            self.assertEqual(engine.state.player.resources.get("筑基丹"), 1)
+            self.assertNotIn("妖兽材料", engine.state.player.resources)
+
+            engine.state.player.sect = "青云宗"
+            engine.state.player.sect_rank = "外门弟子"
+            stones_before_advance = engine.state.player.spirit_stones
+            engine.process("闭关")
+            self.assertGreaterEqual(engine.state.player.spirit_stones, stones_before_advance + 20)
+
 
 if __name__ == "__main__":
     unittest.main()

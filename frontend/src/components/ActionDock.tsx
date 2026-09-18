@@ -102,6 +102,7 @@ export const CORE_FOCUS_ACTIONS: SelectableActionItem[] = [
   { action: '修炼', label: '吐纳修炼', desc: '纳天地灵气，增进当前修为', icon: Sparkles },
   { action: '闭关3月', label: '闭关三月', desc: '避世清修悟道，加速道行破关', icon: MoonStar },
   { action: '探索 青岳山麓', label: '巡游历练', desc: '巡游近郊灵山，搜寻药草灵物', icon: MountainSnow },
+  { action: '委托', label: '悬赏榜单', desc: '揭阅东洲悬榜，接单除祟赚取灵石', icon: ScrollText },
   { action: '坊市', label: '前往坊市', desc: '步入修士坊市，买卖丹药法宝', icon: Store },
 ]
 
@@ -115,6 +116,7 @@ interface ActionDockProps {
   pendingEncounter?: PendingEncounterData | null
   initialMode?: 'focus' | 'all'
   onOpenEncounterModal?: () => void
+  onOpenCommissionBoard?: () => void
   onAction: (action: string) => void
 }
 
@@ -128,6 +130,7 @@ export function ActionDock({
   pendingEncounter,
   initialMode = 'all',
   onOpenEncounterModal,
+  onOpenCommissionBoard,
   onAction,
 }: ActionDockProps) {
   const [activeCategory, setActiveCategory] = useState<ActionCategory>('cultivation')
@@ -271,7 +274,13 @@ export function ActionDock({
               className="dock-action-card"
               aria-label={item.label}
               disabled={!canQuickAct || busy || readOnly}
-              onClick={() => onAction(item.action)}
+              onClick={() => {
+                if (item.action === '委托' && onOpenCommissionBoard) {
+                  onOpenCommissionBoard()
+                } else {
+                  onAction(item.action)
+                }
+              }}
               title={
                 readOnly
                   ? '成果巡览仅供查看'

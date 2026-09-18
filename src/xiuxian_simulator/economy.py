@@ -294,22 +294,27 @@ class EconomyEngine:
             count = 1 + score % 3
             resource = {"东洲": "灵药", "南疆": "妖兽材料", "西漠": "灵铁", "北原": "冰莲", "中州": "符纸"}[area_region]
             rewards = {resource: count}
-            event = f"在当地险地寻得{resource}"
+            stones = 8 + (score % 8)
+            event = f"在当地险地寻得{resource}与散落灵石（材料可带往坊市变现，亦可交付悬榜）"
         elif score < 76:
             count = 1 + score % 2
             rewards = {"妖兽材料": count}
-            event = "拾得斗法后遗落的妖兽材料"
+            stones = 12 + (score % 10)
+            event = "拾得斗法后遗落的妖兽材料与碎灵石（妖兽材料可在坊市高价变现）"
         elif score < 90:
-            stones = 20 + player.realm_index * 20 + score % 21
+            stones = 30 + player.realm_index * 25 + score % 21
             event = "发现散修遗落的灵石袋"
         elif score < 97:
             rewards = {"天材地宝": 1}
-            event = "寻得一株初生的天材地宝"
+            stones = 20
+            event = "寻得一株初生的天材地宝（可在坊市竞得重金）"
         elif score < 100:
             rewards = {"五行灵珠": 1}
+            stones = 25
             event = "在灵脉裂隙中凝得五行灵珠"
         else:
             rewards = {"道韵": 1}
+            stones = 35
             event = "观天地异象，截得一缕道韵"
 
         player.location = f"{REGIONS[area_region].name}·{area}"

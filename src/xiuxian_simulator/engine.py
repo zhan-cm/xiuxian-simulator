@@ -8,7 +8,7 @@ from .arts import ArtsEngine
 from .combat import ENEMIES, CombatEngine
 from .crafting import FACILITIES, RECIPES, SKILL_NAMES, CraftingEngine
 from .relationships import NPCS, RelationshipEngine
-from .economy import AREA_DESCRIPTIONS, AREA_REGIONS, AREAS, SECTS, SECT_TASKS, EconomyEngine
+from .economy import AREA_DESCRIPTIONS, AREA_REGIONS, AREAS, MARKET_PRICES, SECTS, SECT_TASKS, EconomyEngine
 from .ecology import NpcEcologyEngine
 from .npc_lifecycle import NpcLifecycleEngine
 from .npc_network import NpcNetworkEngine
@@ -232,6 +232,8 @@ class GameEngine:
             return self._trade(*trade)
         if action == "坊市":
             return self._market()
+        if action in {"一键变现", "变现杂物", "出售杂物", "快速变现"}:
+            return self._liquidate_tradeables()
         if action in {"拍卖会", "天机拍卖", "拍卖"}:
             return AuctionEngine.panel_text(self.state)
         if action.startswith("竞拍"):
@@ -1240,6 +1242,40 @@ class GameEngine:
         return (
             f"【坊市成交】{operation}{item}×{count}\n"
             f"地点 {region}｜灵石 {stone_change:+d}｜{item} {direction}{item_change}{profit_text}{reputation_text}\n"
+            f"当前灵石：{self.state.player.spirit_stones}"
+        )
+
+    def _liquidate_tradeables(self) -> str:
+        """一键将背囊中可售出的闲置材料、灵草、妖材批量售给当地坊市换取灵石"""
+        protected = {
+            "筑基丹", "凝晶丹", "结丹灵药", "结婴丹", "具灵丹", "化神丹",
+            "悟道丹", "羽化丹", "登仙丹", "疗伤丹", "聚气丹",
+        }
+        sold_items = []
+        total_stones = 0
+        region_key = TravelEngine.current_region(self.state)
+        region = REGIONS[region_key].name
+        for item, count in list(self.state.player.resources.items()):
+            if item in protected or count <= 0:
+                continue
+            if item in MARKET_PRICES:
+                try:
+                    earned, _ = EconomyEngine.trade(self.state, "卖", item, count)
+                    total_stones += earned
+                    sold_items.append(f"{item}×{count}（+{earned}灵石）")
+                except ValueError:
+                    continue
+        if not sold_items:
+            return f"【坊市通筹 · 一键变现】\n乾坤袋中未查见可变现的闲置材料或灵物。\n当前灵石：{self.state.player.spirit_stones}"
+        CommissionEngine.mark(self.state, "market_trade", len(sold_items))
+        sold_summary = "、".join(sold_items)
+        self.state.remember(f"在{region}坊市一键变现杂物：{sold_summary}，共计获得灵石 +{total_stones}")
+        self._autosave()
+        return (
+            f"【坊市通筹 · 一键变现】\n"
+            f"地点：{region}坊市｜交易总数：{len(sold_items)} 种\n"
+            f"变现明细：{sold_summary}\n"
+            f"所得灵石：+{total_stones} 灵石\n"
             f"当前灵石：{self.state.player.spirit_stones}"
         )
 
@@ -3178,6 +3214,22 @@ class GameEngine:
             DaoPartnerEngine.tick_blessings(self.state, 1)
             for event in DaoPartnerEngine.grow_children(self.state, 1):
                 self.state.remember(f"子嗣家书：{event}")
+            # 宗门月俸与散修生计保底
+            if self.state.player.sect != "散修":
+                stipend_map = {
+                    "外门弟子": 20,
+                    "内门弟子": 50,
+                    "核心弟子": 100,
+                    "真传弟子": 150,
+                    "长老": 200,
+                    "掌门": 300,
+                }
+                stipend = stipend_map.get(self.state.player.sect_rank, 20)
+                self.state.player.spirit_stones += stipend
+                self.state.remember(f"宗门月俸：发放【{self.state.player.sect}】{self.state.player.sect_rank}例银，灵石 +{stipend}")
+            elif self.state.player.spirit_stones < 30:
+                self.state.player.spirit_stones += 5
+                self.state.remember("散修生计：行脚售卖山林草药，积蓄微薄盘缠，灵石 +5")
         return died_of_age
 
     @staticmethod

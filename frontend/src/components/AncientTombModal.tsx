@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUp,
   Box,
+  Coins,
   Compass,
   Crown,
   DoorOpen,
@@ -15,11 +16,13 @@ import {
   Footprints,
   History,
   Lock,
+  Mountain,
   PackageCheck,
   Shield,
   ShieldAlert,
   Skull,
   Sparkles,
+  Store,
   Swords,
   X,
 } from 'lucide-react'
@@ -64,6 +67,91 @@ function TombThemesView({
         </p>
       </div>
 
+      {themes.every((t) => !t.unlocked) && (
+        <div
+          className="tomb-prep-banner"
+          style={{
+            padding: '14px 18px',
+            marginBottom: '18px',
+            borderRadius: '8px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f87171', marginBottom: '6px' }}>
+            <ShieldAlert size={16} />
+            <strong style={{ fontSize: '14px' }}>太古禁制封印 · 勘阵备战指南</strong>
+          </div>
+          <p style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: 1.6, margin: '0 0 12px' }}>
+            大能古冢设有万载上古锁灵仙阵，需修士神识达到【筑基期】方能窥破阵眼破禁而入。当前修为尚在炼气期，建议先行突破筑基天堑，并备足回春灵丹与护身法宝以御死局！
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              disabled={busy || readOnly}
+              onClick={() => onAction('突破')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 14px',
+                borderRadius: '5px',
+                background: 'linear-gradient(135deg, #e11d48, #9f1239)',
+                color: '#fff',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <Mountain size={13} />
+              <span>凝气冲击筑基</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy || readOnly}
+              onClick={() => onAction('坊市')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 14px',
+                borderRadius: '5px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#cbd5e1',
+                fontSize: '12px',
+                cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <Store size={13} />
+              <span>坊市备足灵药</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy || readOnly}
+              onClick={() => onAction('委托')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 14px',
+                borderRadius: '5px',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: '#fbbf24',
+                fontSize: '12px',
+                cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <Coins size={13} />
+              <span>接取悬榜生财</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="tomb-cards-grid">
         {themes.map((theme) => {
           const isSelected = selectedThemeId === theme.id
@@ -97,13 +185,20 @@ function TombThemesView({
                 type="button"
                 className="theme-enter-btn"
                 disabled={!theme.unlocked || busy || readOnly}
+                title={
+                  readOnly
+                    ? '巡览只读'
+                    : !theme.unlocked
+                    ? `上古禁制封印，需达【${theme.recommended_realm}】破禁`
+                    : `踏入【${theme.name}】探险`
+                }
                 onClick={(e) => {
                   e.stopPropagation()
                   handleEnter(theme.id)
                 }}
               >
-                <Sparkles size={14} />
-                <span>踏入古墓探险</span>
+                {theme.unlocked ? <Sparkles size={14} /> : <Lock size={14} />}
+                <span>{theme.unlocked ? '踏入古墓探险' : '禁制封印 · 境界不足'}</span>
               </button>
             </div>
           )

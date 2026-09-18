@@ -42,6 +42,7 @@ import { RedDustEncounterModal } from './components/RedDustEncounterModal'
 import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
 import { AncientTombModal } from './components/AncientTombModal'
 import { ArtifactSpiritModal } from './components/ArtifactSpiritModal'
+import { CommissionBoard } from './components/CommissionBoard'
 import { TopbarNavRibbon } from './components/TopbarNavRibbon'
 import { TianjiFocusCard } from './components/TianjiFocusCard'
 import { findEncounterNpc } from './sceneLogic'
@@ -137,6 +138,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [partnerChamberOpen, setPartnerChamberOpen] = useState(false)
   const [ancientTombOpen, setAncientTombOpen] = useState(false)
   const [artifactSpiritOpen, setArtifactSpiritOpen] = useState(false)
+  const [commissionBoardOpen, setCommissionBoardOpen] = useState(false)
 
   const pendingEncounter = snapshot.encounters?.pending
   useEffect(() => {
@@ -221,9 +223,11 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           {!isIntroOrCreation && (
             <TopbarNavRibbon
               hasPendingEncounter={Boolean(pendingEncounter)}
+              hasReadyCommission={Boolean(snapshot.commissions?.active?.some((item) => item.ready))}
               onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
               onOpenGuide={() => setGuideOpen(true)}
               onOpenSectGate={handleOpenSectGate}
+              onOpenCommissionBoard={() => setCommissionBoardOpen(true)}
               onOpenTianji={() => setTianjiOpen(true)}
               onOpenLifebound={() => setLifeboundOpen(true)}
               onOpenArtifactSpirit={() => setArtifactSpiritOpen(true)}
@@ -327,6 +331,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           onAction('寻觅机缘')
                         }
                       }}
+                      onOpenCommissionBoard={() => setCommissionBoardOpen(true)}
                     />
 
                     <AnimatePresence mode="wait">
@@ -419,6 +424,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 pendingEncounter={pendingEncounter}
                 initialMode="focus"
                 onOpenEncounterModal={() => setEncounterOpen(true)}
+                onOpenCommissionBoard={() => setCommissionBoardOpen(true)}
                 onAction={onAction}
               />
 
@@ -544,6 +550,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           open={partnerChamberOpen}
           onOpenChange={setPartnerChamberOpen}
           partnerSystem={snapshot.partner_system}
+          npcProfiles={snapshot.npc_profiles}
           busy={busy}
           readOnly={showcase}
           onAction={(act) => {
@@ -569,6 +576,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
           onAction={(act) => {
             onAction(act)
           }}
+        />
+        <CommissionBoard
+          commissions={snapshot.commissions}
+          busy={busy}
+          readOnly={showcase}
+          open={commissionBoardOpen}
+          onOpenChange={setCommissionBoardOpen}
+          showTrigger={false}
+          onAction={onAction}
         />
       </div>
     </TooltipProvider>

@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   Baby,
-  BookHeart,
   Crown,
   Flame,
   Heart,
@@ -16,13 +15,14 @@ import {
   X,
   Zap,
 } from 'lucide-react'
-import type { DaoPartnerSystemSnapshot } from '../api/types'
+import type { DaoPartnerSystemSnapshot, NpcProfile } from '../api/types'
 import { NpcAvatar } from './NpcAvatar'
 
 export interface DaoPartnerChamberModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   partnerSystem?: DaoPartnerSystemSnapshot | null
+  npcProfiles?: Record<string, NpcProfile>
   busy?: boolean
   readOnly?: boolean
   onAction: (action: string) => void
@@ -39,6 +39,7 @@ export function DaoPartnerChamberModal({
   open,
   onOpenChange,
   partnerSystem,
+  npcProfiles,
   busy = false,
   readOnly = false,
   onAction,
@@ -54,6 +55,19 @@ export function DaoPartnerChamberModal({
   const messages = (partnerSystem?.messages || []).filter(
     (m) => !currentPartner || m.partner === currentPartner.name
   )
+
+  const candidates = useMemo(() => {
+    const list = Object.values(npcProfiles || {}).filter((n) => n.alive !== false)
+    if (list.length === 0) {
+      return [
+        { name: '云栖', identity: '太玄剑宗真传', realm: '筑基·中期', location: '太玄剑宗', affinity: 45 },
+        { name: '顾清玄', identity: '青岳坊市散仙', realm: '炼气·圆满', location: '青岳别院', affinity: 30 },
+        { name: '洛浅浅', identity: '丹鼎阁小师妹', realm: '炼气·后期', location: '丹鼎阁', affinity: 35 },
+        { name: '谢无咎', identity: '北寒剑修', realm: '金丹·初期', location: '极北雪原', affinity: 20 },
+      ]
+    }
+    return list.sort((a, b) => (b.affinity || 0) - (a.affinity || 0)).slice(0, 6)
+  }, [npcProfiles])
 
   const handleDualCultivate = () => {
     if (!currentPartner || busy || readOnly) return
@@ -102,21 +116,117 @@ export function DaoPartnerChamberModal({
           </p>
 
           {!hasPartners ? (
-            <div className="partner-empty-state">
-              <BookHeart size={48} className="partner-empty-icon" />
-              <h3>红尘孤身 · 尚待知己</h3>
-              <p>
-                你当前尚未与任何红颜知己或至交好友结下道侣之契。
-                <br />
-                在【情缘】中赠礼论道，将心仪人物的好感提升至 <strong>80 点</strong> 以上，即可结为道侣共攀长生。
+            <div className="partner-empty-state" style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '3px 12px',
+                  borderRadius: '20px',
+                  background: 'rgba(244, 63, 94, 0.12)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: '#fb7185',
+                  fontSize: '12px',
+                  marginBottom: '10px',
+                }}
+              >
+                <Heart size={13} />
+                <span>红尘寻道 · 结发同修</span>
+              </div>
+              <h3 style={{ fontSize: '18px', color: '#fff', marginBottom: '6px' }}>红尘孤身 · 尚待知己</h3>
+              <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.6, marginBottom: '16px' }}>
+                你当前尚未与红颜知己立下结发之约。与心仪人物好感达到 <strong>80 点</strong> 以上，即可结为仙侣，开启同修静室、合道法印与仙家血脉传承！
               </p>
+
+              {/* 候选知己名录 */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', textAlign: 'left', marginBottom: '18px' }}>
+                {candidates.map((npc) => {
+                  const canMarry = (npc.affinity || 0) >= 80
+                  return (
+                    <div
+                      key={npc.name}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '8px',
+                        gap: '10px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <NpcAvatar item={npc} size="small" />
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <strong style={{ color: '#f1f5f9', fontSize: '14px' }}>{npc.name}</strong>
+                            <small style={{ color: '#f43f5e', fontSize: '11px' }}>好感 {npc.affinity || 0}/80</small>
+                          </div>
+                          <small style={{ display: 'block', color: '#64748b', fontSize: '11px', marginTop: '2px' }}>
+                            {npc.identity || '修士'} · {npc.realm || '炼气'}
+                          </small>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={busy || readOnly}
+                        onClick={() => {
+                          if (canMarry) {
+                            onAction(`结为道侣 ${npc.name}`)
+                          } else {
+                            onAction(`拜访 ${npc.name}`)
+                            onOpenChange(false)
+                          }
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '5px 10px',
+                          background: canMarry
+                            ? 'linear-gradient(135deg, #e11d48, #be123c)'
+                            : 'rgba(244, 63, 94, 0.15)',
+                          border: canMarry ? 'none' : '1px solid rgba(244, 63, 94, 0.4)',
+                          borderRadius: '4px',
+                          color: canMarry ? '#fff' : '#fda4af',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <Heart size={12} />
+                        <span>{canMarry ? '结为仙侣' : '寻访赠礼'}</span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
               <div className="partner-empty-actions">
                 <button
                   type="button"
                   className="action-btn partner-cta-btn"
+                  disabled={busy || readOnly}
                   onClick={() => {
                     onAction('情缘')
                     onOpenChange(false)
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 18px',
+                    background: 'linear-gradient(135deg, #e11d48, #9f1239)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: busy || readOnly ? 'not-allowed' : 'pointer',
                   }}
                 >
                   <Heart size={15} />

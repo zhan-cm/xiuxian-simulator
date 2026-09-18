@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { Backpack, Gem, Shield, Sparkles, Swords, X } from 'lucide-react'
+import { Backpack, Coins, Gem, Shield, Sparkles, Swords, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { InventoryItem, InventorySnapshot } from '../api/types'
 import { Panel } from './Panel'
@@ -46,6 +46,16 @@ export function InventoryDialog({ inventory, busy, canAct, readOnly = false, onA
             <div><Swords size={16} /><span><small>武器</small><strong>{inventory.equipped.weapon || '尚未装备'}</strong></span></div>
             <div><Shield size={16} /><span><small>护甲</small><strong>{inventory.equipped.armor || '尚未装备'}</strong></span></div>
             <em>{inventory.total_types} 类 · {inventory.total_count} 件</em>
+            <button
+              type="button"
+              className="inventory-liquidate-btn"
+              disabled={busy || readOnly || !canAct || inventory.items.length === 0}
+              title="将乾坤袋中闲置的妖材、灵药、矿石等按坊市行情批量变现换取灵石"
+              onClick={() => onAction('一键变现')}
+            >
+              <Coins size={14} />
+              <span>一键变现</span>
+            </button>
           </div>
           {inventory.items.length ? <div className="inventory-layout">
             <section className="inventory-collection">

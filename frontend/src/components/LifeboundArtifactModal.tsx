@@ -6,8 +6,10 @@ import {
   Flame,
   Gem,
   MessageSquare,
+  MountainSnow,
   Shield,
   Sparkles,
+  Store,
   Swords,
   X,
   Zap,
@@ -22,6 +24,169 @@ export interface LifeboundArtifactModalProps {
   busy: boolean
   readOnly?: boolean
   onAction: (action: string) => void
+}
+
+function NoBondedArtifactGuide({
+  artifacts,
+  busy,
+  readOnly,
+  onAction,
+}: {
+  artifacts: ArtifactGrowthSnapshot['artifacts']
+  busy: boolean
+  readOnly: boolean
+  onAction: (action: string) => void
+}) {
+  const unbondedList = (artifacts || []).filter((a) => !a.bonded)
+
+  if (unbondedList.length > 0) {
+    return (
+      <div className="no-bonded-notice unbonded-guide-box">
+        <Compass size={32} />
+        <h3 style={{ fontSize: '16px', color: '#f59e0b', marginBottom: '8px' }}>已持有法宝 · 待祭炼本命</h3>
+        <p style={{ maxWidth: '520px', margin: '0 auto 16px', lineHeight: 1.6, color: '#94a3b8' }}>
+          你当前乾坤袋中已有法器，挑选一件已装备的兵刃或法袍，以心头精血祭炼为本命法宝，即可开启太古器纹与器灵觉醒：
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '480px', margin: '0 auto' }}>
+          {unbondedList.map((item) => (
+            <div
+              key={item.name}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '8px',
+              }}
+            >
+              <div style={{ textAlign: 'left' }}>
+                <strong style={{ color: '#e2e8f0', fontSize: '14px' }}>{item.name}</strong>
+                <small style={{ display: 'block', color: '#64748b', fontSize: '12px' }}>
+                  {item.grade} · {item.slot} · {item.effect}
+                </small>
+              </div>
+              <button
+                type="button"
+                className="bind-btn"
+                disabled={busy || readOnly || !item.can_bind}
+                title={readOnly ? '巡览只读' : item.bind_reason || `将【${item.name}】祭为本命`}
+                onClick={() => onAction(item.bind_action)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 12px',
+                  background: item.can_bind ? 'linear-gradient(135deg, #d97706, #b45309)' : 'rgba(255, 255, 255, 0.05)',
+                  color: item.can_bind ? '#fff' : '#64748b',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: item.can_bind && !busy && !readOnly ? 'pointer' : 'not-allowed',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                <Gem size={12} />
+                <span>{item.can_bind ? '祭为本命' : item.bind_reason || '不可认主'}</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="no-bonded-notice empty-roadmap-notice" style={{ maxWidth: '580px', margin: '0 auto', textAlign: 'center' }}>
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '3px 10px',
+          borderRadius: '20px',
+          background: 'rgba(245, 158, 11, 0.12)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          color: '#fbbf24',
+          fontSize: '12px',
+          marginBottom: '12px',
+        }}
+      >
+        <Sparkles size={13} />
+        <span>道途指引 · 本命神兵启灵</span>
+      </div>
+      <h3 style={{ fontSize: '17px', color: '#f8fafc', marginBottom: '8px' }}>尚未获得法宝胚子</h3>
+      <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }}>
+        本命灵宝乃修士性命相托之无上神兵。需先持有一柄高阶法剑或灵甲，装备后方可引燃真元神火祭炼认主。
+      </p>
+
+      {/* 阶段四步走 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', textAlign: 'left', marginBottom: '22px' }}>
+        <div style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <strong style={{ color: '#fbbf24', fontSize: '13px', display: 'block' }}>① 获宝胚</strong>
+          <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '2px' }}>前往修士坊市选购灵器，或探秘远古古冢与名山洞府</small>
+        </div>
+        <div style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <strong style={{ color: '#e2e8f0', fontSize: '13px', display: 'block' }}>② 祭本命</strong>
+          <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '2px' }}>在乾坤袋中穿戴法器，于灵宝阁立下性命交修法契</small>
+        </div>
+        <div style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <strong style={{ color: '#e2e8f0', fontSize: '13px', display: 'block' }}>③ 铭器纹</strong>
+          <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '2px' }}>开辟太古器纹槽位，融汇破煞、神风等九重器纹</small>
+        </div>
+        <div style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <strong style={{ color: '#e2e8f0', fontSize: '13px', display: 'block' }}>④ 灵化形</strong>
+          <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '2px' }}>温养契合度至百点，唤醒沉睡器灵法相协同护道</small>
+        </div>
+      </div>
+
+      {/* 快捷行动按钮 */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          disabled={busy || readOnly}
+          onClick={() => onAction('坊市')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            background: 'linear-gradient(135deg, #d97706, #92400e)',
+            color: '#fff',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <Store size={14} />
+          <span>前往坊市选购法宝</span>
+        </button>
+        <button
+          type="button"
+          disabled={busy || readOnly}
+          onClick={() => onAction('探索 青岳山麓')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            color: '#cbd5e1',
+            fontSize: '13px',
+            cursor: busy || readOnly ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <MountainSnow size={14} />
+          <span>巡山搜寻宝材</span>
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function LifeboundArtifactModal({
@@ -258,10 +423,12 @@ export function LifeboundArtifactModal({
                       </section>
                     </div>
                   ) : (
-                    <div className="no-bonded-notice">
-                      <Compass size={28} />
-                      <p>尚未认主本命法宝。请前往【法宝囊匣】挑选一件已装备的法宝祭炼认主！</p>
-                    </div>
+                    <NoBondedArtifactGuide
+                      artifacts={allArtifacts}
+                      busy={busy}
+                      readOnly={readOnly}
+                      onAction={onAction}
+                    />
                   )}
                 </div>
               )}
@@ -359,10 +526,12 @@ export function LifeboundArtifactModal({
                       </div>
                     </div>
                   ) : (
-                    <div className="no-bonded-notice">
-                      <Compass size={28} />
-                      <p>尚未认主本命法宝，无法唤醒器灵。</p>
-                    </div>
+                    <NoBondedArtifactGuide
+                      artifacts={allArtifacts}
+                      busy={busy}
+                      readOnly={readOnly}
+                      onAction={onAction}
+                    />
                   )}
                 </div>
               )}
@@ -370,65 +539,74 @@ export function LifeboundArtifactModal({
               {/* 4. 法宝总览 */}
               {activeTab === 'all' && (
                 <div className="tab-all-artifacts">
-                  <div className="artifacts-grid" role="list">
-                    {allArtifacts.map((item) => (
-                      <article key={item.name} className={`artifact-card ${item.bonded ? 'is-bonded' : ''}`} role="listitem">
-                        <header className="art-header">
-                          <span className="art-icon">{item.slot === '武器' ? <Swords size={16} /> : <Shield size={16} />}</span>
-                          <div>
-                            <h4>{item.name}</h4>
-                            <small>{item.grade} · {item.slot} · {item.level_label}</small>
+                  {allArtifacts.length === 0 ? (
+                    <NoBondedArtifactGuide
+                      artifacts={allArtifacts}
+                      busy={busy}
+                      readOnly={readOnly}
+                      onAction={onAction}
+                    />
+                  ) : (
+                    <div className="artifacts-grid" role="list">
+                      {allArtifacts.map((item) => (
+                        <article key={item.name} className={`artifact-card ${item.bonded ? 'is-bonded' : ''}`} role="listitem">
+                          <header className="art-header">
+                            <span className="art-icon">{item.slot === '武器' ? <Swords size={16} /> : <Shield size={16} />}</span>
+                            <div>
+                              <h4>{item.name}</h4>
+                              <small>{item.grade} · {item.slot} · {item.level_label}</small>
+                            </div>
+                            <span className={`bond-status ${item.bonded ? 'bonded' : item.equipped ? 'equipped' : 'stored'}`}>
+                              {item.bonded ? '★ 本命' : item.equipped ? '已装备' : '袋中'}
+                            </span>
+                          </header>
+
+                          <p className="art-effect">{item.effect}</p>
+                          <div className="art-meta">
+                            <span>器心契合：{item.resonance}/100</span>
+                            <span>器纹：{(item.inscriptions || []).length}/{item.max_slots || 2} 孔</span>
                           </div>
-                          <span className={`bond-status ${item.bonded ? 'bonded' : item.equipped ? 'equipped' : 'stored'}`}>
-                            {item.bonded ? '★ 本命' : item.equipped ? '已装备' : '袋中'}
-                          </span>
-                        </header>
 
-                        <p className="art-effect">{item.effect}</p>
-                        <div className="art-meta">
-                          <span>器心契合：{item.resonance}/100</span>
-                          <span>器纹：{(item.inscriptions || []).length}/{item.max_slots || 2} 孔</span>
-                        </div>
-
-                        <footer className="art-actions">
-                          {!item.bonded && (
+                          <footer className="art-actions">
+                            {!item.bonded && (
+                              <button
+                                type="button"
+                                className="bind-btn"
+                                disabled={busy || readOnly || !item.can_bind}
+                                title={readOnly ? '巡览只读' : item.bind_reason || `将【${item.name}】祭为本命`}
+                                onClick={() => onAction(item.bind_action)}
+                              >
+                                <Gem size={12} />
+                                <span>{item.can_bind ? '祭为本命' : item.bind_reason || '不可认主'}</span>
+                              </button>
+                            )}
                             <button
                               type="button"
-                              className="bind-btn"
-                              disabled={busy || readOnly || !item.can_bind}
-                              title={readOnly ? '巡览只读' : item.bind_reason || `将【${item.name}】祭为本命`}
-                              onClick={() => onAction(item.bind_action)}
+                              className="refine-btn"
+                              disabled={busy || readOnly || !item.can_refine}
+                              title={readOnly ? '巡览只读' : item.refine_reason || `淬炼【${item.name}】`}
+                              onClick={() => onAction(item.refine_action)}
                             >
-                              <Gem size={12} />
-                              <span>{item.can_bind ? '祭为本命' : item.bind_reason || '不可认主'}</span>
+                              <Anvil size={12} />
+                              <span>{item.can_refine ? '开炉淬炼' : item.refine_reason || '淬炼上限'}</span>
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            className="refine-btn"
-                            disabled={busy || readOnly || !item.can_refine}
-                            title={readOnly ? '巡览只读' : item.refine_reason || `淬炼【${item.name}】`}
-                            onClick={() => onAction(item.refine_action)}
-                          >
-                            <Anvil size={12} />
-                            <span>{item.can_refine ? '开炉淬炼' : item.refine_reason || '淬炼上限'}</span>
-                          </button>
-                          {item.bonded && (
-                            <button
-                              type="button"
-                              className="nourish-btn"
-                              disabled={busy || readOnly || !item.can_nourish}
-                              title={readOnly ? '巡览只读' : item.nourish_reason || `温养【${item.name}】`}
-                              onClick={() => onAction(item.nourish_action)}
-                            >
-                              <Sparkles size={12} />
-                              <span>{item.can_nourish ? '温养器心' : item.nourish_reason || '器心已满'}</span>
-                            </button>
-                          )}
-                        </footer>
-                      </article>
-                    ))}
-                  </div>
+                            {item.bonded && (
+                              <button
+                                type="button"
+                                className="nourish-btn"
+                                disabled={busy || readOnly || !item.can_nourish}
+                                title={readOnly ? '巡览只读' : item.nourish_reason || `温养【${item.name}】`}
+                                onClick={() => onAction(item.nourish_action)}
+                              >
+                                <Sparkles size={12} />
+                                <span>{item.can_nourish ? '温养器心' : item.nourish_reason || '器心已满'}</span>
+                              </button>
+                            )}
+                          </footer>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </main>
