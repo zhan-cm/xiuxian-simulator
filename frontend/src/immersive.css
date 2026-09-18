@@ -1460,6 +1460,8 @@ body {
 }
 
 .xianxia-topbar {
+  position: relative !important;
+  z-index: 80 !important;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -8209,23 +8211,86 @@ body {
   cursor: not-allowed;
 }
 
-/* Ribbons & Triggers */
-.sect-visit-btn {
-  margin-left: 6px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(186, 148, 75, 0.4);
-  background: rgba(255, 255, 255, 0.85);
-  color: #8c6020;
-  font-size: 11px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.15s;
+/* Ribbons & Sect Action Buttons */
+.sect-card-actions {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
 }
 
-.sect-visit-btn:hover {
-  background: #fff;
-  border-color: #a67c38;
+.sect-action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sect-action-btn > svg {
+  flex-shrink: 0;
+}
+
+.sect-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.sect-action-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.sect-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none !important;
+}
+
+/* 登门拜山：金玉道韵温润质感 */
+.sect-action-btn.sect-visit-btn,
+.sect-visit-btn {
+  margin-left: 0 !important;
+  border: 1px solid rgba(186, 148, 75, 0.45) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 252, 0.95), rgba(248, 241, 226, 0.9)) !important;
+  color: #8c6020 !important;
+  box-shadow: 0 2px 6px rgba(186, 148, 75, 0.1);
+}
+
+.sect-action-btn.sect-visit-btn:hover:not(:disabled),
+.sect-visit-btn:hover:not(:disabled) {
+  border-color: #ba8d3c !important;
+  background: linear-gradient(135deg, #fffcf5, #f5ebd3) !important;
+  color: #724c16 !important;
+  box-shadow: 0 4px 10px rgba(186, 148, 75, 0.2);
+}
+
+/* 申请试炼：青翠凌云修仙质感 */
+.sect-action-btn.sect-trial-btn {
+  border: 1px solid rgba(50, 106, 80, 0.4) !important;
+  background: linear-gradient(135deg, #3d725d, #275241) !important;
+  color: #f7f9f7 !important;
+  box-shadow: 0 2px 8px rgba(39, 82, 65, 0.2);
+}
+
+.sect-action-btn.sect-trial-btn:hover:not(:disabled) {
+  border-color: #2b604b !important;
+  background: linear-gradient(135deg, #468169, #2f5f4b) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(39, 82, 65, 0.3);
 }
 
 .sect-gate-all-trigger {
@@ -13162,6 +13227,8 @@ body {
    顶栏三大仙道灵宫聚合导引 (Topbar Sanctuary Nav & Popovers)
    ======================================================== */
 .xianxia-sanctuary-nav {
+  position: relative !important;
+  z-index: 85 !important;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -13170,6 +13237,10 @@ body {
 
 .sanctuary-capsule-wrap {
   position: relative;
+}
+
+.sanctuary-capsule-wrap.open {
+  z-index: 95 !important;
 }
 
 .sanctuary-capsule-trigger {
@@ -13235,11 +13306,12 @@ body {
   top: calc(100% + 8px);
   left: 0;
   min-width: 270px;
+  max-width: min(340px, 90vw);
   background: #faf7ef;
   border: 1px solid rgba(186, 148, 75, 0.38);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(24, 38, 29, 0.22);
-  z-index: 95;
+  z-index: 100 !important;
   padding: 8px;
   animation: dialog-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(12px);

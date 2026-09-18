@@ -649,26 +649,28 @@ function SectsBlock({ block, readOnly, onAction, onOpenSectGate }: { block: Pres
               <small>{mottos[text(item.name)] || text(item.description)}</small>
               <p>{text(item.description)}</p>
             </div>
-            <div className="sect-card-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div className="sect-card-actions">
               {onOpenSectGate && (
                 <button
                   type="button"
-                  className="sect-visit-btn"
+                  className="sect-action-btn sect-visit-btn"
                   disabled={readOnly}
                   title="登门拜山：知客论道、求丹借宝与承接外务"
                   onClick={() => onOpenSectGate(text(item.name))}
                 >
-                  登门拜山
+                  <Landmark size={13} />
+                  <span>登门拜山</span>
                 </button>
               )}
               <button
                 type="button"
+                className="sect-action-btn sect-trial-btn"
                 disabled={readOnly}
                 title={readOnly ? '成果巡览仅供查看' : '申请入门试炼'}
                 onClick={() => onAction(text(item.action))}
               >
                 <span>申请试炼</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={13} />
               </button>
             </div>
           </article>
