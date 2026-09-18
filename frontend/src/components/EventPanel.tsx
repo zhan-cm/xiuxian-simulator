@@ -1,7 +1,7 @@
 import { ArrowRight, BookOpenText, Check, Clock3, Coins, Compass, Flame, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CaveSnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
+import type { CaveSnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, PendingEncounterData, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
@@ -958,14 +958,141 @@ function Block({ block, cave, lives, naturalExploration, readOnly, onAction, onO
   return <GenericBlock block={block} readOnly={readOnly} onAction={onAction} />
 }
 
-export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, naturalExploration, readOnly = false, immersive = false, onAction, onOpenSectGate }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; naturalExploration?: NaturalExplorationSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
+function EncounterStageCard({
+  encounter,
+  readOnly,
+  onAction,
+  onOpenModal,
+}: {
+  encounter: PendingEncounterData
+  readOnly: boolean
+  onAction: (action: string) => void
+  onOpenModal?: () => void
+}) {
+  const { character, choices, scene, title, category } = encounter
+
+  const categoryLabel =
+    category === 'ancient_secret'
+      ? '太古秘境机缘'
+      : category === 'npc_destiny'
+        ? '故人红尘奇遇'
+        : category === 'spirit_creature'
+          ? '灵宠异兽道缘'
+          : '九州红尘善恶'
+
+  return (
+    <section className="encounter-stage-card" aria-label={`红尘奇遇：${title}`}>
+      <header className="encounter-stage-header">
+        <div className="encounter-stage-title-wrap">
+          <span className="encounter-stage-badge">
+            <Sparkles size={12} />
+            {categoryLabel}
+          </span>
+          <h3 className="encounter-stage-title">{title}</h3>
+        </div>
+        {onOpenModal && (
+          <button
+            type="button"
+            className="encounter-open-modal-btn"
+            onClick={onOpenModal}
+            title="展开沉浸式全屏剧情画卷"
+          >
+            <ScrollText size={13} />
+            <span>全屏剧情画卷</span>
+          </button>
+        )}
+      </header>
+
+      {character && character.name && (
+        <div className="encounter-stage-character-box">
+          <NpcAvatar
+            item={{
+              name: character.name,
+              identity: character.identity,
+              descriptor: character.temperament,
+            }}
+            size="medium"
+          />
+          <div className="encounter-stage-character-info">
+            <span className="encounter-stage-character-name">
+              {character.name} · <small>{character.identity}</small>
+            </span>
+            <span className="encounter-stage-character-desc">{character.temperament}</span>
+            {character.quote && (
+              <p className="encounter-stage-quote">“{character.quote}”</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {scene && <div className="encounter-stage-scene">{scene}</div>}
+
+      <div className="encounter-stage-choices-grid">
+        {(choices || []).map((choice) => {
+          const isDisabled = readOnly || choice.disabled
+          const stance = choice.dao_stance || '道心抉择'
+          const hint = choice.disabled_reason
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              className="encounter-stage-choice-btn"
+              disabled={isDisabled}
+              onClick={() => onAction(`奇遇选择 ${choice.id}`)}
+              title={hint || choice.description}
+            >
+              <div className="stage-choice-header">
+                <span className="stage-choice-stance">【{stance}】</span>
+                <strong className="stage-choice-label">{choice.label}</strong>
+              </div>
+              <p className="stage-choice-desc">{choice.description}</p>
+              {choice.summary && (
+                <small className="stage-choice-summary">
+                  {choice.summary}
+                </small>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+export function EventPanel({
+  presentation,
+  cave,
+  npcLives,
+  npcNetwork,
+  sectMembership,
+  naturalExploration,
+  pendingEncounter,
+  readOnly = false,
+  immersive = false,
+  onAction,
+  onOpenSectGate,
+  onOpenEncounterModal,
+}: {
+  presentation: Presentation
+  cave?: CaveSnapshot
+  npcLives?: NpcLifeSnapshot
+  npcNetwork?: NpcNetworkSnapshot
+  sectMembership?: SectMembershipSnapshot
+  naturalExploration?: NaturalExplorationSnapshot
+  pendingEncounter?: PendingEncounterData | null
+  readOnly?: boolean
+  immersive?: boolean
+  onAction: (action: string) => void
+  onOpenSectGate?: (sectName?: string) => void
+  onOpenEncounterModal?: () => void
+}) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
   const showSectMembership = Boolean(sectMembership?.member && (['宗门', '申请晋升', '宗门大比'].includes(presentation.action) || presentation.action.startsWith('宗门任务')))
   const paragraphs = presentation.paragraphs || []
   const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
   const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
-  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || showSectMembership || presentation.has_details
+  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || showSectMembership || presentation.has_details || Boolean(pendingEncounter)
   const surfaceType = (presentation.blocks || []).find((block) => ['people', 'locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
   const act = (action: string) => { if (!readOnly) onAction(action) }
   if (immersive && !hasSecondaryContent) return null
@@ -976,6 +1103,14 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembe
         <span className="event-seal">{presentation.seal || '道'}</span>
         <div><p>{presentation.eyebrow || '当前道途'}</p><h2>{presentation.title || '灵气潮汐将至'}</h2></div>
       </header>}
+      {pendingEncounter && (
+        <EncounterStageCard
+          encounter={pendingEncounter}
+          readOnly={readOnly}
+          onAction={act}
+          onOpenModal={onOpenEncounterModal}
+        />
+      )}
       {visibleParagraphs.length > 0 && (!showNetwork || showNetworkOutcome) && <div className="event-copy scene-continuation">
         {visibleParagraphs.map((paragraph, index) => renderParagraphBlock(paragraph, `p-${index}`, act, readOnly))}
       </div>}
@@ -995,3 +1130,4 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembe
     </article>
   )
 }
+

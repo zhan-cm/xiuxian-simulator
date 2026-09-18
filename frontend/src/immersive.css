@@ -12680,7 +12680,9 @@ body {
 
 .lifebound-modal,
 .tianji-rank-modal,
-.artifact-spirit-modal-content {
+.artifact-spirit-modal-content,
+.character-dialog,
+.dialog-content {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -12688,6 +12690,7 @@ body {
   z-index: 101 !important;
   animation: dialog-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+
 
 /* ========================================================
    修行与道法谱结构化卡片展示 (Art & Spell Inline Cards)
@@ -12926,4 +12929,233 @@ body {
   color: #496c5d;
   font-size: 11px;
 }
+
+/* ========================================================
+   中栏红尘奇遇交互台与右侧决策提示 (Encounter Stage & Pending Banner)
+   ======================================================== */
+.encounter-stage-card {
+  margin: 16px 0;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: linear-gradient(170deg, #faf7ef 0%, #f4eee1 100%);
+  box-shadow: 0 10px 30px rgba(35, 45, 38, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.encounter-stage-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ba8d3c, #4a7c59, #ba8d3c);
+}
+
+.encounter-stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.encounter-stage-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.encounter-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #925f1b;
+  background: rgba(186, 148, 75, 0.16);
+  border: 1px solid rgba(186, 148, 75, 0.3);
+}
+
+.encounter-stage-title {
+  margin: 0;
+  font-family: 'KaiTi', 'SimSun', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #274738;
+}
+
+.encounter-open-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+  background: #fff;
+  color: #8c6328;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.encounter-open-modal-btn:hover {
+  background: #fdf6eb;
+  border-color: #ba8d3c;
+  transform: translateY(-1px);
+}
+
+.encounter-stage-character-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(90, 110, 95, 0.18);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.encounter-stage-character-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.encounter-stage-character-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #244335;
+}
+
+.encounter-stage-character-desc {
+  font-size: 11px;
+  color: #63776b;
+}
+
+.encounter-stage-quote {
+  font-style: italic;
+  font-size: 12px;
+  color: #8a6c38;
+  margin-top: 2px;
+}
+
+.encounter-stage-scene {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #384d42;
+  margin-bottom: 16px;
+  background: rgba(240, 245, 241, 0.5);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border-left: 3px solid #ba8d3c;
+}
+
+.encounter-stage-choices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.encounter-stage-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.encounter-stage-choice-btn:hover:not(:disabled) {
+  border-color: #ba8d3c;
+  background: #fffcf5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(186, 141, 60, 0.18);
+}
+
+.encounter-stage-choice-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f0f2ef;
+  border-color: #d2ded7;
+}
+
+.stage-choice-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.stage-choice-stance {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ba8d3c;
+}
+
+.stage-choice-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #274738;
+}
+
+.stage-choice-desc {
+  font-size: 12px;
+  color: #4a6356;
+  line-height: 1.5;
+}
+
+.stage-choice-summary {
+  font-size: 11px;
+  color: #8c7348;
+  margin-top: 4px;
+}
+
+.dock-encounter-pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  background: linear-gradient(135deg, #fcf8ee, #f5ecd8);
+  color: #634316;
+}
+
+.dock-encounter-pending-banner p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #7a5e2f;
+  line-height: 1.4;
+}
+
+.dock-encounter-reopen-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(186, 148, 75, 0.5);
+  background: #fff;
+  color: #8c6328;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dock-encounter-reopen-btn:hover {
+  background: #ba8d3c;
+  color: #fff;
+}
+
 

@@ -44,7 +44,13 @@ export function ImmersiveScene({ state, presentation, calendarLabel, npcProfiles
   const scene = sceneFrom(state, presentation)
   const npc = findEncounterNpc(npcProfiles, presentation)
   const mood = npc ? encounterMood(npc, presentation.action) : undefined
-  const summary = presentation.paragraphs?.[0] || state.last_world_event || '天地无言，灵机正在暗处流转。'
+  const summary = useMemo(() => {
+    const isBorder = (s?: string) => !s || /^[\s╔╚╗╝═━─┄┈—\-_=*~|┌└┐┘├┤┬┴┼│║]+$/.test(s.trim())
+    const validParagraph = (presentation.paragraphs || []).find((p) => !isBorder(p))
+    if (validParagraph) return validParagraph
+    if (state.last_world_event && !isBorder(state.last_world_event)) return state.last_world_event
+    return '天地无言，灵机正在暗处流转。'
+  }, [presentation.paragraphs, state.last_world_event])
   const summaryCharacters = Array.from(summary)
   const shortened = summaryCharacters.length > 120
   const preview = shortened ? `${summaryCharacters.slice(0, 120).join('')}…` : summary

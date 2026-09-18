@@ -27,7 +27,7 @@ import {
   Waves,
   type LucideIcon,
 } from 'lucide-react'
-import type { RecoverySnapshot } from '../api/types'
+import type { PendingEncounterData, RecoverySnapshot } from '../api/types'
 import { useUiStore } from '../store/ui'
 
 export interface ContextAction {
@@ -104,6 +104,8 @@ interface ActionDockProps {
   readOnly?: boolean
   recovery?: RecoverySnapshot
   contextActions?: ContextAction[]
+  pendingEncounter?: PendingEncounterData | null
+  onOpenEncounterModal?: () => void
   onAction: (action: string) => void
 }
 
@@ -114,6 +116,8 @@ export function ActionDock({
   readOnly = false,
   recovery,
   contextActions = [],
+  pendingEncounter,
+  onOpenEncounterModal,
   onAction,
 }: ActionDockProps) {
   const [activeCategory, setActiveCategory] = useState<ActionCategory>('cultivation')
@@ -130,6 +134,27 @@ export function ActionDock({
 
   return (
     <section className="action-dock" aria-label="心念决策台">
+      {/* 红尘奇遇未决提示条 */}
+      {pendingEncounter && (
+        <div className="dock-encounter-pending-banner" role="status">
+          <ScrollText size={18} />
+          <div>
+            <strong>【红尘机缘待定】</strong>
+            <p>需定夺当前奇遇道心因果，方可重续日常吐纳与历练。</p>
+          </div>
+          {onOpenEncounterModal && (
+            <button
+              type="button"
+              className="dock-encounter-reopen-btn"
+              onClick={onOpenEncounterModal}
+              title="重新唤出红尘机缘画卷"
+            >
+              展开画卷
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 临机要务：突破机缘与伤势静养 */}
       {(recovery?.active || contextActions.length > 0) && (
         <div className="dock-priority-banner" aria-label="临机要务">

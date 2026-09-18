@@ -9,7 +9,8 @@ from .progression import REALMS
 from .regional import REGIONAL_EVENTS
 
 
-HEADER_PATTERN = re.compile(r"【([^】]+)】")
+HEADER_PATTERN = re.compile(r"(?:^|\n)[ \t]*(?:[╔╚╗╝═━─┄┈—\-_=*~|┌└┐┘├┤┬┴┼│║]*[ \t]*)【([^】\n]+)】")
+BORDER_LINE_PATTERN = re.compile(r"^[\s╔╚╗╝═━─┄┈—\-_=*~|┌└┐┘├┤┬┴┼│║]+$")
 TIME_PATTERN = re.compile(r"^天玄历\s+\d+\s+年\s*·\s*[^\n]+$")
 CHANGE_LINE_PATTERN = re.compile(r"^(修为|气血|灵力|灵石|好感|声望|贡献|功德|业力)\s*[+-]\d+")
 
@@ -86,7 +87,7 @@ def _split_output(output: str) -> tuple[list[str], list[dict[str, str]], str]:
     lead_details: list[str] = []
     for raw_line in lead.splitlines():
         line = raw_line.strip()
-        if not line or TIME_PATTERN.match(line):
+        if not line or TIME_PATTERN.match(line) or BORDER_LINE_PATTERN.match(line):
             continue
         if line.startswith(("结算：", "判定：", "判定 ")) or CHANGE_LINE_PATTERN.match(line):
             lead_details.append(line)
@@ -99,8 +100,10 @@ def _split_output(output: str) -> tuple[list[str], list[dict[str, str]], str]:
         title = match.group(1).strip()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(cleaned)
         content = cleaned[match.end() : end].strip()
-        content_lines = [line.strip() for line in content.splitlines() if line.strip()]
-        content_lines = [line for line in content_lines if not line.startswith("指令：")]
+        content_lines = [
+            line.strip() for line in content.splitlines()
+            if line.strip() and not BORDER_LINE_PATTERN.match(line.strip()) and not line.startswith("指令：")
+        ]
         content = "\n".join(content_lines)
         if title.startswith("状态卡") or title.startswith("洞府主界面"):
             if content:
@@ -154,7 +157,10 @@ CAVE_SECTION_TITLES = ("洞府",)
 
 
 def _section_lines(section: dict[str, str]) -> list[str]:
-    return [line.strip() for line in section.get("body", "").splitlines() if line.strip()]
+    return [
+        line.strip() for line in section.get("body", "").splitlines()
+        if line.strip() and not BORDER_LINE_PATTERN.match(line.strip())
+    ]
 
 
 def _is_people_section(title: str) -> bool:
@@ -549,7 +555,12 @@ def _semantic_blocks(
             and not _is_market_section(first_title)
             and not _is_cave_section(first_title)
         ):
-            narrative = [line for line in first_lines if not _is_technical_line(line)]
+            narrative = [
+                line for line in first_lines
+                if not _is_technical_line(line)
+                and not BORDER_LINE_PATTERN.match(line)
+                and line not in ("场景风貌：", "可供抉择之本心分支：")
+            ]
             if not paragraphs and narrative:
                 paragraphs = narrative[:2]
             technical = [line for line in first_lines if line not in narrative]

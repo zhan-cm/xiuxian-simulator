@@ -391,10 +391,12 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           npcNetwork={snapshot.npc_network}
                           sectMembership={snapshot.sect_membership}
                           naturalExploration={snapshot.natural_exploration}
+                          pendingEncounter={pendingEncounter}
                           readOnly={showcase || busy}
                           immersive
                           onAction={onAction}
                           onOpenSectGate={handleOpenSectGate}
+                          onOpenEncounterModal={() => setEncounterOpen(true)}
                         />
                       </motion.div>
                     </AnimatePresence>
@@ -461,6 +463,8 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 readOnly={showcase}
                 recovery={snapshot.recovery}
                 contextActions={contextActions}
+                pendingEncounter={pendingEncounter}
+                onOpenEncounterModal={() => setEncounterOpen(true)}
                 onAction={onAction}
               />
 
