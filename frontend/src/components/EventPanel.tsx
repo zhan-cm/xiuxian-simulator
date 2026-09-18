@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Clock3, Coins, Compass, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
+import { ArrowRight, BookOpenText, Check, Clock3, Coins, Compass, Flame, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CaveSnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
@@ -678,13 +678,267 @@ function SectsBlock({ block, readOnly, onAction, onOpenSectGate }: { block: Pres
   )
 }
 
-function GenericBlock({ block }: { block: PresentationBlock }) {
+interface ParsedArtItem {
+  kind: '功法' | '法术'
+  name: string
+  grade: string
+  role: string
+  levelLabel: string
+  xp: number
+  nextXp: number
+  progress: number
+  effects: string[]
+}
+
+function parseArtLine(line: string): ParsedArtItem | null {
+  const trimmed = line.trim()
+  const match = trimmed.match(/^(功法|法术)｜([^｜]+)｜([^｜]+)｜([^｜]+)｜([^｜]+)｜(.+)$/)
+  if (!match) return null
+  const [, kind, name, grade, role, masteryStr, effectStr] = match
+  const masteryParts = masteryStr.trim().split(/\s+/)
+  const levelLabel = masteryParts[0] || '初窥'
+  const xpParts = (masteryParts[1] || '0/40').split('/')
+  const xp = parseInt(xpParts[0], 10) || 0
+  const nextXp = parseInt(xpParts[1], 10) || 40
+  const progress = Math.min(100, Math.max(0, Math.round((xp / Math.max(1, nextXp)) * 100)))
+  const effects = effectStr.split('｜').map((s) => s.trim()).filter(Boolean)
+
+  return {
+    kind: kind as '功法' | '法术',
+    name: name.trim(),
+    grade: grade.trim(),
+    role: role.trim(),
+    levelLabel,
+    xp,
+    nextXp,
+    progress,
+    effects,
+  }
+}
+
+function ArtMasteryCardInline({
+  item,
+  readOnly,
+  onAction,
+}: {
+  item: ParsedArtItem
+  readOnly?: boolean
+  onAction?: (action: string) => void
+}) {
+  const isPrimaryOrEquipped = item.role === '主修' || item.role === '已装备'
+  return (
+    <article
+      className="art-card-inline"
+      data-kind={item.kind}
+      data-active={isPrimaryOrEquipped || undefined}
+    >
+      <header className="art-card-inline-header">
+        <div className="art-card-name-group">
+          <span className="art-kind-icon-badge" aria-hidden="true">
+            {item.kind === '功法' ? <BookOpenText size={16} /> : <Flame size={16} />}
+          </span>
+          <div className="art-card-title-wrap">
+            <h4>{item.name}</h4>
+          </div>
+        </div>
+        <div className="art-card-tags">
+          <span className="art-grade-tag">{item.grade}</span>
+          <span
+            className={`art-role-tag ${
+              item.role === '主修' ? 'primary' : item.role === '已装备' ? 'equipped' : 'learned'
+            }`}
+          >
+            {item.role}
+          </span>
+        </div>
+      </header>
+
+      <div className="art-mastery-progress-row">
+        <span className="art-mastery-level-label">
+          <Sparkles size={12} />
+          {item.levelLabel}
+        </span>
+        <div className="art-progress-track">
+          <div
+            className="art-progress-fill"
+            style={{ width: `${item.progress}%` }}
+          />
+        </div>
+        <span className="art-xp-text">
+          {item.xp}/{item.nextXp}
+        </span>
+      </div>
+
+      <div className="art-effect-row">
+        {item.effects.map((eff, i) => (
+          <span className="art-effect-pill" key={i}>
+            {eff}
+          </span>
+        ))}
+      </div>
+
+      {onAction && (
+        <div className="art-card-actions">
+          <button
+            type="button"
+            className="art-card-action-btn"
+            disabled={readOnly}
+            title={readOnly ? '巡览模式' : `参研道法 ${item.name}`}
+            onClick={() => onAction(`参研道法 ${item.name}`)}
+          >
+            <ScrollText size={12} />
+            <span>参研道法</span>
+          </button>
+          {item.kind === '功法' && item.role !== '主修' && (
+            <button
+              type="button"
+              className="art-card-action-btn"
+              disabled={readOnly}
+              title={readOnly ? '巡览模式' : `装备功法 ${item.name}`}
+              onClick={() => onAction(`装备功法 ${item.name}`)}
+            >
+              <Zap size={12} />
+              <span>设为主修</span>
+            </button>
+          )}
+          {item.kind === '法术' && item.role !== '已装备' && (
+            <button
+              type="button"
+              className="art-card-action-btn"
+              disabled={readOnly}
+              title={readOnly ? '巡览模式' : `装备法术 ${item.name}`}
+              onClick={() => onAction(`装备法术 ${item.name}`)}
+            >
+              <Zap size={12} />
+              <span>装备法术</span>
+            </button>
+          )}
+        </div>
+      )}
+    </article>
+  )
+}
+
+function renderParagraphBlock(
+  paragraph: string,
+  keyPrefix: string,
+  onAction?: (action: string) => void,
+  readOnly?: boolean
+) {
+  const lines = paragraph.split('\n').map((l) => l.trim()).filter(Boolean)
+  const hasArtLine = lines.some((l) => Boolean(parseArtLine(l)))
+  const hasArtBanner = lines.some((l) => l.startsWith('【道法') || l.includes('熟练境界'))
+
+  if (!hasArtLine && !hasArtBanner) {
+    return <p key={keyPrefix}>{paragraph}</p>
+  }
+
+  const elements: ReactNode[] = []
+  let pendingCards: ParsedArtItem[] = []
+
+  const flushCards = (idx: number) => {
+    if (pendingCards.length > 0) {
+      elements.push(
+        <div className="art-cards-grid" key={`cards-${idx}`}>
+          {pendingCards.map((card, cIdx) => (
+            <ArtMasteryCardInline
+              key={`${card.name}-${cIdx}`}
+              item={card}
+              readOnly={readOnly}
+              onAction={onAction}
+            />
+          ))}
+        </div>
+      )
+      pendingCards = []
+    }
+  }
+
+  lines.forEach((line, index) => {
+    const artItem = parseArtLine(line)
+    if (artItem) {
+      pendingCards.push(artItem)
+    } else if (line.startsWith('【') && line.endsWith('】')) {
+      flushCards(index)
+      elements.push(
+        <div className="art-mastery-banner" key={`banner-${index}`}>
+          <BookOpenText size={16} />
+          <span>{line.replace(/[【】]/g, '')}</span>
+        </div>
+      )
+    } else if (line.startsWith('指令：')) {
+      flushCards(index)
+      elements.push(
+        <div className="art-instructions-ribbon" key={`instr-${index}`}>
+          <Sparkles size={13} />
+          <span>{line}</span>
+        </div>
+      )
+    } else {
+      flushCards(index)
+      elements.push(
+        <p className="art-narrative-line" key={`line-${index}`}>
+          {line}
+        </p>
+      )
+    }
+  })
+
+  flushCards(lines.length)
+
+  return (
+    <div className="art-mastery-panel-section" key={keyPrefix}>
+      {elements}
+    </div>
+  )
+}
+
+function GenericBlock({
+  block,
+  readOnly,
+  onAction,
+}: {
+  block: PresentationBlock
+  readOnly?: boolean
+  onAction?: (action: string) => void
+}) {
+  const isArtBlock =
+    block.title?.includes('道法') ||
+    (block.items || []).some((it) => parseArtLine(text(it.text || it.value || it.name)))
+
+  if (isArtBlock) {
+    const artItems = (block.items || [])
+      .map((it) => parseArtLine(text(it.text || it.value || it.name)))
+      .filter((it): it is ParsedArtItem => it !== null)
+
+    if (artItems.length > 0) {
+      return (
+        <section className="semantic-block art-mastery-panel-section">
+          <header>
+            <BookOpenText size={16} />
+            <strong>{block.title || '道法谱 · 熟练境界'}</strong>
+          </header>
+          <div className="art-cards-grid">
+            {artItems.map((item, index) => (
+              <ArtMasteryCardInline
+                key={`${item.name}-${index}`}
+                item={item}
+                readOnly={readOnly}
+                onAction={onAction}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
+  }
+
   return (
     <section className="semantic-block">
       <header><ScrollText size={16} /><strong>{block.title || '相关信息'}</strong></header>
       <div className="generic-list">
         {(block.items || []).map((item, index) => (
-          <div key={index}><strong>{text(item.name || item.label || item.title, `记录 ${index + 1}`)}</strong><span>{text(item.value || item.description || item.summary)}</span></div>
+          <div key={index}><strong>{text(item.name || item.label || item.title, `记录 ${index + 1}`)}</strong><span>{text(item.value || item.description || item.summary || item.text)}</span></div>
         ))}
       </div>
     </section>
@@ -701,7 +955,7 @@ function Block({ block, cave, lives, naturalExploration, readOnly, onAction, onO
   if (block.type === 'facilities') return <FacilitiesBlock block={block} cave={cave} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'recipes') return <RecipesBlock block={block} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'sects') return <SectsBlock block={block} readOnly={readOnly} onAction={onAction} onOpenSectGate={onOpenSectGate} />
-  return <GenericBlock block={block} />
+  return <GenericBlock block={block} readOnly={readOnly} onAction={onAction} />
 }
 
 export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembership, naturalExploration, readOnly = false, immersive = false, onAction, onOpenSectGate }: { presentation: Presentation; cave?: CaveSnapshot; npcLives?: NpcLifeSnapshot; npcNetwork?: NpcNetworkSnapshot; sectMembership?: SectMembershipSnapshot; naturalExploration?: NaturalExplorationSnapshot; readOnly?: boolean; immersive?: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
@@ -723,7 +977,7 @@ export function EventPanel({ presentation, cave, npcLives, npcNetwork, sectMembe
         <div><p>{presentation.eyebrow || '当前道途'}</p><h2>{presentation.title || '灵气潮汐将至'}</h2></div>
       </header>}
       {visibleParagraphs.length > 0 && (!showNetwork || showNetworkOutcome) && <div className="event-copy scene-continuation">
-        {visibleParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+        {visibleParagraphs.map((paragraph, index) => renderParagraphBlock(paragraph, `p-${index}`, act, readOnly))}
       </div>}
       {changes.length > 0 && (
         <div className="change-row">

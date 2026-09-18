@@ -176,134 +176,137 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
     <TooltipProvider>
       <div className="game-shell xianxia-game-shell" data-showcase={showcase || undefined} data-ended={legacySurface || undefined}>
         <header className="topbar immersive-topbar xianxia-topbar">
-          <div className="brand xianxia-brand">
-            <span>高自由修仙文字模拟</span>
-            <h1>永恒之道</h1>
-            <p>凡尘一念 · 万法由心</p>
+          <div className="xianxia-topbar-main">
+            <div className="brand xianxia-brand">
+              <span>高自由修仙文字模拟</span>
+              <h1>永恒之道</h1>
+              <p>凡尘一念 · 万法由心</p>
+            </div>
+
+            <div className="xianxia-calendar-bar">
+              <div className="time-badge">
+                <CalendarDays size={16} />
+                <span>{isStartPhase ? '序章启程' : isCreationPhase ? '凝练道骨' : `第 ${state.turn} 回合`}</span>
+                <b />
+                <strong>{isStartPhase ? '九州天地初开' : isCreationPhase ? '定契立命' : `天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`}</strong>
+              </div>
+              <div className="world-era-tag" title={state.last_world_event || '天地灵机运转'}>
+                <CloudSun size={14} />
+                <span>{state.world_era}</span>
+              </div>
+            </div>
+
+            <div className="topbar-actions xianxia-topbar-actions">
+              <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>
+                {showcase ? <X size={16} /> : <Eye size={16} />}
+                {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
+              </button>
+              {!showcase && (
+                <ArchiveDialog
+                  saves={snapshot.save_summaries}
+                  busy={busy}
+                  open={archiveOpen}
+                  onOpenChange={setArchiveOpen}
+                  onAction={onAction}
+                  onChanged={onArchiveChanged}
+                  onNotice={onNotice}
+                />
+              )}
+              {!isIntroOrCreation && <CharacterSheet player={player} />}
+            </div>
           </div>
 
-          <div className="xianxia-calendar-bar">
-            <div className="time-badge">
-              <CalendarDays size={16} />
-              <span>{isStartPhase ? '序章启程' : isCreationPhase ? '凝练道骨' : `第 ${state.turn} 回合`}</span>
-              <b />
-              <strong>{isStartPhase ? '九州天地初开' : isCreationPhase ? '定契立命' : `天玄历 ${state.calendar_year} 年 · ${monthNames[state.month - 1] || `${state.month}月`}`}</strong>
-            </div>
-            <div className="world-era-tag" title={state.last_world_event || '天地灵机运转'}>
-              <CloudSun size={14} />
-              <span>{state.world_era}</span>
-            </div>
-          </div>
-
-          <div className="topbar-actions xianxia-topbar-actions">
-            <button className="showcase-trigger" type="button" disabled={showcaseLoading} onClick={showcase ? onExitShowcase : onShowcase}>
-              {showcase ? <X size={16} /> : <Eye size={16} />}
-              {showcase ? '退出巡览' : showcaseLoading ? '准备巡览…' : '成果巡览'}
-            </button>
-            {!isIntroOrCreation && (
-              <>
-                <button
-                  className="archive-trigger ladder-topbar-trigger"
-                  type="button"
-                  onClick={() => setRealmsLadderOpen(true)}
-                  title="仙道十重天：展示所有境界，低境界在下，高境界在上"
-                >
-                  <Mountain size={16} />
-                  <span>通天仙阶</span>
-                </button>
-                <button
-                  className="archive-trigger guide-topbar-trigger"
-                  type="button"
-                  onClick={() => setGuideOpen(true)}
-                  title="仙途指津：如果想要怎么，你可以去哪里干什么"
-                >
-                  <Compass size={16} />
-                  <span>仙途指津</span>
-                </button>
-                <button
-                  className="archive-trigger sect-gate-topbar-trigger"
-                  type="button"
-                  onClick={() => handleOpenSectGate()}
-                  title="九州仙门：拜山请益、求丹借宝、擂台演武与外务悬赏"
-                >
-                  <Landmark size={16} />
-                  <span>拜山请益</span>
-                </button>
-                <button
-                  className="archive-trigger tianji-topbar-trigger"
-                  type="button"
-                  onClick={() => setTianjiOpen(true)}
-                  title="天机阁百晓风云谱：青云潜龙榜、九天巨擘榜、九州宗门榜与天机宝阁"
-                >
-                  <Trophy size={16} />
-                  <span>天机风云谱</span>
-                </button>
-                <button
-                  className="archive-trigger lifebound-topbar-trigger"
-                  type="button"
-                  onClick={() => setLifeboundOpen(true)}
-                  title="本命灵宝阁：九重太古器纹铭刻、神料熔铸、器灵通微与性命温养"
-                >
-                  <Sparkles size={16} />
-                  <span>本命灵宝</span>
-                </button>
-                <button
-                  className="archive-trigger encounter-topbar-trigger"
-                  type="button"
-                  onClick={() => {
-                    if (pendingEncounter) {
-                      setEncounterOpen(true)
-                    } else if (canUseQuickActions) {
-                      onAction('寻觅机缘')
-                    }
-                  }}
-                  title="红尘机缘：游历九州探寻仙魔古修遗蜕、神兽道缘与故人红尘奇遇"
-                >
-                  <ScrollText size={16} />
-                  <span>红尘奇遇</span>
-                </button>
-                <button
-                  className="archive-trigger partner-chamber-topbar-trigger"
-                  type="button"
-                  onClick={() => setPartnerChamberOpen(true)}
-                  title="仙侣同修阁：道侣专属合道法印、本命心印传音回礼、情魔渡劫与仙家血脉繁衍"
-                >
-                  <HeartHandshake size={16} />
-                  <span>仙侣同修阁</span>
-                </button>
-                <button
-                  className="archive-trigger ancient-tomb-topbar-trigger"
-                  type="button"
-                  onClick={() => setAncientTombOpen(true)}
-                  title="太古古墓秘境：Roguelike 走格子迷雾探险、破阵开匣、诛灭守灵与大能秘宝"
-                >
-                  <Compass size={16} />
-                  <span>古墓秘境</span>
-                </button>
-                <button
-                  className="archive-trigger artifact-spirit-topbar-trigger"
-                  type="button"
-                  onClick={() => setArtifactSpiritOpen(true)}
-                  title="本命器灵化形：本命法宝灵性觉醒、独立人形侍从伙伴、灵丹喂养与护道神通"
-                >
-                  <Sparkles size={16} />
-                  <span>器灵化形</span>
-                </button>
-              </>
-            )}
-            {!showcase && (
-              <ArchiveDialog
-                saves={snapshot.save_summaries}
-                busy={busy}
-                open={archiveOpen}
-                onOpenChange={setArchiveOpen}
-                onAction={onAction}
-                onChanged={onArchiveChanged}
-                onNotice={onNotice}
-              />
-            )}
-            {!isIntroOrCreation && <CharacterSheet player={player} />}
-          </div>
+          {!isIntroOrCreation && (
+            <nav className="xianxia-nav-ribbon" aria-label="九州修真核心功能">
+              <button
+                className="archive-trigger ladder-topbar-trigger"
+                type="button"
+                onClick={() => setRealmsLadderOpen(true)}
+                title="仙道十重天：展示所有境界，低境界在下，高境界在上"
+              >
+                <Mountain size={15} />
+                <span>通天仙阶</span>
+              </button>
+              <button
+                className="archive-trigger guide-topbar-trigger"
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                title="仙途指津：如果想要怎么，你可以去哪里干什么"
+              >
+                <Compass size={15} />
+                <span>仙途指津</span>
+              </button>
+              <button
+                className="archive-trigger sect-gate-topbar-trigger"
+                type="button"
+                onClick={() => handleOpenSectGate()}
+                title="九州仙门：拜山请益、求丹借宝、擂台演武与外务悬赏"
+              >
+                <Landmark size={15} />
+                <span>拜山请益</span>
+              </button>
+              <button
+                className="archive-trigger tianji-topbar-trigger"
+                type="button"
+                onClick={() => setTianjiOpen(true)}
+                title="天机阁百晓风云谱：青云潜龙榜、九天巨擘榜、九州宗门榜与天机宝阁"
+              >
+                <Trophy size={15} />
+                <span>天机风云谱</span>
+              </button>
+              <button
+                className="archive-trigger lifebound-topbar-trigger"
+                type="button"
+                onClick={() => setLifeboundOpen(true)}
+                title="本命灵宝阁：九重太古器纹铭刻、神料熔铸、器灵通微与性命温养"
+              >
+                <Sparkles size={15} />
+                <span>本命灵宝</span>
+              </button>
+              <button
+                className="archive-trigger artifact-spirit-topbar-trigger"
+                type="button"
+                onClick={() => setArtifactSpiritOpen(true)}
+                title="本命器灵化形：本命法宝灵性觉醒、独立人形侍从伙伴、灵丹喂养与护道神通"
+              >
+                <Sparkles size={15} />
+                <span>器灵化形</span>
+              </button>
+              <button
+                className="archive-trigger encounter-topbar-trigger"
+                type="button"
+                onClick={() => {
+                  if (pendingEncounter) {
+                    setEncounterOpen(true)
+                  } else if (canUseQuickActions) {
+                    onAction('寻觅机缘')
+                  }
+                }}
+                title="红尘机缘：游历九州探寻仙魔古修遗蜕、神兽道缘与故人红尘奇遇"
+              >
+                <ScrollText size={15} />
+                <span>红尘奇遇</span>
+              </button>
+              <button
+                className="archive-trigger partner-chamber-topbar-trigger"
+                type="button"
+                onClick={() => setPartnerChamberOpen(true)}
+                title="仙侣同修阁：道侣专属合道法印、本命心印传音回礼、情魔渡劫与仙家血脉繁衍"
+              >
+                <HeartHandshake size={15} />
+                <span>仙侣同修阁</span>
+              </button>
+              <button
+                className="archive-trigger ancient-tomb-topbar-trigger"
+                type="button"
+                onClick={() => setAncientTombOpen(true)}
+                title="太古古墓秘境：Roguelike 走格子迷雾探险、破阵开匣、诛灭守灵与大能秘宝"
+              >
+                <Compass size={15} />
+                <span>古墓秘境</span>
+              </button>
+            </nav>
+          )}
         </header>
 
         {isStartPhase ? (

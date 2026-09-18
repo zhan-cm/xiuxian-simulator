@@ -442,6 +442,56 @@ function ActiveSpiritView({
   )
 }
 
+const DEFAULT_SPIRIT_SNAPSHOT: ArtifactSpiritSnapshot = {
+  bonded_artifact: '',
+  resonance: 0,
+  can_manifest: false,
+  manifest_reason: '尚未佩戴本命灵宝或法宝灵性不足，无法化形',
+  spirit: null,
+  archetypes: [
+    {
+      id: 'sword_fairy',
+      name: '剑仙子',
+      title: '太虚剑魄 · 霜刃凝灵',
+      personality: '冷冽清傲 · 攻伐无双',
+      description: '法宝真灵化作清冷绝尘之剑仙，出剑势如青霜贯日，诛魔荡邪。',
+      default_name: '青霜仙子',
+      combat_skill_name: '万剑归墟',
+      combat_skill_desc: '护战时激发剑意飞芒，大幅提升主人破甲伤害。',
+      attack_multiplier: 1.35,
+      defense_bonus: 20,
+      max_health_bonus: 50,
+    },
+    {
+      id: 'bell_spirit',
+      name: '钟灵儿',
+      title: '东皇古钟 · 梵音明心',
+      personality: '活泼玲珑 · 固若金汤',
+      description: '法宝真灵化作娇憨灵动的少女，身负古朴金钟，护道安宁。',
+      default_name: '小叮当',
+      combat_skill_name: '镇岳玄罡',
+      combat_skill_desc: '护战时敲响荡魔金钟，为主人生成抵御重伤的护体金光。',
+      attack_multiplier: 1.05,
+      defense_bonus: 60,
+      max_health_bonus: 180,
+    },
+    {
+      id: 'flame_qilin',
+      name: '赤炎童子',
+      title: '九霄神火 · 灵兽化形',
+      personality: '纯真好斗 · 焚天烈焰',
+      description: '火系神兵真灵幻化之麒麟童子，吞吐纯阳三昧真火，灼尽邪魔。',
+      default_name: '火宝',
+      combat_skill_name: '纯阳烈焰击',
+      combat_skill_desc: '护战时降下连环劫火爆破，焚毁强敌护体罡气。',
+      attack_multiplier: 1.25,
+      defense_bonus: 30,
+      max_health_bonus: 90,
+    },
+  ],
+  history: [],
+}
+
 export function ArtifactSpiritModal({
   open,
   onOpenChange,
@@ -450,14 +500,13 @@ export function ArtifactSpiritModal({
   readOnly = false,
   onAction,
 }: ArtifactSpiritModalProps) {
-  if (!artifactSpirit) return null
-
-  const hasSpirit = Boolean(artifactSpirit.spirit && artifactSpirit.spirit.name)
+  const currentSnapshot = artifactSpirit || DEFAULT_SPIRIT_SNAPSHOT
+  const hasSpirit = Boolean(currentSnapshot.spirit && currentSnapshot.spirit.name)
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Overlay className="dialog-overlay dialog-backdrop" />
         <Dialog.Content className="dialog-content artifact-spirit-modal-content">
           <div className="spirit-modal-header">
             <div className="header-title-wrap">
@@ -485,16 +534,16 @@ export function ArtifactSpiritModal({
           </div>
 
           <div className="spirit-modal-body">
-            {hasSpirit && artifactSpirit.spirit ? (
+            {hasSpirit && currentSnapshot.spirit ? (
               <ActiveSpiritView
-                spirit={artifactSpirit.spirit}
+                spirit={currentSnapshot.spirit}
                 busy={busy}
                 readOnly={readOnly}
                 onAction={onAction}
               />
             ) : (
               <ManifestationView
-                snapshot={artifactSpirit}
+                snapshot={currentSnapshot}
                 busy={busy}
                 readOnly={readOnly}
                 onAction={onAction}
@@ -502,13 +551,13 @@ export function ArtifactSpiritModal({
             )}
           </div>
 
-          {artifactSpirit.history && artifactSpirit.history.length > 0 && (
+          {currentSnapshot.history && currentSnapshot.history.length > 0 && (
             <div className="spirit-history-footer">
               <span className="history-label">
                 <Scroll size={13} /> 器灵纪事：
               </span>
               <span className="history-text">
-                {artifactSpirit.history[artifactSpirit.history.length - 1]}
+                {currentSnapshot.history[currentSnapshot.history.length - 1]}
               </span>
             </div>
           )}

@@ -50,7 +50,7 @@ export function TianjiRankModal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="dialog-backdrop" />
+        <Dialog.Overlay className="dialog-overlay dialog-backdrop" />
         <Dialog.Content
           className="tianji-rank-modal dialog-content"
           aria-label="天机阁百晓风云谱"

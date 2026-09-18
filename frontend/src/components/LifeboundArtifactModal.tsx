@@ -1,4 +1,4 @@
-﻿import * as Dialog from '@radix-ui/react-dialog'
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   Anvil,
   Coins,
@@ -54,7 +54,7 @@ export function LifeboundArtifactModal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="dialog-backdrop" />
+        <Dialog.Overlay className="dialog-overlay dialog-backdrop" />
         <Dialog.Content
           className="lifebound-modal dialog-content"
           aria-label="本命灵宝阁"

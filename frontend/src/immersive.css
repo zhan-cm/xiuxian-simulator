@@ -1461,16 +1461,23 @@ body {
 
 .xianxia-topbar {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 20px;
+  border: 1.5px solid rgba(186, 148, 75, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 250, 0.95), rgba(247, 243, 230, 0.92));
+  box-shadow: 0 8px 24px rgba(35, 60, 48, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+}
+
+.xianxia-topbar-main {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 64px;
-  padding: 10px 20px;
-  border: 1.5px solid rgba(186, 148, 75, 0.4);
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 250, 0.94), rgba(247, 243, 230, 0.9));
-  box-shadow: 0 8px 24px rgba(35, 60, 48, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(14px);
+  width: 100%;
 }
 
 .xianxia-brand {
@@ -1568,6 +1575,47 @@ body {
   border-color: #ba8d3c;
   box-shadow: 0 4px 12px rgba(186, 141, 60, 0.18);
   color: #173b2f;
+}
+
+/* 九州修真核心功能领航带 */
+.xianxia-nav-ribbon {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(186, 148, 75, 0.3);
+}
+
+.xianxia-nav-ribbon .archive-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(186, 148, 75, 0.38);
+  background: linear-gradient(145deg, #fffef9, #f7eedb);
+  color: #2c5543;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(40, 70, 55, 0.04);
+}
+
+.xianxia-nav-ribbon .archive-trigger:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  border-color: #ba8d3c;
+  background: linear-gradient(145deg, #ffffff, #faefdc);
+  box-shadow: 0 4px 12px rgba(186, 141, 60, 0.22);
+  color: #15382b;
+}
+
+.xianxia-nav-ribbon .archive-trigger svg {
+  color: #ba8d3c;
+  flex-shrink: 0;
 }
 
 /* 2. 三栏视窗栅格架构 */
@@ -12614,4 +12662,268 @@ body {
 
 
 
+
+
+
+/* ========================================================
+   通用修仙弹窗蒙版与居中机枢 (Fixed Centering & Backdrop)
+   ======================================================== */
+.dialog-backdrop,
+.dialog-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  background: rgba(14, 24, 18, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+  animation: fade-in 0.18s ease;
+}
+
+.lifebound-modal,
+.tianji-rank-modal,
+.artifact-spirit-modal-content {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 101 !important;
+  animation: dialog-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ========================================================
+   修行与道法谱结构化卡片展示 (Art & Spell Inline Cards)
+   ======================================================== */
+.art-mastery-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0 16px;
+  width: 100%;
+}
+
+.art-mastery-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(186, 148, 75, 0.18) 0%, rgba(186, 148, 75, 0.04) 100%);
+  border-left: 3px solid #ba8d3c;
+  color: #5c4217;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.art-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.art-card-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #fffef9 0%, #f7f3e8 100%);
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  box-shadow: 0 4px 14px rgba(35, 60, 48, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.art-card-inline:hover {
+  transform: translateY(-2px);
+  border-color: #ba8d3c;
+  box-shadow: 0 8px 20px rgba(186, 141, 60, 0.15);
+}
+
+.art-card-inline[data-active="true"] {
+  border-color: #ba8d3c;
+  background: linear-gradient(145deg, #fffdf5 0%, #fbf4e2 100%);
+}
+
+.art-card-inline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.art-card-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.art-kind-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.art-card-inline[data-kind="功法"] .art-kind-icon-badge {
+  background: rgba(39, 93, 73, 0.12);
+  color: #275d49;
+  border: 1px solid rgba(39, 93, 73, 0.25);
+}
+
+.art-card-inline[data-kind="法术"] .art-kind-icon-badge {
+  background: rgba(186, 60, 40, 0.12);
+  color: #b33924;
+  border: 1px solid rgba(186, 60, 40, 0.25);
+}
+
+.art-card-title-wrap h4 {
+  margin: 0;
+  font-size: 15px;
+  font-family: "STKaiti", "KaiTi", "Noto Serif SC", serif;
+  font-weight: 700;
+  color: #1a3c30;
+  letter-spacing: 0.04em;
+}
+
+.art-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.art-grade-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(186, 148, 75, 0.15);
+  color: #8c6a28;
+  border: 1px solid rgba(186, 148, 75, 0.3);
+}
+
+.art-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+
+.art-role-tag.primary,
+.art-role-tag.equipped {
+  background: #96382b;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(150, 56, 43, 0.25);
+}
+
+.art-role-tag.learned {
+  background: #e8eee9;
+  color: #557266;
+  border: 1px solid rgba(85, 114, 102, 0.2);
+}
+
+.art-mastery-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.art-mastery-level-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #9c7838;
+  flex-shrink: 0;
+}
+
+.art-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(40, 70, 55, 0.08);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.art-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d4a84e, #2e7a5c);
+  transition: width 0.3s ease;
+}
+
+.art-xp-text {
+  font-size: 10px;
+  font-family: monospace;
+  color: #6a8276;
+  flex-shrink: 0;
+}
+
+.art-effect-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(240, 245, 241, 0.7);
+  border: 1px solid rgba(60, 100, 80, 0.1);
+}
+
+.art-effect-pill {
+  font-size: 11px;
+  color: #274b3d;
+  font-weight: 500;
+}
+
+.art-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.art-card-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  background: linear-gradient(145deg, #fff, #f6edd9);
+  color: #3b5f4f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.art-card-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #ba8d3c;
+  background: #ba8d3c;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(186, 141, 60, 0.25);
+}
+
+.art-instructions-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(235, 242, 238, 0.85);
+  border: 1px solid rgba(50, 100, 75, 0.15);
+  color: #496c5d;
+  font-size: 11px;
+}
 

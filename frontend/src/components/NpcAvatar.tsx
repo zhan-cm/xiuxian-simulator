@@ -6,6 +6,14 @@ import yunQiImg from '../assets/avatars/yun_qi.jpg'
 import xieWujiuImg from '../assets/avatars/xie_wujiu.jpg'
 import moChenImg from '../assets/avatars/mo_chen.jpg'
 import luoQianqianImg from '../assets/avatars/luo_qianqian.jpg'
+import ancientSwordMasterImg from '../assets/avatars/ancient_sword_master.jpg'
+import chessImmortalImg from '../assets/avatars/chess_immortal.jpg'
+import woodSpiritMaidenImg from '../assets/avatars/wood_spirit_maiden.jpg'
+import swordSpiritValiantImg from '../assets/avatars/sword_spirit_valiant.jpg'
+import shadowSecretEnvoyImg from '../assets/avatars/shadow_secret_envoy.jpg'
+import mortalEmperorImg from '../assets/avatars/mortal_emperor.jpg'
+import destituteMaidenImg from '../assets/avatars/destitute_maiden.jpg'
+import nineTailedFoxImg from '../assets/avatars/nine_tailed_fox.jpg'
 
 export const NPC_PORTRAIT_IMAGES: Record<string, string> = {
   顾清玄: guQingxuanImg,
@@ -14,6 +22,14 @@ export const NPC_PORTRAIT_IMAGES: Record<string, string> = {
   谢无咎: xieWujiuImg,
   墨尘: moChenImg,
   洛浅浅: luoQianqianImg,
+  太古剑尊残魂: ancientSwordMasterImg,
+  无相弈仙: chessImmortalImg,
+  木灵玄女: woodSpiritMaidenImg,
+  万劫剑魄: swordSpiritValiantImg,
+  玄阴密使: shadowSecretEnvoyImg,
+  凡世人皇: mortalEmperorImg,
+  落魄孤女: destituteMaidenImg,
+  九尾雪狐: nineTailedFoxImg,
 }
 
 export interface NpcAppearanceData {
