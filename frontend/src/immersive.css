@@ -13922,5 +13922,523 @@ body {
   gap: 10px;
 }
 
+/* ========================================================
+   连贯行动链与交互组件封装 (EventActionChain & Interactive Ribbons)
+   ======================================================== */
+
+.event-action-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 突破高光、悬赏领赏、急救卡片通用布局 */
+.action-chain-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 246, 238, 0.9));
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  animation: actionCardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes actionCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-chain-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.action-chain-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  width: fit-content;
+}
+
+.action-chain-card-content strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c2518;
+  line-height: 1.35;
+}
+
+.action-chain-card-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #6a6050;
+  line-height: 1.4;
+}
+
+/* 气海大圆满突破卡片（金芒雷霆流光） */
+.action-chain-card--breakthrough {
+  background: linear-gradient(135deg, #fff9e6 0%, #fef3d0 50%, #fdf8eb 100%);
+  border: 1.5px solid #d4a742;
+  box-shadow: 0 0 20px rgba(212, 167, 66, 0.28), 0 4px 12px rgba(99, 67, 22, 0.08);
+}
+
+.action-chain-card--breakthrough::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-25deg);
+  animation: breakthroughGleam 3s infinite ease-in-out;
+}
+
+@keyframes breakthroughGleam {
+  0% { left: -100%; }
+  35% { left: 160%; }
+  100% { left: 160%; }
+}
+
+.action-chain-card--breakthrough .action-chain-card-tag {
+  color: #9c6c10;
+}
+
+.action-chain-card--breakthrough .action-chain-card-content strong {
+  color: #6e4604;
+}
+
+/* 悬赏领赏卡片（翡翠生辉） */
+.action-chain-card--bounty {
+  background: linear-gradient(135deg, #f0f8f4 0%, #e3f2ea 100%);
+  border: 1.5px solid #4a9e70;
+  box-shadow: 0 4px 14px rgba(74, 158, 112, 0.16);
+}
+
+.action-chain-card--bounty .action-chain-card-tag {
+  color: #2b704c;
+}
+
+.action-chain-card--bounty .action-chain-card-content strong {
+  color: #174d32;
+}
+
+/* 负伤急救卡片（朱砂警示） */
+.action-chain-card--triage {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe9e9 100%);
+  border: 1.5px solid #d96363;
+  box-shadow: 0 4px 14px rgba(217, 99, 99, 0.14);
+}
+
+.action-chain-card--triage .action-chain-card-tag {
+  color: #a82e2e;
+}
+
+.action-chain-card--triage .action-chain-card-content strong {
+  color: #7a1d1d;
+}
+
+/* 按钮与按钮组 */
+.action-chain-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-chain-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.action-chain-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.16);
+}
+
+.action-chain-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.action-chain-btn--gold {
+  background: linear-gradient(135deg, #dca83f 0%, #b88220 100%);
+  color: #ffffff;
+  border: 1px solid #ecc266;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  animation: pulseGoldGlow 2.2s infinite ease-in-out;
+}
+
+@keyframes pulseGoldGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(220, 168, 63, 0.4); }
+  50% { box-shadow: 0 0 22px rgba(220, 168, 63, 0.75); }
+}
+
+.action-chain-btn--bounty {
+  background: linear-gradient(135deg, #389866 0%, #206d44 100%);
+  color: #ffffff;
+  border: 1px solid #58b886;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.action-chain-btn--danger {
+  background: linear-gradient(135deg, #db4c4c 0%, #a82e2e 100%);
+  color: #ffffff;
+  border: 1px solid #f07575;
+}
+
+.action-chain-btn--emerald {
+  background: linear-gradient(135deg, #328a64 0%, #1f5e43 100%);
+  color: #ffffff;
+  border: 1px solid #48b082;
+}
+
+/* 战利品趁热打铁横栏 */
+.action-chain-loot-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(245, 238, 222, 0.6) 0%, rgba(255, 252, 245, 0.8) 100%);
+  border: 1px dashed rgba(186, 148, 75, 0.4);
+}
+
+.action-chain-loot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a5823;
+  white-space: nowrap;
+}
+
+.action-chain-loot-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-chain-loot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.4);
+  color: #523a13;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.action-chain-loot-btn:hover:not(:disabled) {
+  border-color: #ba8d3c;
+  background: #fdf6e6;
+  color: #8c5b0d;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(186, 141, 60, 0.15);
+}
+
+/* 顺水推舟连贯行动推荐 */
+.action-chain-contextual-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: rgba(240, 246, 243, 0.7);
+  border: 1px solid rgba(54, 105, 82, 0.15);
+}
+
+.action-chain-contextual-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b6351;
+  white-space: nowrap;
+}
+
+.action-chain-contextual-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.action-chain-contextual-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(54, 105, 82, 0.25);
+  color: #275642;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-chain-contextual-btn:hover:not(:disabled) {
+  border-color: #276f4e;
+  background: #eef7f2;
+  color: #164733;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(39, 111, 78, 0.12);
+}
+
+/* 纯文本指令转化为可点击组件胶囊 (Interactive Command Ribbons) */
+.interactive-command-ribbon {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(254, 252, 247, 0.95), rgba(246, 241, 230, 0.9));
+  border: 1px solid rgba(186, 148, 75, 0.3);
+}
+
+.interactive-command-ribbon .ribbon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c672b;
+}
+
+.interactive-command-ribbon .ribbon-capsules {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.command-capsule-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid rgba(186, 148, 75, 0.35);
+  color: #5c431b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.command-capsule-btn:hover:not(:disabled) {
+  background: #faf2dc;
+  border-color: #ba8d3c;
+  color: #8f5c0c;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(186, 141, 60, 0.14);
+}
+
+.command-ribbon-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b5f4f;
+}
+
+.action-bullet-row {
+  margin: 4px 0;
+}
+
+.command-capsule-btn--rich {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 9px;
+  background: #fbfbf9;
+  border: 1px solid rgba(54, 105, 82, 0.22);
+}
+
+.command-capsule-btn--rich strong {
+  font-size: 12px;
+  color: #23583d;
+}
+
+.command-capsule-btn--rich small {
+  font-size: 11px;
+  color: #63776b;
+  margin: 0 8px;
+  flex: 1;
+}
+
+.command-capsule-btn--rich:hover:not(:disabled) {
+  background: #f0f7f3;
+  border-color: #2f8356;
+}
+
+.interactive-input-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  background: rgba(246, 243, 235, 0.85);
+  border: 1px solid rgba(186, 148, 75, 0.25);
+  font-size: 12px;
+  color: #55442b;
+}
+
+/* 升级版收益行与灵光反馈 (Upgraded change-row & change-pills) */
+.change-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.change-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #faf8f5;
+  border: 1px solid rgba(140, 130, 115, 0.25);
+  transition: all 0.2s ease;
+  animation: rewardPillPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes rewardPillPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.change-pill small {
+  font-size: 11px;
+  color: #6a6358;
+}
+
+.change-pill strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.change-pill.change-cultivation {
+  background: linear-gradient(135deg, #fffcf3, #fdf4d7);
+  border-color: rgba(212, 167, 66, 0.5);
+}
+.change-pill.change-cultivation strong { color: #9c6c10; }
+
+.change-pill.change-stones {
+  background: linear-gradient(135deg, #f7fcf9, #e8f7ee);
+  border-color: rgba(46, 125, 80, 0.35);
+}
+.change-pill.change-stones strong { color: #1e6d42; }
+
+.change-pill.change-health {
+  background: linear-gradient(135deg, #fff7f7, #fde8e8);
+  border-color: rgba(217, 83, 79, 0.35);
+}
+.change-pill.change-health strong { color: #b52b27; }
+
+.change-pill.change-lifespan {
+  background: linear-gradient(135deg, #f8fbf8, #ebf5eb);
+  border-color: rgba(76, 175, 80, 0.35);
+}
+.change-pill.change-lifespan strong { color: #2e7d32; }
+
+.change-pill.change-spirit {
+  background: linear-gradient(135deg, #f5faff, #e3f2fd);
+  border-color: rgba(33, 150, 243, 0.35);
+}
+.change-pill.change-spirit strong { color: #1565c0; }
+
+.change-pill.change-renown {
+  background: linear-gradient(135deg, #faf5ff, #f3e5f5);
+  border-color: rgba(156, 39, 176, 0.35);
+}
+.change-pill.change-renown strong { color: #7b1fa2; }
+
+.change-pill.is-gain {
+  box-shadow: 0 2px 6px rgba(186, 141, 60, 0.1);
+}
+
+.change-pill.is-loss {
+  background: #fff0f0;
+  border-color: rgba(217, 83, 79, 0.4);
+}
+.change-pill.is-loss strong {
+  color: #c92a2a;
+}
+
+@media (max-width: 768px) {
+  .action-chain-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .action-chain-btn,
+  .action-chain-btn-group button {
+    width: 100%;
+    justify-content: center;
+  }
+  .command-capsule-btn--rich {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
 
 

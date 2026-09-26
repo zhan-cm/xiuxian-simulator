@@ -350,11 +350,19 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           sectMembership={snapshot.sect_membership}
                           naturalExploration={snapshot.natural_exploration}
                           pendingEncounter={pendingEncounter}
+                          player={player}
+                          inventory={snapshot.inventory}
+                          commissions={snapshot.commissions}
+                          recovery={snapshot.recovery}
                           readOnly={showcase || busy}
                           immersive
                           onAction={onAction}
                           onOpenSectGate={handleOpenSectGate}
                           onOpenEncounterModal={() => setEncounterOpen(true)}
+                          onOpenBreakthrough={() => {
+                            setViewBreakthrough(true)
+                            if (canUseQuickActions) onAction('突破')
+                          }}
                         />
                       </motion.div>
                     </AnimatePresence>

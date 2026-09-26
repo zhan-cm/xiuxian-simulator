@@ -1,7 +1,7 @@
-import { ArrowRight, BookOpenText, Check, Clock3, Coins, Compass, Flame, FlaskConical, Gauge, Hammer, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
+import { ArrowRight, Award, BookOpenText, Check, Clock3, Coins, Compass, Flame, FlaskConical, Gauge, Hammer, Heart, Landmark, LockKeyhole, MapPin, Mountain, Route, Scale, ScrollText, ShieldCheck, ShoppingBag, Sparkles, Sprout, Sun, Swords, UserRound, Waypoints, Wind, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CaveSnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, PendingEncounterData, Presentation, PresentationBlock, SectMembershipSnapshot } from '../api/types'
+import type { CaveSnapshot, CommissionSnapshot, InventorySnapshot, NaturalExplorationSnapshot, NpcLifeProfile, NpcLifeSnapshot, NpcNetworkSnapshot, PendingEncounterData, PlayerState, Presentation, PresentationBlock, RecoverySnapshot, SectMembershipSnapshot } from '../api/types'
 import { SectMembershipPage } from './SectMembershipPage'
 import { NineProvincesMap, OUTER_SEALED_PROVINCES, type RegionAtlasItem } from './NineProvincesMap'
 import caveLandscapeBg from '../assets/immortal_cave_landscape.jpg'
@@ -849,8 +849,15 @@ function renderParagraphBlock(
   const lines = paragraph.split('\n').map((l) => l.trim()).filter(Boolean)
   const hasArtLine = lines.some((l) => Boolean(parseArtLine(l)))
   const hasArtBanner = lines.some((l) => l.startsWith('【道法') || l.includes('熟练境界'))
+  const hasCommandRibbon = lines.some(
+    (l) =>
+      l.startsWith('指令：') ||
+      l.startsWith('可进行行动：') ||
+      l.startsWith('输入：') ||
+      /^[-*]\s*[^：:]{2,24}[：:]/.test(l)
+  )
 
-  if (!hasArtLine && !hasArtBanner) {
+  if (!hasArtLine && !hasArtBanner && !hasCommandRibbon) {
     return <p key={keyPrefix}>{paragraph}</p>
   }
 
@@ -889,10 +896,75 @@ function renderParagraphBlock(
       )
     } else if (line.startsWith('指令：')) {
       flushCards(index)
+      const rawCmds = line.replace(/^指令[：:]/, '').trim()
+      const cmds = rawCmds.split(/[、，,\s]+/).map((c) => c.trim()).filter(Boolean)
       elements.push(
-        <div className="art-instructions-ribbon" key={`instr-${index}`}>
-          <Sparkles size={13} />
+        <div className="art-instructions-ribbon interactive-command-ribbon" key={`instr-${index}`}>
+          <span className="ribbon-label"><Sparkles size={13} />可选指令：</span>
+          <div className="ribbon-capsules">
+            {cmds.map((cmd, cIdx) => (
+              <button
+                key={`${cmd}-${cIdx}`}
+                type="button"
+                className="command-capsule-btn"
+                disabled={readOnly}
+                onClick={() => onAction?.(cmd)}
+                title={`点击立即执行：${cmd}`}
+              >
+                <span>{cmd}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )
+    } else if (line.startsWith('可进行行动：')) {
+      flushCards(index)
+      elements.push(
+        <div className="command-ribbon-heading" key={`act-head-${index}`}>
+          <Compass size={14} />
+          <span>可进行行动</span>
+        </div>
+      )
+    } else if (/^[-*]\s*([^：:]{2,24})[：:]\s*(.+)$/.test(line)) {
+      flushCards(index)
+      const bulletMatch = line.match(/^[-*]\s*([^：:]{2,24})[：:]\s*(.+)$/)
+      if (bulletMatch) {
+        const actCmd = bulletMatch[1].trim()
+        const actDesc = bulletMatch[2].trim()
+        elements.push(
+          <div className="action-bullet-row" key={`bullet-${index}`}>
+            <button
+              type="button"
+              className="command-capsule-btn command-capsule-btn--rich"
+              disabled={readOnly}
+              onClick={() => onAction?.(actCmd)}
+              title={actDesc}
+            >
+              <strong>{actCmd}</strong>
+              <small>{actDesc}</small>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        )
+      }
+    } else if (line.startsWith('输入：')) {
+      flushCards(index)
+      const match = line.match(/输入[：:]\s*([^。，\n]+)/)
+      const cmd = match ? match[1].trim() : ''
+      elements.push(
+        <div className="interactive-input-ribbon" key={`input-cmd-${index}`}>
           <span>{line}</span>
+          {cmd && (
+            <button
+              type="button"
+              className="command-capsule-btn"
+              disabled={readOnly}
+              onClick={() => onAction?.(cmd)}
+            >
+              <ArrowRight size={12} />
+              <span>立即执行 {cmd}</span>
+            </button>
+          )}
         </div>
       )
     } else {
@@ -1080,6 +1152,195 @@ function EncounterStageCard({
   )
 }
 
+function EventActionChain({
+  player,
+  inventory,
+  commissions,
+  recovery,
+  presentation,
+  readOnly,
+  onAction,
+  onOpenBreakthrough,
+}: {
+  player?: PlayerState
+  inventory?: InventorySnapshot
+  commissions?: CommissionSnapshot
+  recovery?: RecoverySnapshot
+  presentation: Presentation
+  readOnly: boolean
+  onAction: (action: string) => void
+  onOpenBreakthrough?: () => void
+}) {
+  const canBreakthrough = Boolean(
+    player &&
+    Number(player.cultivation_required || 0) > 0 &&
+    Number(player.cultivation || 0) >= Number(player.cultivation_required || 0)
+  )
+
+  const needsHealing = Boolean(
+    (player && Number(player.health_max || 0) > 0 && Number(player.health || 0) < Number(player.health_max || 0) * 0.55) ||
+    (recovery && recovery.active && (recovery.injuries || []).length > 0) ||
+    (typeof player?.condition === 'string' && player.condition.includes('伤'))
+  )
+
+  const readyCommission = commissions?.active?.find((c) => c.ready)
+
+  const actionableItems = useMemo(() => {
+    if (!inventory?.items) return []
+    return inventory.items
+      .filter((item) => {
+        if (item.actionable && item.action) return true
+        if (['丹药', '法宝', '功法'].includes(item.category) && item.count > 0 && !item.equipped) return true
+        return false
+      })
+      .slice(0, 3)
+  }, [inventory])
+
+  const contextualActions = useMemo(() => {
+    const act = presentation.action || ''
+    const list: Array<{ label: string; action: string; tip: string }> = []
+    if (act.includes('探索') || act.includes('机缘') || act.includes('历练')) {
+      list.push({ label: '继续深入探寻', action: act || '探索 荒野', tip: '沿途顺势探查更多机缘宝物' })
+      list.push({ label: '回府静修吐纳', action: '闭关', tip: '纳天地灵机以稳固根基' })
+      list.push({ label: '移步坊市采买', action: '前往坊市', tip: '采买灵丹资粮或兜售所得' })
+    } else if (act.includes('闭关') || act.includes('吐纳') || act.includes('修炼')) {
+      list.push({ label: '再次吐纳运功', action: '吐纳', tip: '运转周天纳灵入体' })
+      list.push({ label: '出山寻觅机缘', action: '寻觅机缘', tip: '游历四方触动仙缘' })
+      list.push({ label: '前往坊市淘珍', action: '前往坊市', tip: '寻访坊市奇珍异宝' })
+    } else if (act.includes('宗门') || act.includes('拜山') || act.includes('演武')) {
+      list.push({ label: '宗门事务', action: '宗门', tip: '巡视宗门并检视功绩' })
+      list.push({ label: '山门演武', action: '山门演武', tip: '同门较技以印证大道' })
+      list.push({ label: '闭关纳灵', action: '闭关', tip: '静修消化所得' })
+    } else {
+      list.push({ label: '吐纳炼气', action: '吐纳', tip: '运转周天，汲取天地灵气' })
+      list.push({ label: '寻觅机缘', action: '寻觅机缘', tip: '踏勘名山大川以历道心' })
+      list.push({ label: '前往坊市', action: '前往坊市', tip: '采买资粮丹药' })
+    }
+    return list
+  }, [presentation.action])
+
+  const hasAnyChainAction = canBreakthrough || readyCommission || needsHealing || actionableItems.length > 0 || contextualActions.length > 0
+  if (!hasAnyChainAction) return null
+
+  return (
+    <div className="event-action-chain">
+      {canBreakthrough && (
+        <div className="action-chain-card action-chain-card--breakthrough">
+          <div className="action-chain-card-content">
+            <span className="action-chain-card-tag"><Sparkles size={13} />天机感应 · 气海圆融</span>
+            <strong>气海周天已大圆满！叩问天关的时机已然成熟</strong>
+            <p>当前修为已达此境顶点，可直面天道法则引动破境契机。</p>
+          </div>
+          <button
+            type="button"
+            className="action-chain-btn action-chain-btn--gold"
+            disabled={readOnly}
+            onClick={() => {
+              if (onOpenBreakthrough) onOpenBreakthrough()
+              else onAction('突破')
+            }}
+          >
+            <Zap size={15} />
+            <span>叩问天关 · 立即突破</span>
+          </button>
+        </div>
+      )}
+
+      {readyCommission && (
+        <div className="action-chain-card action-chain-card--bounty">
+          <div className="action-chain-card-content">
+            <span className="action-chain-card-tag"><Award size={13} />悬赏契约 · 达成所托</span>
+            <strong>【{readyCommission.title}】交付条件已达成</strong>
+            <p>可立即复命领受赏格：{readyCommission.reward}</p>
+          </div>
+          <button
+            type="button"
+            className="action-chain-btn action-chain-btn--bounty"
+            disabled={readOnly}
+            onClick={() => onAction(readyCommission.deliver_action)}
+          >
+            <Check size={14} />
+            <span>一键揭榜领赏</span>
+          </button>
+        </div>
+      )}
+
+      {needsHealing && (
+        <div className="action-chain-card action-chain-card--triage">
+          <div className="action-chain-card-content">
+            <span className="action-chain-card-tag"><Heart size={13} />真元受损 · 亟需调理</span>
+            <strong>道体受损，需平复翻腾气血以绝后患</strong>
+          </div>
+          <div className="action-chain-btn-group">
+            <button
+              type="button"
+              className="action-chain-btn action-chain-btn--danger"
+              disabled={readOnly}
+              onClick={() => onAction(recovery?.rest_action || '疗伤')}
+            >
+              <span>🩹 运功疗伤</span>
+            </button>
+            {recovery?.has_healing_pill && recovery.pill_action && (
+              <button
+                type="button"
+                className="action-chain-btn action-chain-btn--emerald"
+                disabled={readOnly}
+                onClick={() => onAction(recovery.pill_action)}
+              >
+                <span>🍵 吞服疗伤圣药</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {actionableItems.length > 0 && (
+        <div className="action-chain-loot-bar">
+          <span className="action-chain-loot-label"><ShoppingBag size={13} />所得资粮 · 趁热打铁：</span>
+          <div className="action-chain-loot-pills">
+            {actionableItems.map((item, idx) => {
+              const actStr = item.action || (item.category === '丹药' ? `使用 ${item.name}` : item.category === '法宝' ? `装备 ${item.name}` : `研习 ${item.name}`)
+              const icon = item.category === '丹药' ? '💊' : item.category === '法宝' ? '⚔️' : '📖'
+              const verb = item.category === '丹药' ? '立即服用' : item.category === '法宝' ? '一键装备' : '研读参悟'
+              return (
+                <button
+                  key={`${item.name}-${idx}`}
+                  type="button"
+                  className="action-chain-loot-btn"
+                  disabled={readOnly}
+                  onClick={() => onAction(actStr)}
+                  title={item.description || item.usage || `对【${item.name}】执行${verb}`}
+                >
+                  <span>{icon} {verb}【{item.name}】{item.count > 1 ? `×${item.count}` : ''}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="action-chain-contextual-bar">
+        <span className="action-chain-contextual-label"><Compass size={13} />顺水推舟：</span>
+        <div className="action-chain-contextual-pills">
+          {contextualActions.map((item, idx) => (
+            <button
+              key={`${item.label}-${idx}`}
+              type="button"
+              className="action-chain-contextual-btn"
+              disabled={readOnly}
+              onClick={() => onAction(item.action)}
+              title={item.tip}
+            >
+              <span>{item.label}</span>
+              <ArrowRight size={11} />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function EventPanel({
   presentation,
   cave,
@@ -1088,11 +1349,16 @@ export function EventPanel({
   sectMembership,
   naturalExploration,
   pendingEncounter,
+  player,
+  inventory,
+  commissions,
+  recovery,
   readOnly = false,
   immersive = false,
   onAction,
   onOpenSectGate,
   onOpenEncounterModal,
+  onOpenBreakthrough,
 }: {
   presentation: Presentation
   cave?: CaveSnapshot
@@ -1101,11 +1367,16 @@ export function EventPanel({
   sectMembership?: SectMembershipSnapshot
   naturalExploration?: NaturalExplorationSnapshot
   pendingEncounter?: PendingEncounterData | null
+  player?: PlayerState
+  inventory?: InventorySnapshot
+  commissions?: CommissionSnapshot
+  recovery?: RecoverySnapshot
   readOnly?: boolean
   immersive?: boolean
   onAction: (action: string) => void
   onOpenSectGate?: (sectName?: string) => void
   onOpenEncounterModal?: () => void
+  onOpenBreakthrough?: () => void
 }) {
   const showNetwork = Boolean(npcNetwork && (['人脉', '缘网', '众生缘网'].includes(presentation.action) || presentation.action.startsWith('介入人情')))
   const showNetworkOutcome = showNetwork && presentation.action.startsWith('介入人情')
@@ -1113,7 +1384,7 @@ export function EventPanel({
   const paragraphs = presentation.paragraphs || []
   const visibleParagraphs = immersive ? paragraphs.slice(1) : paragraphs
   const changes = immersive ? (presentation.changes || []).slice(3) : presentation.changes || []
-  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || showSectMembership || presentation.has_details || Boolean(pendingEncounter)
+  const hasSecondaryContent = visibleParagraphs.length > 0 || changes.length > 0 || presentation.blocks?.length > 0 || showNetwork || showSectMembership || presentation.has_details || Boolean(pendingEncounter) || Boolean(player)
   const surfaceType = (presentation.blocks || []).find((block) => ['people', 'locations', 'regions', 'market', 'facilities', 'sects', 'recipes'].includes(block.type))?.type
   const act = (action: string) => { if (!readOnly) onAction(action) }
   if (immersive && !hasSecondaryContent) return null
@@ -1136,10 +1407,40 @@ export function EventPanel({
         {visibleParagraphs.map((paragraph, index) => renderParagraphBlock(paragraph, `p-${index}`, act, readOnly))}
       </div>}
       {changes.length > 0 && (
-        <div className="change-row">
-          {changes.map((change, index) => <span key={`${change.label}-${index}`}><small>{change.label}</small><strong>{change.value}</strong></span>)}
+        <div className="change-row" aria-label="本次行动收益与变化">
+          {changes.map((change, index) => {
+            const isPositive = change.value.startsWith('+')
+            const isNegative = change.value.startsWith('-')
+            const typeClass =
+              change.label.includes('修为') ? 'change-cultivation' :
+              change.label.includes('灵石') ? 'change-stones' :
+              change.label.includes('气血') ? 'change-health' :
+              change.label.includes('寿元') ? 'change-lifespan' :
+              change.label.includes('灵力') ? 'change-spirit' :
+              change.label.includes('声望') || change.label.includes('贡献') ? 'change-renown' :
+              change.label.includes('好感') ? 'change-affinity' : 'change-general'
+            return (
+              <span
+                className={`change-pill ${typeClass} ${isPositive ? 'is-gain' : isNegative ? 'is-loss' : ''}`}
+                key={`${change.label}-${index}`}
+              >
+                <small>{change.label}</small>
+                <strong>{change.value}</strong>
+              </span>
+            )
+          })}
         </div>
       )}
+      <EventActionChain
+        player={player}
+        inventory={inventory}
+        commissions={commissions}
+        recovery={recovery}
+        presentation={presentation}
+        readOnly={readOnly}
+        onAction={act}
+        onOpenBreakthrough={onOpenBreakthrough}
+      />
       <div className="event-blocks" aria-label="本次推演数据">
         {!showNetwork && !showSectMembership && (presentation.blocks || []).map((block, index) => <Block block={block} cave={cave} lives={npcLives} naturalExploration={naturalExploration} readOnly={readOnly} onAction={act} onOpenSectGate={onOpenSectGate} key={`${block.type}-${index}`} />)}
         {showNetwork && npcNetwork && <NpcNetworkBlock network={npcNetwork} readOnly={readOnly} onAction={act} />}

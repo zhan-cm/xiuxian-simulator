@@ -794,7 +794,7 @@ class GameEngine:
             RecoveryEngine.capture_legacy(self.state, f"奇遇·{encounter.title}")
         event_text = ""
         if encounter.triggered:
-            event_text = f"\n\n【随机奇遇 · {encounter.title}】\n{encounter.description}\n判定：1d100={encounter.roll}（20%触发）"
+            event_text = f"\n\n【随机奇遇 · {encounter.title}】\n{encounter.description}\n天机显照：机缘偶得（福缘相契）"
         self.state.remember(action + (f"；奇遇：{encounter.title}" if encounter.triggered else ""))
         self._autosave()
         return f"{self.state.time_label}\n{narrative}{event_text}\n\n{self._status()}"
@@ -869,9 +869,10 @@ class GameEngine:
             message = f"突破成功：{result.old_realm} → {result.new_realm}，修为归零。"
         else:
             message = f"突破失败：修为跌回 70%，当前 {result.cultivation_after}/{player.cultivation_required}。"
-        self.state.remember(f"{message} 掷骰 {result.roll}/{result.chance}")
+        resonance = "道基天成，气机圆融" if result.success else "天道威压，道基未稳"
+        self.state.remember(f"{message} 顺遂度 {result.chance}%")
         self._autosave()
-        return f"{self.state.time_label}\n{message}\n判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._status()}"
+        return f"{self.state.time_label}\n{message}\n破境印证：{resonance}（契合度 {result.chance}%）\n\n{self._status()}"
 
     def _major_breakthrough_choice(self, action: str) -> str:
         if action == "取消突破":
@@ -1098,7 +1099,7 @@ class GameEngine:
             self._autosave()
             return (
                 f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
-                f"判定：1d100={result.roll}\n\n{CombatEngine.enemy_panel(self.state)}"
+                f"气运感召：突生异变，杀机乍现\n\n{CombatEngine.enemy_panel(self.state)}"
             )
         self._autosave()
         if self.state.phase == "ended":
@@ -1119,7 +1120,7 @@ class GameEngine:
             encounter_text = f"\n\n{RedDustEncounterEngine.text_panel(self.state)}"
         return (
             f"{self.state.time_label}\n【探索 · {result.area}】\n{result.event}\n"
-            f"判定：1d100={result.roll}｜收获：{reward_text}\n\n{self._status()}{encounter_text}"
+            f"气运感召：探索顺遂｜收获：{reward_text}\n\n{self._status()}{encounter_text}"
         )
 
     @staticmethod
@@ -1306,9 +1307,9 @@ class GameEngine:
             result = f"你放下竞价玉牌；{lot['winner']}以 {lot['price']} 灵石拍得《{lot['name']}》。"
         elif won:
             reward = "、".join(f"{name}×{count}" for name, count in lot["rewards"].items())
-            result = f"落槌成交。你以 {offer} 灵石拍得《{lot['name']}》，所得 {reward} 已收入乾坤袋。\n判定：1d100={roll}，成交机会 {chance}%"
+            result = f"落槌成交。你以 {offer} 灵石拍得《{lot['name']}》，所得 {reward} 已收入乾坤袋。\n竞拍机缘：志在必得（胜算 {chance}%）"
         else:
-            result = f"竞价失利。{lot['winner']}以 {lot['price']} 灵石拍得《{lot['name']}》，你没有损失灵石。\n判定：1d100={roll}，成交机会 {chance}%"
+            result = f"竞价失利。{lot['winner']}以 {lot['price']} 灵石拍得《{lot['name']}》，你没有损失灵石。\n竞拍机缘：惜败错失（胜算 {chance}%）"
         self.state.remember(result.splitlines()[0])
         self._autosave()
         return f"【天机拍卖 · 落槌】\n{result}\n\n{AuctionEngine.panel_text(self.state)}"
@@ -1423,13 +1424,13 @@ class GameEngine:
             verdict = f"{disciple['name']}拜入门下，资质 {disciple['aptitude']}"
         else:
             verdict = "本次未遇到心性资质相合的门人"
-        self.state.remember(f"宗门招徒：{verdict}；判定 {result['roll']}/{result['chance']}")
+        self.state.remember(f"宗门招徒：{verdict}；顺遂率 {result['chance']}%")
         self._autosave()
         if died:
             return f"{verdict}。山门钟声未歇，你却已走完此生。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【开山收徒】库藏 -{SectFoundationEngine.RECRUIT_COST}｜{verdict}\n"
-            f"判定：1d100={result['roll']}，成功率 {result['chance']}%\n\n{SectFoundationEngine.panel_text(self.state)}"
+            f"收徒运势：顺遂率 {result['chance']}%\n\n{SectFoundationEngine.panel_text(self.state)}"
         )
 
     def _teach_founded_sect(self) -> str:
@@ -1522,7 +1523,7 @@ class GameEngine:
             return "晋升试炼结束后，你的寿元也走到尽头。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【宗门晋升试炼】{verdict}\n"
-            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._sect()}"
+            f"试炼印证：顺遂率 {result.chance}%\n\n{self._sect()}"
         )
 
     def _sect_tournament(self) -> str:
@@ -1544,7 +1545,7 @@ class GameEngine:
             return "大比落幕后，你在众人注视中寿元耗尽。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【宗门大比】{verdict}\n"
-            f"判定：1d100={result.roll}，胜率 {result.chance}%｜"
+            f"较技胜算：胜率 {result.chance}%｜"
             f"贡献 +{result.contribution}｜声望 +{result.reputation}{reward}\n\n{self._sect()}"
         )
 
@@ -1664,7 +1665,7 @@ class GameEngine:
         self._autosave()
         if died:
             return result.description + "\n【坐化结局】战火落幕后，你也走完了此生。"
-        verdict = "" if result.chance == 100 else f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+        verdict = "" if result.chance == 100 else f"\n战局推演：顺遂率 {result.chance}%"
         return f"{self.state.time_label}\n【护宗战 · {result.choice}】\n{result.description}{verdict}\n\n{self._world_timeline()}"
 
     def _join_sect(self, action: str) -> str:
@@ -1678,11 +1679,11 @@ class GameEngine:
             self.state.phase = "ended"
             self.state.player.condition = "寿元耗尽"
         message = f"通过入门试炼，成为{sect}外门弟子" if success else f"入门试炼落选，仍为散修"
-        self.state.remember(f"{message}；判定 {roll}/{chance}")
+        self.state.remember(f"{message}；顺遂率 {chance}%")
         self._autosave()
         if died_of_age:
             return f"试炼尚未结束，你已寿元耗尽。\n【坐化结局】享年 {self.state.player.age} 岁。"
-        return f"{self.state.time_label}\n{message}。\n判定：1d100={roll}，成功率 {chance}%\n\n{self._sect()}"
+        return f"{self.state.time_label}\n{message}。\n试炼契机：顺遂率 {chance}%\n\n{self._sect()}"
 
     def _sect_task(self, action: str) -> str:
         task = action.removeprefix("宗门任务").strip()
@@ -1714,7 +1715,7 @@ class GameEngine:
             return f"{self.state.time_label}\n宗门任务途中陨落。\n【陨落结局】道途止于{result.task}任务。"
         return (
             f"{self.state.time_label}\n【宗门任务 · {result.task}】{verdict}\n"
-            f"判定：1d100={result.roll}，成功率 {result.chance}%｜结算：{reward_text}\n\n{self._status()}"
+            f"功绩印证：顺遂率 {result.chance}%｜结算：{reward_text}\n\n{self._status()}"
         )
 
     def _sect_visit(self, action: str) -> str:
@@ -1732,7 +1733,7 @@ class GameEngine:
         verdict = (
             f"【拜山请益 · {sect_name}】{'知客长老欣然接见并共论大道' if result['success'] else '守山执事奉茶并礼貌奉还金帖'}。\n"
             f"声望 +{result['reputation_gain']}｜修为 +{result['cultivation_gain']}{gift_msg}\n"
-            f"道心印证判定：1d100={result['roll']}，顺遂率 {result['chance']}%"
+            f"道心印证：顺遂率 {result['chance']}%"
         )
         self._autosave()
         if died_of_age:
@@ -1767,7 +1768,7 @@ class GameEngine:
         verdict = (
             f"【山门演武 · {sect_name}】{'剑势如虹，点到即止拔得头筹' if result['success'] else '同门较技，虽败犹荣砥砺道心'}。\n"
             f"获得赏赐：灵石 +{result['reward_stones']}｜声望 +{result['reputation_gain']}\n"
-            f"较技胜算判定：1d100={result['roll']}，胜算率 {result['chance']}%"
+            f"较技胜算：胜率 {result['chance']}%"
         )
         self._autosave()
         if died_of_age:
@@ -1798,7 +1799,7 @@ class GameEngine:
         reward_text = "、".join(rewards) if rewards else "无额外赏赐"
         verdict = (
             f"【山门历练 · {sect_name}】{result['title']}——{'功成圆满归山复命' if result['success'] else '途中遭遇凶险受阻'}。\n"
-            f"判定：1d100={result['roll']}，胜算率 {result['chance']}%｜获得赏赐：{reward_text}"
+            f"历练印证：顺遂率 {result['chance']}%｜获得赏赐：{reward_text}"
         )
         self._autosave()
         if died_of_age:
@@ -2109,13 +2110,13 @@ class GameEngine:
             self.state.phase = "ended"
             self.state.player.condition = "参悟中寿元耗尽"
         verdict = "参悟成功" if result.success else "参悟失败，残卷损毁"
-        self.state.remember(f"参悟{result.name}：{verdict}；判定 {result.roll}/{result.chance}")
+        self.state.remember(f"参悟{result.name}：{verdict}；顺遂率 {result.chance}%")
         self._autosave()
         if died_of_age:
             return f"你在参悟{result.name}时寿元耗尽。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【参悟 · {result.name}】{verdict}\n"
-            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._arts()}"
+            f"参悟推演：顺遂率 {result.chance}%\n\n{self._arts()}"
         )
 
     def _equip_main_technique(self, action: str) -> str:
@@ -2203,13 +2204,13 @@ class GameEngine:
             self.state.phase = "ended"
             self.state.player.condition = "淬炼法宝时寿元耗尽"
         verdict = f"淬炼成功，升至{result['level']}炼" if result["success"] else "淬炼失败，所投阵材尽毁"
-        self.state.remember(f"淬炼{name}：{verdict}；判定 {result['roll']}/{result['chance']}")
+        self.state.remember(f"淬炼{name}：{verdict}；顺遂率 {result['chance']}%")
         self._autosave()
         if died_of_age:
             return f"你在淬炼{name}时寿元耗尽。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【法宝淬炼 · {name}】{verdict}\n"
-            f"判定：1d100={result['roll']}，成功率 {result['chance']}%｜灵石 -{result['stones']}\n\n"
+            f"淬火气机：成功率 {result['chance']}%｜灵石 -{result['stones']}\n\n"
             f"{ArtifactGrowthEngine.panel_text(self.state)}"
         )
 
@@ -2341,7 +2342,7 @@ class GameEngine:
             return f"你在{craft}途中寿元耗尽。\n【坐化结局】"
         return (
             f"{self.state.time_label}\n【{craft} · {name}】{verdict}{rank_up}\n"
-            f"判定：1d100={result.roll}，成功率 {result.chance}%\n\n{self._crafts()}"
+            f"百艺造化：成功率 {result.chance}%\n\n{self._crafts()}"
         )
 
     def _cave(self) -> str:
@@ -2521,7 +2522,7 @@ class GameEngine:
         self._autosave()
         if died:
             return f"{result.description}\n【坐化结局】你在情劫落幕后走完此生。"
-        verdict = "" if result.chance == 100 else f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+        verdict = "" if result.chance == 100 else f"\n情劫印证：顺遂率 {result.chance}%"
         return (
             f"{self.state.time_label}\n【情劫 · {result.choice}】\n{result.description}{verdict}\n"
             f"尘缘波澜：{result.tension}/100\n\n{self._relationships()}"
@@ -2584,7 +2585,7 @@ class GameEngine:
         self._autosave()
         verdict = ""
         if result.chance:
-            verdict = f"\n判定：1d100={result.roll}，成功率 {result.chance}%"
+            verdict = f"\n调停印证：顺遂率 {result.chance}%"
         cost = f"｜灵力 -{result.spirit_cost}" if result.spirit_cost else ""
         ending = "\n【坐化结局】你在人情风波落定后走完此生。" if died_of_age else ""
         return (

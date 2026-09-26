@@ -531,10 +531,10 @@ class WorldEvolutionEngine:
             if roll <= 60 + state.player.fortune:
                 state.player.resources["道韵"] = state.player.resources.get("道韵", 0) + 1
                 state.regional_prosperity["东洲"] = min(100, int(state.regional_prosperity.get("东洲", 50)) + 4)
-                description = f"你寻得一处新生灵脉，道韵 +1；判定 1d100={roll}。"
+                description = f"你寻得一处新生灵脉，道韵 +1；灵机契合，福缘深厚。"
             else:
                 state.world_tension = min(100, state.world_tension + 3)
-                description = f"灵脉下方竟连着魔气裂隙，天下局势 +3；判定 1d100={roll}。"
+                description = f"灵脉下方竟连着魔气裂隙，天下局势 +3；暗流涌动，突遭异变。"
             result = WorldInterventionResult(choice, description)
         else:
             raise ValueError("请选择扶持宗门、赈济苍生或探查灵脉。")

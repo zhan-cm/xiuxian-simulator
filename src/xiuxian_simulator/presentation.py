@@ -89,7 +89,34 @@ def _split_output(output: str) -> tuple[list[str], list[dict[str, str]], str]:
         line = raw_line.strip()
         if not line or TIME_PATTERN.match(line) or BORDER_LINE_PATTERN.match(line):
             continue
-        if line.startswith(("结算：", "判定：", "判定 ")) or CHANGE_LINE_PATTERN.match(line):
+        if line.startswith("指令："):
+            continue
+        if (
+            line.startswith(
+                (
+                    "结算：",
+                    "判定：",
+                    "判定 ",
+                    "破境印证：",
+                    "气运感召：",
+                    "竞拍机缘：",
+                    "收徒运势：",
+                    "试炼印证：",
+                    "较技胜算：",
+                    "战局推演：",
+                    "试炼契机：",
+                    "功绩印证：",
+                    "道心印证：",
+                    "历练印证：",
+                    "参悟推演：",
+                    "淬火气机：",
+                    "百艺造化：",
+                    "情劫印证：",
+                    "调停印证：",
+                )
+            )
+            or CHANGE_LINE_PATTERN.match(line)
+        ):
             lead_details.append(line)
         else:
             paragraphs.append(line)
@@ -148,7 +175,31 @@ COLLECTION_SECTION_TITLES = (
     "五域民生",
     "指令大全",
 )
-TECHNICAL_PREFIXES = ("判定", "结算", "成功率", "尘缘波澜", "当前好感", "贡献：", "权限：")
+TECHNICAL_PREFIXES = (
+    "判定",
+    "结算",
+    "成功率",
+    "尘缘波澜",
+    "当前好感",
+    "贡献：",
+    "权限：",
+    "破境印证",
+    "气运感召",
+    "竞拍机缘",
+    "收徒运势",
+    "试炼印证",
+    "较技胜算",
+    "战局推演",
+    "试炼契机",
+    "功绩印证",
+    "道心印证",
+    "历练印证",
+    "参悟推演",
+    "淬火气机",
+    "百艺造化",
+    "情劫印证",
+    "调停印证",
+)
 REGION_SECTION_TITLES = ("九州舆图",)
 MAP_SECTION_TITLES = ("东洲探索地图", "当地探索")
 SECRET_REALM_SECTION_TITLES = ("九州秘境",)
@@ -201,11 +252,18 @@ def _fact_items(lines: list[str]) -> list[dict[str, str]]:
         for token in (part.strip() for part in line.split("｜") if part.strip()):
             colon = re.match(r"^([^：:]{1,14})[：:]\s*(.+)$", token)
             if colon:
-                facts.append({"label": colon.group(1).strip(), "value": colon.group(2).strip()})
+                label = colon.group(1).strip()
+                val = re.sub(r"1d\d+=\d+[，,\s]*", "", colon.group(2).strip()).strip()
+                if label == "判定":
+                    label = "机缘印证"
+                if val:
+                    facts.append({"label": label, "value": val})
                 continue
             verdict = re.match(r"^(判定)\s+(.+)$", token)
             if verdict:
-                facts.append({"label": verdict.group(1), "value": verdict.group(2).strip()})
+                val = re.sub(r"1d\d+=\d+[，,\s]*", "", verdict.group(2).strip()).strip()
+                if val:
+                    facts.append({"label": "机缘印证", "value": val})
                 continue
             metric = re.match(r"^(.{1,12}?)\s+([+-]?\d+(?:/\d+)?%?)$", token)
             if metric:
