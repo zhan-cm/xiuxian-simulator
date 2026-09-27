@@ -118,6 +118,12 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const hasUpdates = snapshot.story.available || snapshot.new_era.available || snapshot.commissions.active.some((item) => item.ready) || snapshot.npc_lives.pending_count > 0 || Boolean(snapshot.npc_network.pending?.id) || Boolean(localStanding && !localStanding.encounter_completed)
   const contextActions: ContextAction[] = (() => {
     if (snapshot.recovery.active) return []
+    const hasFoundationMaterial = ['筑基丹', '天材地宝'].some((name) =>
+      player.resources?.[name] > 0 || snapshot.inventory?.items?.some((item) => item.name === name && item.count > 0)
+    )
+    if (player.realm === '炼气·圆满' && !hasFoundationMaterial) {
+      return [{ action: player.spirit_stones >= 300 ? '坊市' : '委托', label: '筹备筑基丹', description: '先备齐筑基丹，再尝试人道筑基', tone: 'commission' }]
+    }
     if (player.cultivation >= player.cultivation_required) return [{ action: '突破', label: '叩问突破', description: `${player.realm}修为已圆满`, tone: 'breakthrough' }]
     if (snapshot.new_era.available) return [{ action: snapshot.new_era.begin_action, label: '处置新世余波', description: snapshot.new_era.event.title || '新的时代波澜正在显现', tone: 'world' }]
     if (snapshot.story.available) return [{ action: snapshot.story.begin_action, label: '续写灵潮因果', description: snapshot.story.title || snapshot.story.next_hint, tone: 'story' }]
@@ -158,7 +164,11 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const isIntroOrCreation = isStartPhase || isCreationPhase
 
   const isMajorBreakthrough = state.phase === 'major_breakthrough_choice' || state.phase === 'destiny_choice' || decision?.eyebrow === '破境路线' || decision?.eyebrow === '逆天改命'
-  const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough || presentation.action === '突破'
+  const isBreakthroughActive = isMajorBreakthrough || viewBreakthrough
+  const onGuidedAction = (action: string) => {
+    if (action === '突破' && player.realm.endsWith('圆满')) setViewBreakthrough(true)
+    onAction(action)
+  }
   const handleNavigate = (action: string) => {
     if (action === '突破') {
       setViewBreakthrough(true)
@@ -304,7 +314,10 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                     snapshot={snapshot}
                     busy={busy}
                     readOnly={showcase}
-                    onAction={onAction}
+                    onAction={(action) => {
+                      if (!action.startsWith('突破')) setViewBreakthrough(false)
+                      onAction(action)
+                    }}
                     onClose={() => {
                       setViewBreakthrough(false)
                       if (state.phase === 'major_breakthrough_choice') {
@@ -323,7 +336,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                       busy={busy}
                       readOnly={showcase}
                       canQuickAct={canUseQuickActions}
-                      onAction={onAction}
+                      onAction={onGuidedAction}
                       onOpenGuide={() => setGuideOpen(true)}
                       onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
                       onOpenEncounter={() => {
@@ -371,7 +384,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                           onOpenSectGate={handleOpenSectGate}
                           onOpenEncounterModal={() => setEncounterOpen(true)}
                           onOpenBreakthrough={() => {
-                            setViewBreakthrough(true)
+                            if (player.realm.endsWith('圆满')) setViewBreakthrough(true)
                             if (canUseQuickActions) onAction('突破')
                           }}
                         />
@@ -391,7 +404,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                             readOnly={showcase}
                             onAction={onAction}
                             onOpenBreakthrough={() => {
-                              setViewBreakthrough(true)
+                              if (player.realm.endsWith('圆满')) setViewBreakthrough(true)
                               if (canUseQuickActions) onAction('突破')
                             }}
                             onOpenGuide={() => setGuideOpen(true)}
@@ -451,7 +464,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 initialMode="focus"
                 onOpenEncounterModal={() => setEncounterOpen(true)}
                 onOpenCommissionBoard={() => setCommissionBoardOpen(true)}
-                onAction={onAction}
+                onAction={onGuidedAction}
               />
 
               {/* 山海司南：全局世界导航 */}

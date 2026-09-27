@@ -52,6 +52,27 @@ function FactsBlock({ block }: { block: PresentationBlock }) {
   )
 }
 
+function CombatantsBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
+  const targets = block.items || []
+  const suitable = targets.filter((item) => item.recommended === true)
+  const shown = suitable.length ? suitable : targets.slice(0, 1)
+  const dangerous = targets.filter((item) => !shown.includes(item))
+  const renderTarget = (item: Record<string, unknown>) => (
+    <div className="combat-target" key={text(item.name)}>
+      <span><strong>{text(item.name)}</strong><small>{text(item.realm)} · 五行 {text(item.element)}</small></span>
+      <button type="button" disabled={readOnly} onClick={() => onAction(text(item.action))}>查看并挑战</button>
+    </div>
+  )
+  return (
+    <section className="semantic-block combatants-block" aria-label="可交手目标">
+      <header><Swords size={16} /><strong>选择斗法目标</strong></header>
+      <p>先从同阶或低阶目标开始；点击后仍可在开战前离开。</p>
+      <div className="combat-targets">{shown.map(renderTarget)}</div>
+      {dangerous.length > 0 && <details><summary>查看高阶目标 · {dangerous.length} 位</summary><div className="combat-targets">{dangerous.map(renderTarget)}</div></details>}
+    </section>
+  )
+}
+
 function PeopleBlock({ block, lives, readOnly, onAction }: { block: PresentationBlock; lives?: NpcLifeSnapshot; readOnly: boolean; onAction: (action: string) => void }) {
   const lifeByName = useMemo(() => new Map((lives?.profiles || []).map((profile) => [profile.name, profile])), [lives])
   const [selectedName, setSelectedName] = useState('')
@@ -383,10 +404,12 @@ function MeterBlock({ block }: { block: PresentationBlock }) {
 
 function MarketBlock({ block, readOnly, onAction }: { block: PresentationBlock; readOnly: boolean; onAction: (action: string) => void }) {
   const items = useMemo(() => block.items || [], [block.items])
-  const categories = useMemo(() => ['全部', ...new Set(items.map((item) => text(item.category, '其他')))], [items])
-  const [category, setCategory] = useState('全部')
+  const categories = useMemo(() => ['常用', '全部', ...new Set(items.map((item) => text(item.category, '其他')))], [items])
+  const [category, setCategory] = useState('常用')
   const [selectedName, setSelectedName] = useState('')
-  const shown = useMemo(() => category === '全部' ? items : items.filter((item) => item.category === category), [category, items])
+  const shown = useMemo(() => category === '全部' ? items : items.filter((item) => category === '常用'
+    ? ['聚气丹', '疗伤丹', '筑基丹', '灵药', '妖兽材料', '灵铁', '符纸'].includes(text(item.name))
+    : item.category === category), [category, items])
   const selected = shown.find((item) => text(item.name) === selectedName) || shown[0]
   return (
     <section className="semantic-block market-block">
@@ -1040,6 +1063,7 @@ function GenericBlock({
 
 function Block({ block, cave, lives, naturalExploration, readOnly, onAction, onOpenSectGate }: { block: PresentationBlock; cave?: CaveSnapshot; lives?: NpcLifeSnapshot; naturalExploration?: NaturalExplorationSnapshot; readOnly: boolean; onAction: (action: string) => void; onOpenSectGate?: (sectName?: string) => void }) {
   if (block.type === 'facts') return <FactsBlock block={block} />
+  if (block.type === 'combatants') return <CombatantsBlock block={block} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'people') return <PeopleBlock block={block} lives={lives} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'regions') return <RegionsBlock block={block} naturalExploration={naturalExploration} readOnly={readOnly} onAction={onAction} />
   if (block.type === 'locations') return <LocationsBlock block={block} readOnly={readOnly} onAction={onAction} />

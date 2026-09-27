@@ -100,7 +100,6 @@ export const CATEGORY_ACTIONS: Record<ActionCategory, SelectableActionItem[]> = 
 
 export const CORE_FOCUS_ACTIONS: SelectableActionItem[] = [
   { action: '修炼', label: '吐纳修炼', desc: '纳天地灵气，增进当前修为', icon: Sparkles },
-  { action: '闭关3月', label: '闭关三月', desc: '避世清修悟道，加速道行破关', icon: MoonStar },
   { action: '探索 青岳山麓', label: '巡游历练', desc: '巡游近郊灵山，搜寻药草灵物', icon: MountainSnow },
   { action: '委托', label: '悬赏榜单', desc: '揭阅东洲悬榜，接单除祟赚取灵石', icon: ScrollText },
   { action: '坊市', label: '前往坊市', desc: '步入修士坊市，买卖丹药法宝', icon: Store },
@@ -205,7 +204,7 @@ export function ActionDock({
                 data-tone={item.tone}
                 key={item.action}
                 disabled={!canQuickAct || busy || readOnly}
-                onClick={() => onAction(item.action)}
+                onClick={() => item.action === '委托' && onOpenCommissionBoard ? onOpenCommissionBoard() : onAction(item.action)}
                 title={readOnly ? '成果巡览仅供查看' : item.description}
               >
                 <Icon size={16} />
@@ -301,8 +300,8 @@ export function ActionDock({
         })}
       </div>
 
-      {/* 自定心念折叠区（为高阶自定推演提供输入框，兼容原有测试与自定义需要） */}
-      <div className="custom-draft-container">
+      {/* 自定义推演保留在完整模式，常用模式只显示直接可执行的行动。 */}
+      {viewMode === 'all' && <div className="custom-draft-container">
         <button
           type="button"
           className="custom-draft-toggle"
@@ -312,7 +311,7 @@ export function ActionDock({
           <span className="toggle-left">
             <Compass size={13} />
             <strong>自定义心念草稿</strong>
-            <small>（新手无需使用，点选上方卡片即可）</small>
+            <small>（进阶玩法）</small>
           </span>
           <ChevronDown size={14} className={`toggle-chevron ${customDraftOpen ? 'open' : ''}`} />
         </button>
@@ -360,7 +359,7 @@ export function ActionDock({
             </button>
           </div>
         </div>
-      </div>
+      </div>}
     </section>
   )
 }

@@ -171,6 +171,17 @@ describe('BreakthroughAltar component', () => {
     expect(onAction).toHaveBeenCalledWith('突破 人道')
   })
 
+  it('offers a direct market path when the foundation pill is missing', () => {
+    const onAction = vi.fn()
+    const snapshot = {
+      ...mockSnapshot,
+      state: { ...mockSnapshot.state, player: { ...mockSnapshot.state.player, resources: {} } },
+    } as unknown as Snapshot
+    render(<BreakthroughAltar snapshot={snapshot} busy={false} readOnly={false} onAction={onAction} />)
+    fireEvent.click(screen.getByRole('button', { name: '去坊市寻找筑基丹' }))
+    expect(onAction).toHaveBeenCalledWith('坊市')
+  })
+
   it('渡劫战报输出时正确展示渡劫回响卡片', () => {
     const snapshotWithOutput = {
       ...mockSnapshot,
