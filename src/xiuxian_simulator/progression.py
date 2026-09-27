@@ -433,16 +433,15 @@ class ProgressionEngine:
         elif trait == "天眼通":
             player.spirit_sense = min(20, player.spirit_sense + 3)
         elif trait == "双修悟道":
-            player.modifiers["dual_cultivation_multiplier"] = 1.5
+            player.modifiers["dual_cultivation_multiplier"] = player.modifiers.get("dual_cultivation_multiplier", 1.0) * 1.5
         elif trait == "聚灵体":
             player.modifiers["cultivation_multiplier"] = player.modifiers.get("cultivation_multiplier", 1.0) * 1.15
         elif trait == "心如磐石":
             player.dao_heart = min(20, player.dao_heart + 3)
-            player.tags.append("可抵挡一次心魔")
         elif trait == "万里神行":
             player.speed = min(20, player.speed + 3)
         elif trait == "灵兽亲和":
-            player.tags.append("御兽等级+1")
+            player.tags.append("收服灵兽成功率+12")
         elif trait == "血魔噬魂":
             player.tags.append("击杀回血")
         elif trait == "大道之体":

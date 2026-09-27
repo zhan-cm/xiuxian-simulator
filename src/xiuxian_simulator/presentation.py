@@ -31,6 +31,12 @@ METRICS = (
 
 def _classify(action: str, output: str) -> tuple[str, str, str]:
     action_text = action.strip()
+    if action_text.startswith("读档"):
+        return "卷", "system", "卷宗已读取" if output.startswith("读档完成。") else "卷宗未读取"
+    if action_text.startswith("恢复备份"):
+        return "卷", "system", "备份已恢复" if output.startswith("已恢复为") else "备份未恢复"
+    if action_text.startswith("存档"):
+        return "卷", "system", "卷宗已保存"
     if any(action_text.startswith(word) for word in ("评传", "仙途评传", "轮回", "轮回卷宗", "铭刻传承")):
         return "轮", "story", "仙途评传"
     if any(word in output for word in ("陨落", "坐化", "战败", "死亡")):
@@ -66,7 +72,7 @@ def _classify(action: str, output: str) -> tuple[str, str, str]:
     if any(action_text.startswith(word) for word in ("天下", "干预天下", "扶持宗门", "赈济苍生", "探查灵脉", "暂不干预")):
         return "世", "story", "九州大势"
     if (
-        action_text in {"开始游戏", "确认默认创角", "面板", "帮助"}
+        action_text in {"开始游戏", "快速开始游戏", "确认默认创角", "面板", "帮助"}
         or action_text.startswith(("存档", "读档"))
         or "=" in action_text
     ):
@@ -800,7 +806,10 @@ def present_action(
 ) -> dict[str, Any]:
     seal, tone, default_title = _classify(action, output)
     paragraphs, sections, hidden_details = _split_output(output)
-    changes = _state_changes(before, after)
+    administrative = action.strip().startswith(("读档", "存档", "恢复备份")) or action.strip() in {
+        "开始游戏", "快速开始游戏", "重开新局", "开启新轮回", "重新创角"
+    }
+    changes = [] if administrative else _state_changes(before, after)
     paragraphs, blocks = _semantic_blocks(action, tone, paragraphs, sections, changes, after)
     title = sections[0]["title"] if sections and len(sections[0]["title"]) <= 18 else default_title
     details = hidden_details or output.strip()

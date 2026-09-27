@@ -231,7 +231,7 @@ class RelationshipEngine:
         if name not in state.dao_partners:
             raise ValueError(f"{name}尚不是你的道侣。")
         breakdown = ProgressionEngine.cultivation_gain(state, retreat=False)
-        multiplier = state.player.modifiers.get("dual_cultivation_multiplier", 1.5) * DaoEngine.dual_cultivation_multiplier(state)
+        multiplier = 1.5 * state.player.modifiers.get("dual_cultivation_multiplier", 1.0) * DaoEngine.dual_cultivation_multiplier(state)
         remaining = state.player.cultivation_required - state.player.cultivation
         gain = min(remaining, max(1, round(breakdown.total * multiplier)))
         state.player.cultivation += max(0, gain)

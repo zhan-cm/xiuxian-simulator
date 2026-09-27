@@ -248,7 +248,7 @@ class CharacterCreator:
             player.dao_heart += 1
             player.comprehension += 1
         elif player.background == "没落世家":
-            player.inventory.append("先祖残卷（随机玄阶功法）")
+            player.known_techniques.append("青木长生诀")
         elif player.background == "市井孤儿":
             player.speed += 2
         elif player.background == "书香门第":
@@ -256,6 +256,7 @@ class CharacterCreator:
         elif player.background == "方外遗孤":
             player.aptitude += 2
         elif player.background == "妖族后裔":
+            player.health_max += 20
             player.tags.append("半妖之身")
 
     @staticmethod
@@ -273,10 +274,13 @@ class CharacterCreator:
         elif player.constitution == "冰魄灵体":
             player.modifiers["ice_damage_multiplier"] = 1.3
         elif player.constitution == "剑灵体":
+            player.modifiers["sword_damage_multiplier"] = 1.2
             player.tags.append("剑道亲和")
         elif player.constitution in {"玄阴体", "纯阳体"}:
+            player.modifiers["dual_cultivation_multiplier"] = 1.2
             player.tags.append("双修增益")
         elif player.constitution == "混沌体":
+            player.modifiers["element_damage_multiplier"] = 1.1
             player.tags.append("五行皆通")
 
     @staticmethod

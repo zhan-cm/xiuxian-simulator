@@ -10,7 +10,11 @@ interface StartGamePortalProps {
 }
 
 export function StartGamePortal({ busy, saveSummaries, onAction, onOpenArchive }: StartGamePortalProps) {
-  const latestSave = saveSummaries && saveSummaries.length > 0 ? saveSummaries[0] : null
+  const latestSave = saveSummaries.find((save) => !save.corrupt) || null
+  const begin = (action: string) => {
+    if (saveSummaries.length && !window.confirm('开始新游戏会替换当前自动存档。旧进度会先另存为“开局前”卷宗，可在存档界面读取。确定继续吗？')) return
+    onAction(action)
+  }
 
   return (
     <div className="start-game-portal">
@@ -36,14 +40,31 @@ export function StartGamePortal({ busy, saveSummaries, onAction, onOpenArchive }
         </section>
 
         <div className="portal-action-cluster">
+          {latestSave && (
+            <motion.button
+              type="button"
+              className="portal-btn primary-start-btn"
+              disabled={busy}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onAction(`读档 ${String(latestSave.name)}`)}
+            >
+              <div className="btn-seal"><FolderOpen size={20} /></div>
+              <div className="btn-text">
+                <strong>继续上次修行</strong>
+                <small>{String(latestSave.player_name || '修士')} · {String(latestSave.realm || '凡人')} · {String(latestSave.name)}</small>
+              </div>
+              <Play size={18} className="btn-arrow" />
+            </motion.button>
+          )}
           {/* 主动作 1：自定创角 */}
           <motion.button
             type="button"
-            className="portal-btn primary-start-btn"
+            className={`portal-btn ${latestSave ? 'quick-start-btn' : 'primary-start-btn'}`}
             disabled={busy}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => onAction('开始游戏')}
+            onClick={() => begin('开始游戏')}
           >
             <div className="btn-seal"><Feather size={20} /></div>
             <div className="btn-text">
@@ -60,10 +81,7 @@ export function StartGamePortal({ busy, saveSummaries, onAction, onOpenArchive }
             disabled={busy}
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              // 引擎在 new 阶段支持“开始游戏”，随后在创角时支持“确认默认创角”
-              onAction('开始游戏')
-            }}
+            onClick={() => begin('快速开始游戏')}
           >
             <div className="btn-seal"><Sparkles size={20} /></div>
             <div className="btn-text">
@@ -89,10 +107,10 @@ export function StartGamePortal({ busy, saveSummaries, onAction, onOpenArchive }
             </button>
 
             {latestSave && (
-              <div className="latest-save-chip" onClick={onOpenArchive}>
+              <button className="latest-save-chip" type="button" disabled={busy} onClick={onOpenArchive}>
                 <ScrollText size={13} />
                 <span>最近卷宗：<strong>{String(latestSave.name || 'autosave')}</strong>（{String(latestSave.player_name || '修士')} · {String(latestSave.realm || '凡人')}）</span>
-              </div>
+              </button>
             )}
           </div>
         </div>

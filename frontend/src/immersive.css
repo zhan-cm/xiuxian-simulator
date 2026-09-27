@@ -4733,9 +4733,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font: inherit;
   font-size: 11.5px;
   color: #7b643d;
   cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 .latest-save-chip:hover {
   text-decoration: underline;

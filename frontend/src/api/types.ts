@@ -571,6 +571,7 @@ export interface NpcNetworkSnapshot {
 
 export interface Snapshot {
   app_version: string
+  action_result?: { status: 'success' | 'blocked' }
   state: GameState
   narrator: string
   save_names: string[]

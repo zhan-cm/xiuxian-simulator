@@ -237,6 +237,14 @@ class CombatEngine:
             * partner_attack_mult
             * spirit_atk_mult
         )
+        if attack_element == "火":
+            arts_multiplier *= player.modifiers.get("fire_damage_multiplier", 1.0)
+        elif attack_element == "冰":
+            arts_multiplier *= player.modifiers.get("ice_damage_multiplier", 1.0)
+        if attack_element in {"金", "木", "水", "火", "土", "冰", "风", "雷"}:
+            arts_multiplier *= player.modifiers.get("element_damage_multiplier", 1.0)
+        if "剑" in purpose or (purpose in {"attack", "ultimate"} and "剑" in player.equipped_weapon):
+            arts_multiplier *= player.modifiers.get("sword_damage_multiplier", 1.0)
         damage = max(
             1,
             round(base * power_multiplier * arts_multiplier * realm * element * critical_multiplier - int(combat["enemy_defense"])),
@@ -449,6 +457,8 @@ class CombatEngine:
             state.phase = "playing"
             state.combat = {}
             return
+        if "血魔噬魂" in state.player.destiny_traits:
+            state.player.health = min(state.player.health_max, state.player.health + max(1, round(state.player.health_max * 0.1)))
         state.player.karma += 5
         state.pending_loot = dict(combat.get("loot", {}))
         stones = int(combat.get("loot_spirit_stones", 0))

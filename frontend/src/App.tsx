@@ -209,6 +209,7 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                 <ArchiveDialog
                   saves={snapshot.save_summaries}
                   busy={busy}
+                  canSave={!isStartPhase}
                   open={archiveOpen}
                   onOpenChange={setArchiveOpen}
                   onAction={onAction}
@@ -612,28 +613,12 @@ export default function App() {
     onMutate: (value) => { setActiveAction(value); setActionError(''); setNotice(null) },
     onSuccess: (data, value) => {
       queryClient.setQueryData(['snapshot'], data)
-      const out = String(data.output || '')
-      const isBlocked =
-        out.includes('资源不足') ||
-        out.includes('反噬尚未平复') ||
-        out.includes('伤势未愈') ||
-        out.includes('不可突破') ||
-        out.includes('要求当前境界圆满') ||
-        out.includes('尚未')
-      if (isBlocked) {
-        setNotice({
-          title: '破关受阻',
-          message: out.split('\n')[0] || '资粮或道行未足，暂未能破境',
-          isWarning: true,
-        })
-      } else {
-        setNotice({
-          title: '推演完成',
-          message: data.presentation?.title || `已完成：${value}`,
-          isWarning: false,
-        })
-      }
-      window.scrollTo({ top: 0, behavior: 'instant' })
+      const blocked = data.action_result?.status === 'blocked'
+      setNotice({
+        title: blocked ? '操作未完成' : value.startsWith('读档') ? '卷宗已读取' : '行动已处理',
+        message: blocked ? String(data.output || '').split('\n')[0] : data.presentation?.title || `已处理：${value}`,
+        isWarning: blocked,
+      })
     },
     onError: (reason: Error) => setActionError(reason.message),
     onSettled: () => setActiveAction(''),
@@ -651,6 +636,10 @@ export default function App() {
   const displayed = inShowcase ? pages[showcaseIndex].snapshot : snapshot.data
   const openShowcase = async () => {
     const result = await showcase.refetch()
+    if (result.error) {
+      setActionError(result.error.message)
+      return
+    }
     if (result.data?.pages.length) {
       const review = loadShowcaseReview(result.data.pages, snapshot.data.app_version)
       const resumedIndex = result.data.pages.findIndex((page) => page.id === review.currentId)
