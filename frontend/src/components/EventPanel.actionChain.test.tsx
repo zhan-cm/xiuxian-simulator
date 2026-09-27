@@ -109,6 +109,8 @@ const mockCommissions: CommissionSnapshot = {
       kind_label: '斩妖除祟',
       summary: '剿除贼寇',
       requirement: '击败黑风盗',
+      location: '青岳城外',
+      how_to: '击败黑风盗后交付。',
       duration: 3,
       reward: '灵石 +200',
       accepted: true,
@@ -125,6 +127,9 @@ const mockCommissions: CommissionSnapshot = {
       deadline_turn: 10,
       deliver_action: '交付悬赏 comm-1',
       abandon_action: '放弃悬赏 comm-1',
+      next_action: '交付悬赏 comm-1',
+      next_label: '交付并领取报酬',
+      action_hint: '无需推进时间',
     },
   ],
 }

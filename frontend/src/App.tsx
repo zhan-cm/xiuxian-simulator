@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
+import { CalendarDays, ChevronDown, CircleAlert, CloudSun, Eye, HeartHandshake, History, Leaf, LoaderCircle, RotateCcw, ScrollText, Shield, Sparkles, UserRound, Waypoints, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchShowcase, fetchSnapshot, performAction } from './api/client'
 import type { Snapshot } from './api/types'
@@ -43,6 +43,7 @@ import { DaoPartnerChamberModal } from './components/DaoPartnerChamberModal'
 import { AncientTombModal } from './components/AncientTombModal'
 import { ArtifactSpiritModal } from './components/ArtifactSpiritModal'
 import { CommissionBoard } from './components/CommissionBoard'
+import { CommissionTracker } from './components/CommissionTracker'
 import { TopbarNavRibbon } from './components/TopbarNavRibbon'
 import { TianjiFocusCard } from './components/TianjiFocusCard'
 import { findEncounterNpc } from './sceneLogic'
@@ -120,8 +121,6 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
     if (player.cultivation >= player.cultivation_required) return [{ action: '突破', label: '叩问突破', description: `${player.realm}修为已圆满`, tone: 'breakthrough' }]
     if (snapshot.new_era.available) return [{ action: snapshot.new_era.begin_action, label: '处置新世余波', description: snapshot.new_era.event.title || '新的时代波澜正在显现', tone: 'world' }]
     if (snapshot.story.available) return [{ action: snapshot.story.begin_action, label: '续写灵潮因果', description: snapshot.story.title || snapshot.story.next_hint, tone: 'story' }]
-    const readyCommission = snapshot.commissions.active.find((item) => item.ready)
-    if (readyCommission) return [{ action: '委托', label: '悬榜可以交付', description: readyCommission.title, tone: 'commission' }]
     if (localStanding && !localStanding.encounter_completed) return [{ action: '地方机缘', label: '探查地方机缘', description: localStanding.encounter_title, tone: 'world' }]
     return []
   })()
@@ -139,6 +138,8 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
   const [ancientTombOpen, setAncientTombOpen] = useState(false)
   const [artifactSpiritOpen, setArtifactSpiritOpen] = useState(false)
   const [commissionBoardOpen, setCommissionBoardOpen] = useState(false)
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  const [morePlacesOpen, setMorePlacesOpen] = useState(false)
 
   const pendingEncounter = snapshot.encounters?.pending
   useEffect(() => {
@@ -335,6 +336,15 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                       onOpenCommissionBoard={() => setCommissionBoardOpen(true)}
                     />
 
+                    <CommissionTracker
+                      commissions={snapshot.commissions}
+                      busy={busy}
+                      canAct={canUseQuickActions}
+                      readOnly={showcase}
+                      onAction={onAction}
+                      onOpenBoard={() => setCommissionBoardOpen(true)}
+                    />
+
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={`${state.turn}-${presentation.title}`}
@@ -368,20 +378,27 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
                       </motion.div>
                     </AnimatePresence>
 
-                    {/* 当没有特定事件块时，填充道途长卷与世象全景，彻底消除中栏空白 */}
+                    {/* 全景信息按需展开，默认优先展示当前行动。 */}
                     {(!presentation.blocks || presentation.blocks.length === 0) && (
-                      <CenterStageChronicle
-                        snapshot={snapshot}
-                        busy={busy}
-                        readOnly={showcase}
-                        onAction={onAction}
-                        onOpenBreakthrough={() => {
-                          setViewBreakthrough(true)
-                          if (canUseQuickActions) onAction('突破')
-                        }}
-                        onOpenGuide={() => setGuideOpen(true)}
-                        onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
-                      />
+                      <div className="stage-overview">
+                        <button className="stage-overview-toggle" type="button" aria-expanded={overviewOpen} onClick={() => setOverviewOpen((value) => !value)}>
+                          <span>{overviewOpen ? '收起修行概览' : '查看修行概览'}</span><ChevronDown size={16} />
+                        </button>
+                        {overviewOpen && (
+                          <CenterStageChronicle
+                            snapshot={snapshot}
+                            busy={busy}
+                            readOnly={showcase}
+                            onAction={onAction}
+                            onOpenBreakthrough={() => {
+                              setViewBreakthrough(true)
+                              if (canUseQuickActions) onAction('突破')
+                            }}
+                            onOpenGuide={() => setGuideOpen(true)}
+                            onOpenRealmsLadder={() => setRealmsLadderOpen(true)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     <SocialActionBar
@@ -439,16 +456,20 @@ function Game({ snapshot, busy, activeAction, error, onAction, showcase, showcas
 
               {/* 山海司南：全局世界导航 */}
               <div className="xianxia-rail-nav">
-                <WorldNavigation
-                  activeAction={presentation.action}
-                  disabled={busy || showcase || !canUseQuickActions}
-                  disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'}
-                  codexOpen={codexOpen}
-                  codexButtonRef={codexTrigger}
-                  hasUpdates={Boolean(hasUpdates)}
-                  onNavigate={handleNavigate}
-                  onToggleCodex={toggleCodex}
-                />
+                <button ref={codexTrigger} className="rail-more-toggle" type="button" aria-expanded={morePlacesOpen} onClick={() => setMorePlacesOpen((value) => !value)}>
+                  <span>更多地点与侧记</span><ChevronDown size={16} />
+                </button>
+                {morePlacesOpen && (
+                  <WorldNavigation
+                    activeAction={presentation.action}
+                    disabled={busy || showcase || !canUseQuickActions}
+                    disabledReason={showcase ? '成果巡览仅供查看' : busy ? '正在推演，请稍候' : '请先完成当前抉择'}
+                    codexOpen={codexOpen}
+                    hasUpdates={Boolean(hasUpdates)}
+                    onNavigate={handleNavigate}
+                    onToggleCodex={toggleCodex}
+                  />
+                )}
               </div>
             </aside>
           )}

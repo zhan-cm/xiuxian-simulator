@@ -270,6 +270,38 @@ class SimulatorSmokeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "没有追踪"):
             CommissionEngine.deliver(state, herb["id"])
 
+    def test_commission_guidance_tracks_next_step_and_delivery(self) -> None:
+        state = GameState(phase="playing", turn=1)
+        herb = next(item for item in CommissionEngine.snapshot(state)["offers"] if item["template_id"] == "herb-delivery")
+        self.assertIn("青岳山麓", herb["location"])
+        self.assertIn("灵药", herb["how_to"])
+        CommissionEngine.accept(state, herb["id"])
+        active = CommissionEngine.snapshot(state)["active"][0]
+        self.assertEqual(active["next_action"], "探索 青岳山麓")
+        self.assertFalse(active["ready"])
+        state.player.resources["灵药"] = 3
+        ready = CommissionEngine.snapshot(state)["active"][0]
+        self.assertEqual(ready["next_action"], ready["deliver_action"])
+        self.assertTrue(ready["ready"])
+
+    def test_combat_victory_advances_hunt_commission(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            hunt = next(item for item in CommissionEngine.snapshot(engine.state)["offers"] if item["template_id"] == "monster-hunt")
+            CommissionEngine.accept(engine.state, hunt["id"])
+            engine.state.player.speed = 30
+            engine.state.player.fortune = 30
+            engine.state.rng_seed = 5
+            engine.process("挑战 噬灵獾")
+            engine.process("开战")
+            engine.state.combat["enemy_health"] = 1
+            self.assertIn("胜利", engine.process("攻击"))
+            active = CommissionEngine.snapshot(engine.state)["active"][0]
+            self.assertTrue(active["ready"])
+            self.assertEqual(active["current"], 1)
+
     def test_commission_commands_share_engine_autosave_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))

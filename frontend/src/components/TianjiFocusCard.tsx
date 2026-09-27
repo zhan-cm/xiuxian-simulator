@@ -54,7 +54,7 @@ export function TianjiFocusCard({
   onOpenEncounter,
   onOpenCommissionBoard,
 }: TianjiFocusCardProps) {
-  const [showMilestones, setShowMilestones] = useState(true)
+  const [showMilestones, setShowMilestones] = useState(false)
 
   // 1. 动态推演「当务之急」焦点行动（Next Best Action）
   const recommendation = useMemo<FocusActionRecommendation>(() => {
@@ -120,24 +120,8 @@ export function TianjiFocusCard({
       }
     }
 
-    // 优先级 5：悬赏有成（在途委托已达标，前往领赏）
-    const readyCommissions = snapshot.commissions?.active?.filter((item) => item.ready) || []
-    if (readyCommissions.length > 0) {
-      const firstReady = readyCommissions[0]
-      return {
-        tone: 'gain',
-        badge: '悬榜有成',
-        eyebrow: '【因果有偿】委托已达标',
-        title: `《${firstReady.title}》已成 · 前往东洲悬榜领赏`,
-        description: `历练圆满达成所托，可领取 ${firstReady.reward} 等丰厚报酬。`,
-        actionLabel: '领取悬榜赏金',
-        action: 'open_commission',
-        isModalAction: Boolean(onOpenCommissionBoard),
-        icon: ScrollText,
-      }
-    }
-
-    // 优先级 6：囊中羞涩（灵石不足 40 且未达突破，急需生财）
+    // 委托统一交给常驻追踪卡，避免与当务之急重复显示。
+    // 优先级 5：囊中羞涩（灵石不足 40 且未达突破，急需生财）
     if (player.spirit_stones < 40) {
       return {
         tone: 'trade',
@@ -152,7 +136,7 @@ export function TianjiFocusCard({
       }
     }
 
-    // 优先级 7：日常潜修纳气（日常主推）
+    // 优先级 6：日常潜修纳气（日常主推）
     const needCultivation = Math.max(0, player.cultivation_required - player.cultivation)
     const canRetreat = player.spirit >= 20
     return {
@@ -165,7 +149,7 @@ export function TianjiFocusCard({
       action: canRetreat ? '闭关3月' : '修炼',
       icon: Sparkles,
     }
-  }, [player, state.phase, snapshot.recovery, snapshot.commissions, pendingEncounter, onOpenCommissionBoard])
+  }, [player, state.phase, snapshot.recovery, pendingEncounter, onOpenCommissionBoard])
 
   // 2. 当前道阶里程碑清单（Milestone Checklist）
   const milestones = useMemo(() => {

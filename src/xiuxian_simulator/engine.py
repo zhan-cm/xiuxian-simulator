@@ -2039,6 +2039,7 @@ class GameEngine:
 
         if result.victory:
             JourneyEngine.mark(self.state, "combat_victory")
+            CommissionEngine.mark(self.state, "combat_victory")
             insight = DaoEngine.gain_insight(self.state, 8, f"战胜{enemy}")
             died_of_age = self._advance_combat_time()
             if died_of_age:
