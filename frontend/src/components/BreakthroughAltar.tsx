@@ -320,6 +320,7 @@ export function BreakthroughAltar({ snapshot, busy, readOnly, onAction, onClose 
                 {!isCultivationMax ? '修为未圆满' : !hasHumanPill ? `缺少${pillRequired}` : '叩定人道'}
               </span>
             </button>
+            {!hasHumanPill && <button type="button" className="route-supply-link" disabled={busy || readOnly} onClick={() => onAction('坊市')}>去坊市寻找{pillRequired}</button>}
           </article>
 
           {/* 地道破关 */}

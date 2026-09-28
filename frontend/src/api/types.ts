@@ -142,6 +142,8 @@ export interface CommissionOffer {
   kind_label: string
   summary: string
   requirement: string
+  location: string
+  how_to: string
   duration: number
   reward: string
   accepted: boolean
@@ -161,6 +163,9 @@ export interface ActiveCommission extends CommissionOffer {
   deadline_turn: number
   deliver_action: string
   abandon_action: string
+  next_action: string
+  next_label: string
+  action_hint: string
 }
 
 export interface CommissionSnapshot {
@@ -571,6 +576,7 @@ export interface NpcNetworkSnapshot {
 
 export interface Snapshot {
   app_version: string
+  action_result?: { status: 'success' | 'blocked' }
   state: GameState
   narrator: string
   save_names: string[]

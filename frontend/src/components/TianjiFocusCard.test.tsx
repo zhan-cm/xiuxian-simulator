@@ -82,10 +82,27 @@ describe('TianjiFocusCard', () => {
       />
     )
 
-    expect(screen.getByText(/气海翻涌引动天劫/)).toBeInTheDocument()
-    expect(screen.getByText(/引动雷劫破境/)).toBeInTheDocument()
-    fireEvent.click(screen.getByText(/引动雷劫破境/))
+    expect(screen.getByText(/无需筑基丹或渡雷劫/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '尝试小境界突破' }))
     expect(handleAction).toHaveBeenCalledWith('突破')
+  })
+
+  it('guides a Qi-complete player to earn a real foundation pill before breakthrough', () => {
+    const openBoard = vi.fn()
+    const player = { ...basePlayer, realm: '炼气·圆满', cultivation: 100, spirit_stones: 150 }
+    render(<TianjiFocusCard player={player} state={baseState} snapshot={baseSnapshot} canQuickAct onAction={vi.fn()} onOpenCommissionBoard={openBoard} />)
+    expect(screen.getByText(/筑基丹尚未备齐/)).toBeInTheDocument()
+    expect(screen.getByText(/现有 150 灵石/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '查看可做的悬榜' }))
+    expect(openBoard).toHaveBeenCalledOnce()
+  })
+
+  it('recognizes a foundation pill instead of any pill or a fixed stone threshold', () => {
+    const player = { ...basePlayer, realm: '炼气·圆满', cultivation: 100, resources: { 筑基丹: 1 } }
+    render(<TianjiFocusCard player={player} state={baseState} snapshot={baseSnapshot} canQuickAct onAction={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '选择突破路线' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /证道里程碑/ }))
+    expect(screen.getByText('备齐筑基丹或天材地宝').closest('li')).toHaveAttribute('title', '已持有可用的破境材料')
   })
 
   it('recommends rest when player is critically wounded', () => {

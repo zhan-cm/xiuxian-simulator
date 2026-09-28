@@ -30,6 +30,7 @@ export function CultivatorRail({
   const { player } = state
   const activeLegacy = snapshot.legacy.active_legacy
   const isCultivationMax = player.cultivation >= player.cultivation_required
+  const isMajorBreakthrough = player.realm.endsWith('圆满')
   const lifeRemaining = Math.max(0, player.lifespan - player.age)
   const lifePercent = player.lifespan > 0 ? Math.min(100, Math.max(0, (player.age / player.lifespan) * 100)) : 0
   const inventoryTypes = snapshot.inventory?.total_types || 0
@@ -85,19 +86,19 @@ export function CultivatorRail({
           <div className="banner-glow" aria-hidden="true" />
           <header>
             <Sparkles size={16} />
-            <strong>修为已至大圆满</strong>
+            <strong>{isMajorBreakthrough ? '大境界突破在即' : '当前小境界修为已满'}</strong>
           </header>
-          <p>{player.realm} 瓶颈松动，天地灵气共鸣！</p>
+          <p>{isMajorBreakthrough ? `${player.realm}：备齐破境材料后选择路线。` : `${player.realm}：可尝试突破，无需筑基丹。`}</p>
           <button
             type="button"
             className="rail-breakthrough-btn"
             disabled={!canQuickAct || busy || readOnly}
             onClick={() => {
-              onOpenBreakthrough?.()
+              if (isMajorBreakthrough) onOpenBreakthrough?.()
               onAction('突破')
             }}
           >
-            叩问突破境界
+            {isMajorBreakthrough ? '查看突破路线' : '尝试小境界突破'}
           </button>
         </div>
       )}

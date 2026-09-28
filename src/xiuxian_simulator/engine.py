@@ -80,6 +80,11 @@ class GameEngine:
             return self._choose_legacy(action)
         if action == "开始游戏":
             return self._start_game()
+        if action == "快速开始游戏":
+            opening = self._start_game()
+            if self.state.phase != "character_creation_basic":
+                return opening
+            return self._handle_basic_creation("确认默认创角")
         if action in {"帮助", "指令"}:
             return self._help()
         if action == "面板":
@@ -90,6 +95,15 @@ class GameEngine:
             return self._save(action)
         if action.startswith("读档"):
             return self._load(action)
+        if action.startswith("恢复备份"):
+            name = action.removeprefix("恢复备份").strip()
+            if not name:
+                return "请指定要恢复备份的卷宗名称。"
+            try:
+                restored = self.saves.restore_backup(name)
+            except (FileNotFoundError, ValueError) as exc:
+                return str(exc)
+            return f"已恢复为“{restored}”。请在卷宗中读取，原存档未被覆盖。"
 
         if self.state.phase == "combat_ready":
             return self._combat_ready(action)
@@ -424,6 +438,7 @@ class GameEngine:
         return self._free_action(action)
 
     def _restart_game(self) -> str:
+        self.saves.preserve(self.autosave_name)
         self.state = GameState(
             phase="character_creation_basic",
             turn=1,
@@ -456,6 +471,7 @@ class GameEngine:
         else:
             life_number = previous.life_number
             active_legacy = previous.active_legacy
+        self.saves.preserve(self.autosave_name)
         self.state = GameState(
             phase="character_creation_basic",
             turn=1,
@@ -514,6 +530,10 @@ class GameEngine:
     def _complete_character_creation(self, source: str) -> str:
         self.state.phase = "playing"
         self.state.character_draft = {}
+        affinity_bonus = self.state.player.initial_affinity_bonus
+        if affinity_bonus:
+            for name in NPCS:
+                self.state.npc_relations[name] = {"affinity": affinity_bonus, "interactions": 0}
         inheritance = LegacyEngine.apply_inheritance(self.state)
         if inheritance:
             self.state.remember(inheritance)
@@ -2019,6 +2039,7 @@ class GameEngine:
 
         if result.victory:
             JourneyEngine.mark(self.state, "combat_victory")
+            CommissionEngine.mark(self.state, "combat_victory")
             insight = DaoEngine.gain_insight(self.state, 8, f"战胜{enemy}")
             died_of_age = self._advance_combat_time()
             if died_of_age:
@@ -3168,7 +3189,7 @@ class GameEngine:
             return "可用存档：" + ("、".join(names) if names else "无")
         try:
             loaded = self.saves.load(parts[1])
-        except FileNotFoundError as exc:
+        except (FileNotFoundError, ValueError) as exc:
             return str(exc)
         if loaded.rule_sha256 and loaded.rule_sha256 != self.rules.sha256:
             return "存档所用规则与当前 DOCX 不一致，已拒绝直接载入；请先备份并迁移存档。"

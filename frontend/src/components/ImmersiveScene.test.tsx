@@ -149,6 +149,19 @@ describe('immersive game shell', () => {
     expect(act).not.toHaveBeenCalled()
   })
 
+  it('offers a direct challenge for a suitable combat target and folds away higher tiers', () => {
+    const act = vi.fn()
+    const combatants = { ...presentation, blocks: [{ type: 'combatants', title: '可交手目标', items: [
+      { name: '噬灵獾', realm: '1境·1阶', element: '土', recommended: true, action: '挑战 噬灵獾' },
+      { name: '金丹真人', realm: '4境·1阶', element: '火', recommended: false, action: '挑战 金丹真人' },
+    ] }] } as Presentation
+    render(<EventPanel presentation={combatants} immersive onAction={act} />)
+    expect(screen.getByText('噬灵獾')).toBeVisible()
+    expect(screen.getByText(/查看高阶目标/).closest('details')).not.toHaveAttribute('open')
+    fireEvent.click(screen.getAllByRole('button', { name: '查看并挑战' })[0])
+    expect(act).toHaveBeenCalledWith('挑战 噬灵獾')
+  })
+
   it('opens a complete character dossier without allowing showcase actions', () => {
     const act = vi.fn()
     const lives = { living_count: 1, pending_count: 0, memorials: [], history: [], last_event: '', profiles: [{

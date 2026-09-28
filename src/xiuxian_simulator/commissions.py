@@ -76,6 +76,17 @@ TEMPLATES: tuple[CommissionTemplate, ...] = (
 TEMPLATE_BY_ID = {template.id: template for template in TEMPLATES}
 KIND_LABELS = {"resource": "物资交付", "counter": "历练委托"}
 
+COMMISSION_GUIDANCE = {
+    "herb-delivery": ("东洲·青岳山麓或坊市", "探索青岳山麓可采到灵药，也可在坊市购买。背包中保留 3 株后返回悬榜交付。", "探索 青岳山麓", "去青岳山麓采药", "探索耗时 1 个月，可能遇敌"),
+    "mountain-survey": ("东洲·青岳山麓", "前往青岳山麓探索，累计完成 2 次探索后交付；其他地域的探索也计入进度。", "探索 青岳山麓", "去青岳山麓探索", "探索耗时 1 个月，可能遇敌"),
+    "monster-hunt": ("斗法目标或探索遇敌", "打开斗法目标，挑战可战胜的对手并取得 1 次胜利；探索中遇敌获胜也计入。达标后返回悬榜交付。", "战斗", "查看斗法目标", "先查看目标，再决定是否开战"),
+    "artisan-order": ("修仙百艺", "打开百艺查看配方，备齐材料后成功炼丹、炼器或制符 1 次。失败不计进度。", "技艺", "查看百艺配方", "制作会消耗材料和 1 个月"),
+    "sect-support": ("所属宗门", "打开宗门查看任务，完成 1 次宗门任务并成功结算。失败不计进度。", "宗门", "查看宗门任务", "宗门任务耗时 1 个月"),
+    "market-runner": ("任意坊市", "在坊市完成 2 笔买入或卖出交易。查看行情本身不计进度。", "坊市", "前往坊市交易", "交易本身不推进月份"),
+    "cultivation-notes": ("洞府修炼", "累计修炼 2 个月；吐纳或闭关都计入。进度达标后返回悬榜交付。", "修炼", "吐纳修炼 1 个月", "本次耗时 1 个月"),
+    "caravan-escort": ("九州舆图", "从九州舆图前往另一地域并完成跨域行旅。只打开地图不会增加进度。", "地图", "规划跨域行旅", "跨域行旅会推进时间"),
+}
+
 
 class CommissionEngine:
     BOARD_SIZE = 4
@@ -229,6 +240,7 @@ class CommissionEngine:
         elif len(state.active_commissions) >= cls.ACTIVE_LIMIT:
             disabled_reason = "追踪栏位已满"
         requirement = f"交付 {template.target}×{template.required}" if template.kind == "resource" else template.summary
+        location, how_to, _, _, _ = COMMISSION_GUIDANCE[template.id]
         return {
             "id": instance_id,
             "template_id": template.id,
@@ -238,6 +250,8 @@ class CommissionEngine:
             "kind_label": KIND_LABELS[template.kind],
             "summary": template.summary,
             "requirement": requirement,
+            "location": location,
+            "how_to": how_to,
             "duration": template.duration,
             "reward": template.reward.label(),
             "accepted": accepted,
@@ -253,6 +267,12 @@ class CommissionEngine:
         current = min(cls.progress(state, record, template), template.required)
         deadline = int(record.get("deadline_turn", state.turn))
         turns_left = max(0, deadline - state.turn)
+        _, _, next_action, next_label, action_hint = COMMISSION_GUIDANCE[template.id]
+        if template.id in {"herb-delivery", "mountain-survey"} and not state.player.location.startswith("东洲"):
+            next_action, next_label = "地图", "查看返回东洲的行程"
+            action_hint = "先前往东洲；也可在当前坊市购买灵药" if template.id == "herb-delivery" else "先前往东洲"
+        if current >= template.required and state.turn <= deadline:
+            next_action, next_label, action_hint = f"交付委托 {instance_id}", "交付委托并领取报酬", "立即交付，不推进月份"
         return {
             **cls._offer_data(state, instance_id, template),
             "current": current,
@@ -262,6 +282,9 @@ class CommissionEngine:
             "expired": state.turn > deadline,
             "turns_left": turns_left,
             "deadline_turn": deadline,
+            "next_action": next_action,
+            "next_label": next_label,
+            "action_hint": action_hint,
             "deliver_action": f"交付委托 {instance_id}",
             "abandon_action": f"放弃委托 {instance_id}",
         }
@@ -301,11 +324,15 @@ class CommissionEngine:
             for item in data["active"]:
                 status = "可交付" if item["ready"] else "已逾期" if item["expired"] else f"{item['current']}/{item['required']}"
                 lines.append(f"{item['title']}｜{status}｜余 {item['turns_left']} 月｜编号 {item['id']}")
+                lines.append(f"  地点：{item['location']}｜做法：{item['how_to']}")
+                if not item["expired"]:
+                    lines.append(f"  下一步：{item['next_action']}")
         else:
             lines.append("暂无，可从本期悬榜接取两份。")
         lines.append("【本期悬榜】")
         for item in data["offers"]:
             status = item["disabled_reason"] or "可接取"
             lines.append(f"{item['title']}｜{item['issuer']}｜{item['requirement']}｜{item['reward']}｜{status}｜编号 {item['id']}")
+            lines.append(f"  地点：{item['location']}｜做法：{item['how_to']}")
         lines.append("指令：接取委托 [编号]／交付委托 [编号]／放弃委托 [编号]")
         return "\n".join(lines)

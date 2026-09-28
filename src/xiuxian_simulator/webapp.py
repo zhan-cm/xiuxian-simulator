@@ -51,10 +51,14 @@ class WebApplication:
         self.decisions = decisions or DecisionCatalog.load(
             self.project_root / "data" / "content" / "decision_choices.json"
         )
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._presentation = welcome_presentation()
 
     def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return self._snapshot_unlocked()
+
+    def _snapshot_unlocked(self) -> dict[str, Any]:
         life_state = GameState.from_dict(self.engine.state.to_dict())
         npc_lives = NpcLifecycleEngine.snapshot(life_state)
         npc_network = NpcNetworkEngine.snapshot(life_state)
@@ -133,11 +137,25 @@ class WebApplication:
             after = self.engine.state.to_dict()
             self._presentation = present_action(normalized, output, before, after)
             snapshot = self.snapshot()
-        return {"output": output, **snapshot}
+        blocked = (
+            normalized.startswith("读档") and not output.startswith("读档完成。")
+        ) or (
+            normalized.startswith("恢复备份") and not output.startswith("已恢复为")
+        )
+        return {
+            "output": output,
+            "action_result": {"status": "blocked" if blocked else "success"},
+            **snapshot,
+        }
 
     def export_save(self, name: str) -> dict[str, Any]:
         with self._lock:
             return self.engine.saves.export_payload(name)
+
+    def delete_save(self, name: str) -> dict[str, Any]:
+        with self._lock:
+            result = self.engine.saves.delete(name)
+            return {**result, "save_summaries": self.engine.saves.list_summaries()}
 
     def import_save(
         self,

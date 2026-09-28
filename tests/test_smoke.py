@@ -270,6 +270,38 @@ class SimulatorSmokeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "没有追踪"):
             CommissionEngine.deliver(state, herb["id"])
 
+    def test_commission_guidance_tracks_next_step_and_delivery(self) -> None:
+        state = GameState(phase="playing", turn=1)
+        herb = next(item for item in CommissionEngine.snapshot(state)["offers"] if item["template_id"] == "herb-delivery")
+        self.assertIn("青岳山麓", herb["location"])
+        self.assertIn("灵药", herb["how_to"])
+        CommissionEngine.accept(state, herb["id"])
+        active = CommissionEngine.snapshot(state)["active"][0]
+        self.assertEqual(active["next_action"], "探索 青岳山麓")
+        self.assertFalse(active["ready"])
+        state.player.resources["灵药"] = 3
+        ready = CommissionEngine.snapshot(state)["active"][0]
+        self.assertEqual(ready["next_action"], ready["deliver_action"])
+        self.assertTrue(ready["ready"])
+
+    def test_combat_victory_advances_hunt_commission(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = self.make_engine(Path(temp_dir))
+            engine.process("开始游戏")
+            engine.process("确认默认创角")
+            hunt = next(item for item in CommissionEngine.snapshot(engine.state)["offers"] if item["template_id"] == "monster-hunt")
+            CommissionEngine.accept(engine.state, hunt["id"])
+            engine.state.player.speed = 30
+            engine.state.player.fortune = 30
+            engine.state.rng_seed = 5
+            engine.process("挑战 噬灵獾")
+            engine.process("开战")
+            engine.state.combat["enemy_health"] = 1
+            self.assertIn("胜利", engine.process("攻击"))
+            active = CommissionEngine.snapshot(engine.state)["active"][0]
+            self.assertTrue(active["ready"])
+            self.assertEqual(active["current"], 1)
+
     def test_commission_commands_share_engine_autosave_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = self.make_engine(Path(temp_dir))
@@ -1351,7 +1383,7 @@ class SimulatorSmokeTests(unittest.TestCase):
             engine.process("确认默认创角")
             player = engine.state.player
             player.spirit_sense = 1
-            player.resources.update({"灵药": 8, "妖兽材料": 2})
+            player.resources.update({"灵药": 6, "妖兽材料": 1})
             for seed in range(1, 300):
                 probe = GameState.from_dict(engine.state.to_dict())
                 probe.rng_seed = seed
@@ -2407,6 +2439,31 @@ class SimulatorSmokeTests(unittest.TestCase):
         view = present_action("地图", "【东洲探索地图】\n" + "\n".join(lines), state, state)
         self.assertEqual(len(view["blocks"][0]["items"]), 6)
         self.assertTrue(all(item["accessible"] for item in view["blocks"][0]["items"]))
+
+    def test_starter_foundation_pill_has_an_accessible_price_and_recipe(self) -> None:
+        state = GameState(phase="playing")
+        self.assertLessEqual(EconomyEngine.regional_price(state, "筑基丹", "买"), 310)
+        hunt = next(template for template in CommissionEngine.board(state) if template[1].id == "monster-hunt")[1]
+        self.assertGreaterEqual(state.player.spirit_stones + hunt.reward.spirit_stones,
+                                EconomyEngine.regional_price(state, "筑基丹", "买"))
+        self.assertEqual(RECIPES["筑基丹"].ingredients, {"灵药": 6, "妖兽材料": 1})
+        self.assertGreaterEqual(RECIPES["筑基丹"].base_chance, 65)
+
+    def test_combatant_list_has_direct_challenge_actions(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        output = "【可交手目标】\n噬灵獾｜1境·1阶｜五行 土\n铁甲妖狼｜1境·3阶｜五行 金\n输入：挑战 噬灵獾"
+        view = present_action("战斗", output, state, state)
+        block = view["blocks"][0]
+        self.assertEqual(block["type"], "combatants")
+        self.assertEqual(block["items"][0]["action"], "挑战 噬灵獾")
+        self.assertTrue(block["items"][0]["recommended"])
+        self.assertFalse(block["items"][1]["recommended"])
+        self.assertIn("选择目标后", view["paragraphs"][0])
+
+    def test_opening_market_does_not_claim_a_trade_occurred(self) -> None:
+        state = GameState(phase="playing").to_dict()
+        view = present_action("坊市", "【青岳坊市】\n聚气丹：买 16／卖 12 灵石", state, state)
+        self.assertIn("查看本身不会花费", view["paragraphs"][0])
 
     def test_market_output_becomes_filterable_trade_items(self) -> None:
         state = GameState(phase="playing").to_dict()

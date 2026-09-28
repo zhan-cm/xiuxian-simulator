@@ -87,6 +87,78 @@ class ModernWebTests(unittest.TestCase):
             invalid = client.post("/api/v1/actions", json={"action": ""})
             self.assertEqual(invalid.status_code, 422)
 
+    def test_quick_start_preserves_existing_autosave_and_completes_creation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            old_state = engine.state.to_dict()
+            engine.state.phase = "playing"
+            engine.state.turn = 27
+            engine.state.player.name = "旧档修士"
+            engine.saves.save("autosave", engine.state)
+            engine.state = type(engine.state).from_dict(old_state)
+            client = TestClient(create_modern_app(engine, ROOT))
+
+            response = client.post("/api/v1/actions", json={"action": "快速开始游戏"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["state"]["phase"], "playing")
+            self.assertEqual(response.json()["state"]["player"]["name"], "沈砚")
+            preserved = [name for name in engine.saves.list_names() if name.startswith("autosave_开局前_")]
+            self.assertEqual(len(preserved), 1)
+            self.assertEqual(engine.saves.load(preserved[0]).player.name, "旧档修士")
+            self.assertEqual(engine.saves.load("autosave").player.name, "沈砚")
+            self.assertEqual(response.json()["presentation"]["changes"], [])
+
+    def test_loading_does_not_report_saved_progress_as_new_rewards(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            engine.state.phase = "playing"
+            engine.state.turn = 27
+            engine.state.player.spirit_stones = 999
+            engine.saves.save("旧档", engine.state)
+            engine.state = type(engine.state)(rule_sha256=engine.rules.sha256)
+            client = TestClient(create_modern_app(engine, ROOT))
+
+            response = client.post("/api/v1/actions", json={"action": "读档 旧档"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["presentation"]["changes"], [])
+            self.assertEqual(response.json()["state"]["player"]["spirit_stones"], 999)
+
+    def test_corrupt_save_does_not_break_the_state_endpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            (Path(temp_dir) / "broken.json").write_text('{"player": [], "turn": "bad"}', encoding="utf-8")
+            client = TestClient(create_modern_app(engine, ROOT))
+
+            response = client.get("/api/v1/state")
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["save_summaries"][0]["corrupt"])
+            load = client.post("/api/v1/actions", json={"action": "读档 broken"})
+            self.assertEqual(load.status_code, 200)
+            self.assertEqual(load.json()["action_result"]["status"], "blocked")
+            self.assertIn("已损坏", load.json()["output"])
+
+    def test_backup_restores_as_a_separate_loadable_save(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            engine = build_engine(ROOT)
+            engine.saves.save_dir = Path(temp_dir)
+            engine.state.phase = "playing"
+            engine.state.turn = 12
+            engine.saves.save("autosave", engine.state)
+            engine.state.turn = 19
+            engine.saves.save("autosave", engine.state)
+            client = TestClient(create_modern_app(engine, ROOT))
+
+            before = client.get("/api/v1/state").json()
+            self.assertTrue(before["save_summaries"][0]["has_backup"])
+            restored = client.post("/api/v1/actions", json={"action": "恢复备份 autosave"})
+            self.assertEqual(restored.status_code, 200)
+            self.assertEqual(restored.json()["action_result"]["status"], "success")
+            self.assertEqual(engine.saves.load("autosave").turn, 19)
+            self.assertEqual(engine.saves.load("autosave_备份恢复").turn, 12)
+
     def test_portable_save_endpoints_preserve_active_game_and_avoid_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = build_engine(ROOT)

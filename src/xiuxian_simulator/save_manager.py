@@ -36,6 +36,9 @@ class SaveManager:
     def path_for(self, name: str) -> Path:
         return self.save_dir / f"{self.normalize_name(name)}.json"
 
+    def backup_path_for(self, name: str) -> Path:
+        return self.path_for(name).with_suffix(".json.bak")
+
     def save(self, name: str, state: GameState) -> Path:
         destination = self.path_for(name)
         payload = json.dumps(state.to_dict(), ensure_ascii=False, indent=2)
@@ -45,7 +48,7 @@ class SaveManager:
                 stream.write(payload)
                 stream.write("\n")
             if destination.is_file():
-                shutil.copy2(destination, destination.with_suffix(".json.bak"))
+                shutil.copy2(destination, self.backup_path_for(name))
             os.replace(temp_name, destination)
         except Exception:
             try:
@@ -55,26 +58,91 @@ class SaveManager:
             raise
         return destination
 
+    def preserve(self, name: str) -> Path | None:
+        """Keep a separately loadable copy before a new game replaces an autosave."""
+        source = self.path_for(name)
+        if not source.is_file():
+            return None
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        for index in range(1000):
+            suffix = f"_{index}" if index else ""
+            destination = self.path_for(f"{self.normalize_name(name)}_开局前_{stamp}{suffix}")
+            if not destination.exists():
+                shutil.copy2(source, destination)
+                return destination
+        raise OSError("旧自动存档副本过多，无法安全开始新游戏。")
+
     def load(self, name: str) -> GameState:
         path = self.path_for(name)
         if not path.is_file():
             raise FileNotFoundError(f"找不到存档：{path.name}")
-        with path.open("r", encoding="utf-8") as stream:
-            return GameState.from_dict(json.load(stream))
+        return self._load_path(path)
+
+    def _load_path(self, path: Path) -> GameState:
+        try:
+            with path.open("r", encoding="utf-8") as stream:
+                payload = json.load(stream)
+            if not isinstance(payload, dict) or not isinstance(payload.get("player"), dict):
+                raise ValueError("存档结构无效。")
+            state = GameState.from_dict(payload)
+            self._validate_loaded_state(state)
+            return state
+        except (OSError, json.JSONDecodeError, TypeError, ValueError, KeyError, AttributeError) as exc:
+            raise SaveImportError(f"存档“{path.name}”已损坏，无法读取：{exc}") from exc
+
+    def restore_backup(self, name: str) -> str:
+        backup = self.backup_path_for(name)
+        if not backup.is_file():
+            raise FileNotFoundError(f"找不到“{self.normalize_name(name)}”的备份。")
+        state = self._load_path(backup)
+        restored_name = self._available_import_name(f"{self.normalize_name(name)}_备份恢复")
+        self.save(restored_name, state)
+        return restored_name
 
     def list_names(self) -> list[str]:
         return sorted(path.stem for path in self.save_dir.glob("*.json"))
+
+    def delete(self, name: str) -> dict[str, str]:
+        """Remove a save and its backup from the list, retaining recoverable bytes."""
+        if not name or self.normalize_name(name) != name:
+            raise ValueError("存档名称无效，请从卷宗列表选择。")
+        root = self.save_dir.resolve()
+        source = self.path_for(name)
+        backup = self.backup_path_for(name)
+        for path in (source, backup):
+            if path.is_symlink() or path.resolve().parent != root:
+                raise ValueError("存档路径无效，不能删除目录之外的文件。")
+        if not source.is_file():
+            raise FileNotFoundError(f"找不到存档：{name}")
+        trash = self.save_dir / '.trash'
+        if trash.is_symlink() or trash.resolve().parent != root:
+            raise ValueError("回收目录路径无效。")
+        trash.mkdir(exist_ok=True)
+        recovery = Path(tempfile.mkdtemp(prefix='deleted-', dir=trash))
+        moved: list[Path] = []
+        try:
+            for path in (source, backup):
+                if path.is_file():
+                    path.rename(recovery / path.name)
+                    moved.append(path)
+        except OSError:
+            for path in reversed(moved):
+                (recovery / path.name).rename(path)
+            recovery.rmdir()
+            raise
+        return {"name": name, "recovery_directory": str(recovery.resolve())}
 
     def list_summaries(self) -> list[dict[str, object]]:
         summaries: list[dict[str, object]] = []
         for path in sorted(self.save_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            player = payload.get("player", {}) if isinstance(payload, dict) else {}
-            summaries.append(
-                {
+                if not isinstance(payload, dict) or not isinstance(payload.get("player"), dict):
+                    raise ValueError("存档结构无效。")
+                state = GameState.from_dict(payload)
+                self._validate_loaded_state(state)
+                player = payload["player"]
+                summary = {
                     "name": path.stem,
                     "player_name": str(player.get("name", "无名修士")),
                     "dao_name": str(player.get("dao_name", "")),
@@ -83,8 +151,12 @@ class SaveManager:
                     "calendar_year": int(payload.get("calendar_year", 387)),
                     "month": int(payload.get("month", 1)),
                     "modified_at": int(path.stat().st_mtime),
+                    "corrupt": False,
                 }
-            )
+            except (OSError, json.JSONDecodeError, TypeError, ValueError, KeyError, AttributeError):
+                summary = {"name": path.stem, "player_name": "存档损坏", "realm": "无法读取", "corrupt": True}
+            summaries.append(summary)
+            summary["has_backup"] = self.backup_path_for(path.stem).is_file()
         return summaries
 
     @staticmethod

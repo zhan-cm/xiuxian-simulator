@@ -4733,9 +4733,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font: inherit;
   font-size: 11.5px;
   color: #7b643d;
   cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 .latest-save-chip:hover {
   text-decoration: underline;
@@ -14442,3 +14446,105 @@ body {
 
 
 
+/* 委托在主流程中保持可见；次要信息按需展开。 */
+.commission-tracker {
+  padding: 16px;
+  border: 1px solid rgba(70, 111, 86, .23);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f7f8ef, #edf3e9);
+  box-shadow: 0 5px 18px rgba(34, 68, 48, .06);
+}
+.commission-tracker > header,
+.commission-tracker > header > div,
+.commission-tracker-heading,
+.commission-tracker-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.commission-tracker > header > div { justify-content: flex-start; color: #396751; }
+.commission-tracker h3 { margin: 0; font-size: 16px; }
+.commission-tracker header span { font-size: 12px; color: #718576; }
+.commission-tracker button,
+.stage-overview-toggle,
+.rail-more-toggle {
+  border: 1px solid rgba(60, 101, 76, .24);
+  border-radius: 9px;
+  background: #fffdf7;
+  color: #345e49;
+  cursor: pointer;
+  font: inherit;
+}
+.commission-tracker > header > button { padding: 7px 10px; font-size: 12px; }
+.commission-tracker-list { display: grid; gap: 10px; margin-top: 12px; }
+.commission-tracker-list > article {
+  padding: 13px;
+  border: 1px solid rgba(61, 102, 78, .16);
+  border-radius: 11px;
+  background: rgba(255, 255, 253, .86);
+}
+.commission-tracker-list > article[data-ready="true"] { border-color: rgba(171, 123, 45, .5); background: #fffaf0; }
+.commission-tracker-heading strong { color: #315b46; font-size: 15px; }
+.commission-tracker-heading span,
+.commission-tracker-location { display: inline-flex; align-items: center; gap: 4px; color: #826a42; font-size: 12px; }
+.commission-tracker-location { margin: 8px 0 3px; font-weight: 600; }
+.commission-tracker-instruction { margin: 0; color: #4e6357; font-size: 13px; line-height: 1.55; }
+.commission-tracker-bottom { margin-top: 10px; }
+.commission-tracker-progress { display: grid; gap: 4px; flex: 1; max-width: 240px; color: #526c5c; font-size: 12px; }
+.commission-tracker-progress progress { width: 100%; height: 7px; accent-color: #4e8667; }
+.commission-tracker-bottom button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 7px 12px;
+  background: #3d7559;
+  color: #fff;
+  font-size: 13px;
+}
+.commission-tracker-bottom button:disabled { opacity: .5; cursor: not-allowed; }
+.commission-tracker article > small { display: block; margin-top: 5px; color: #728277; font-size: 11px; }
+.stage-overview-toggle,
+.rail-more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.stage-overview-toggle[aria-expanded="true"] svg,
+.rail-more-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.stage-overview > :not(.stage-overview-toggle) { margin-top: 10px; }
+.xianxia-rail-nav .world-navigation { margin-top: 8px; }
+.commission-howto { margin-top: 9px; padding: 9px; border-radius: 8px; background: #e9f1e8; }
+.commission-howto strong { display: inline-flex; align-items: center; gap: 4px; color: #385d46; font-size: 12px; }
+.commission-howto p,
+.commission-offer-guide p { margin: 4px 0 0; color: #536b5d; font-size: 12px; line-height: 1.5; }
+.commission-offer-guide { padding: 7px 0; color: #396b50; font-size: 12px; }
+.commission-offer-guide summary { cursor: pointer; }
+.commission-dialog .commission-summary span,
+.commission-dialog .commission-section-title span small,
+.commission-dialog .commission-section-title > em,
+.commission-dialog .commission-empty p,
+.commission-dialog .active-commission-list header small,
+.commission-dialog .active-commission-list header > span,
+.commission-dialog .active-commission-list article > p,
+.commission-dialog .commission-progress strong,
+.commission-dialog .active-commission-list footer > small,
+.commission-dialog .commission-offer-grid header span,
+.commission-dialog .commission-offer-grid header small,
+.commission-dialog .commission-offer-grid article > p,
+.commission-dialog .commission-offer-grid dt,
+.commission-dialog .commission-offer-grid dd { font-size: 12px; }
+.commission-dialog .active-commission-list footer button,
+.commission-dialog .commission-offer-grid article > button { min-height: 35px; font-size: 12px; }
+.commission-dialog .active-commission-list header h3,
+.commission-dialog .commission-offer-grid h3 { font-size: 17px; }
+@media (max-width: 600px) {
+  .commission-tracker { padding: 12px; }
+  .commission-tracker-bottom { align-items: stretch; flex-direction: column; }
+  .commission-tracker-progress { max-width: none; }
+}

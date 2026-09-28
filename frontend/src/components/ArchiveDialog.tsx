@@ -1,12 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { CalendarDays, FileDown, FolderOpen, RotateCcw, Save, ScrollText, Upload, X } from 'lucide-react'
+import { CalendarDays, FileDown, FolderOpen, RotateCcw, Save, ScrollText, Trash2, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { fetchSaveExport, importSave } from '../api/client'
+import { deleteSave, fetchSaveExport, importSave } from '../api/client'
 import type { Snapshot } from '../api/types'
 
 interface ArchiveDialogProps {
   saves: Snapshot['save_summaries']
   busy: boolean
+  canSave: boolean
   onAction: (action: string) => void
   onChanged: () => Promise<unknown> | void
   onNotice: (message: string) => void
@@ -18,14 +19,15 @@ const value = (item: Record<string, unknown>, key: string, fallback = '—') => 
 
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
-export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open, onOpenChange }: ArchiveDialogProps) {
-  const [name, setName] = useState('autosave')
+export function ArchiveDialog({ saves, busy, canSave, onAction, onChanged, onNotice, open, onOpenChange }: ArchiveDialogProps) {
+  const [name, setName] = useState('手动存档')
   const [confirming, setConfirming] = useState('')
   const [transferring, setTransferring] = useState('')
   const [transferStatus, setTransferStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const submitSave = () => {
-    const normalized = name.trim() || 'autosave'
+    const normalized = name.trim() || '手动存档'
+    if (saves.some((item) => item.name === normalized) && !window.confirm(`“${normalized}”已存在。确定覆盖这份卷宗吗？`)) return
     onAction(`存档 ${normalized}`)
   }
   const load = (saveName: string) => {
@@ -35,6 +37,24 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open
     }
     setConfirming('')
     onAction(`读档 ${saveName}`)
+    onOpenChange?.(false)
+  }
+  const remove = async (saveName: string) => {
+    if (!window.confirm(`删除“${saveName}”及其备份？文件会移入本地回收目录，不会重置当前角色；继续行动可能重新生成自动存档。`)) return
+    setTransferring(`delete:${saveName}`)
+    setTransferStatus(null)
+    try {
+      const result = await deleteSave(saveName)
+      setConfirming('')
+      await onChanged()
+      const message = `“${saveName}”已删除，不会重置当前角色。可恢复文件位于：${result.recovery_directory}`
+      setTransferStatus({ tone: 'success', text: message })
+      onNotice(message)
+    } catch (reason) {
+      setTransferStatus({ tone: 'error', text: reason instanceof Error ? reason.message : '删除失败。' })
+    } finally {
+      setTransferring('')
+    }
   }
   const download = async (saveName: string) => {
     setTransferring(`export:${saveName}`)
@@ -98,7 +118,8 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open
           <header><div><p>本地卷宗</p><Dialog.Title>存档与读档</Dialog.Title><Dialog.Description>存档保存在你的电脑中；覆盖旧档前会自动留存备份。</Dialog.Description></div><Dialog.Close aria-label="关闭"><X size={20} /></Dialog.Close></header>
           <section className="save-create">
             <label htmlFor="save-name">卷宗名称</label>
-            <div><input id="save-name" value={name} maxLength={48} onChange={(event) => setName(event.target.value)} placeholder="例如：筑基之前" /><button type="button" disabled={busy} onClick={submitSave}><Save size={15} />保存当前进度</button></div>
+            <div><input id="save-name" value={name} maxLength={48} onChange={(event) => setName(event.target.value)} placeholder="例如：筑基之前" /><button type="button" disabled={busy || !canSave} onClick={submitSave}><Save size={15} />保存当前进度</button></div>
+            {!canSave && <small>开始游戏后才能保存当前进度。</small>}
             <small>同名卷宗会被新进度覆盖，但上一个版本仍会保留为备份。</small>
           </section>
           <section className="save-transfer">
@@ -111,7 +132,22 @@ export function ArchiveDialog({ saves, busy, onAction, onChanged, onNotice, open
               const saveName = value(item, 'name')
               const selected = confirming === saveName
               const exporting = transferring === `export:${saveName}`
-              return <article key={saveName}><span>{value(item, 'player_name', '无名修士').slice(0, 1)}</span><div><strong>{saveName}</strong><p>{value(item, 'player_name', '无名修士')} · {value(item, 'realm', '凡人')}</p><small><CalendarDays size={11} />天玄历 {value(item, 'calendar_year', '387')} 年 {value(item, 'month', '1')} 月 · 第 {value(item, 'turn', '0')} 回合</small></div><div className="save-entry-actions"><button type="button" title="导出为带校验值的便携卷宗" disabled={busy || Boolean(transferring)} onClick={() => void download(saveName)}><FileDown size={14} />{exporting ? '导出中…' : '导出'}</button><button type="button" data-confirm={selected || undefined} disabled={busy || Boolean(transferring)} onClick={() => load(saveName)}><FolderOpen size={14} />{selected ? '再次点击确认' : '读取'}</button></div></article>
+              return (
+                <article key={saveName}>
+                  <span>{value(item, 'player_name', '无名修士').slice(0, 1)}</span>
+                  <div>
+                    <strong>{saveName}</strong>
+                    <p>{item.corrupt ? '存档损坏，无法读取；原文件仍保留在本地' : `${value(item, 'player_name', '无名修士')} · ${value(item, 'realm', '凡人')}`}</p>
+                    {!item.corrupt && <small><CalendarDays size={11} />天玄历 {value(item, 'calendar_year', '387')} 年 {value(item, 'month', '1')} 月 · 第 {value(item, 'turn', '0')} 回合</small>}
+                  </div>
+                  <div className="save-entry-actions">
+                    {Boolean(item.has_backup) && <button type="button" title="将上一个版本另存为新卷宗" disabled={busy || Boolean(transferring)} onClick={() => onAction(`恢复备份 ${saveName}`)}><RotateCcw size={14} />恢复备份</button>}
+                    <button type="button" title="导出为带校验值的便携卷宗" disabled={busy || Boolean(transferring) || Boolean(item.corrupt)} onClick={() => void download(saveName)}><FileDown size={14} />{exporting ? '导出中…' : '导出'}</button>
+                    <button type="button" data-confirm={selected || undefined} disabled={busy || Boolean(transferring) || Boolean(item.corrupt)} onClick={() => load(saveName)}><FolderOpen size={14} />{selected ? '再次点击确认' : '读取'}</button>
+                    <button type="button" className="save-delete-button" aria-label={`删除 ${saveName}`} title="确认后移入本地回收目录，不重置角色" disabled={busy || Boolean(transferring)} onClick={() => void remove(saveName)}><Trash2 size={14} />{transferring === `delete:${saveName}` ? '删除中…' : '删除'}</button>
+                  </div>
+                </article>
+              )
             })}</div> : <div className="empty-save"><ScrollText size={25} /><p>还没有已保存的卷宗。</p></div>}
           </section>
           <section className="save-restart-area">

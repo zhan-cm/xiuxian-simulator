@@ -22,6 +22,20 @@ describe('StartGamePortal', () => {
     fireEvent.click(screen.getByRole('button', { name: /查阅洞天卷宗/ }))
     expect(openArchive).toHaveBeenCalled()
   })
+
+  it('starts the default character in one action', () => {
+    const act = vi.fn()
+    render(<StartGamePortal busy={false} saveSummaries={[]} onAction={act} onOpenArchive={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /承袭天命/ }))
+    expect(act).toHaveBeenCalledWith('快速开始游戏')
+  })
+
+  it('offers direct continuation when a valid save exists', () => {
+    const act = vi.fn()
+    render(<StartGamePortal busy={false} saveSummaries={[{ name: 'autosave', player_name: '林渡', realm: '筑基', corrupt: false }]} onAction={act} onOpenArchive={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /继续上次修行/ }))
+    expect(act).toHaveBeenCalledWith('读档 autosave')
+  })
 })
 
 describe('CharacterCreatorPortal', () => {

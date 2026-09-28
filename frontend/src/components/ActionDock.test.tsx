@@ -50,6 +50,15 @@ describe('action drafts', () => {
     expect(act).toHaveBeenCalledExactlyOnceWith('突破')
   })
 
+  it('opens the commission board from the foundation preparation prompt', () => {
+    const openBoard = vi.fn()
+    const act = vi.fn()
+    render(<ActionDock busy={false} canQuickAct canDraft initialMode="focus" contextActions={[{ action: '委托', label: '筹备筑基丹', description: '先赚灵石', tone: 'commission' }]} onOpenCommissionBoard={openBoard} onAction={act} />)
+    fireEvent.click(screen.getByRole('button', { name: /筹备筑基丹/ }))
+    expect(openBoard).toHaveBeenCalledOnce()
+    expect(act).not.toHaveBeenCalled()
+  })
+
   it('allows one-click execution of selectable actions across categories without manual typing', () => {
     const act = vi.fn()
     render(<ActionDock busy={false} canQuickAct canDraft onAction={act} />)
@@ -83,6 +92,15 @@ describe('action drafts', () => {
     expect(cultivateBtn).toBeDisabled()
     fireEvent.click(cultivateBtn)
     expect(act).not.toHaveBeenCalled()
+  })
+
+  it('keeps advanced controls out of the default focused view', () => {
+    render(<ActionDock busy={false} canQuickAct canDraft initialMode="focus" onAction={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '悬赏榜单' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: '行动草稿' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '闭关三月' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '展开万象' }))
+    expect(screen.getByRole('button', { name: /自定义心念草稿.*进阶玩法/ })).toBeInTheDocument()
   })
 })
 

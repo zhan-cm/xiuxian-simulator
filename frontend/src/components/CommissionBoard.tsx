@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { Ban, Check, ClipboardList, Clock3, Coins, Gift, LockKeyhole, ScrollText, ShieldCheck, X } from 'lucide-react'
+import { ArrowRight, Ban, Check, ClipboardList, Clock3, Coins, Gift, LockKeyhole, MapPin, ScrollText, ShieldCheck, X } from 'lucide-react'
 import type { CommissionSnapshot } from '../api/types'
 
 interface CommissionBoardProps {
@@ -61,7 +61,8 @@ export function CommissionBoard({
                 <header><div><small>{item.issuer}</small><h3>{item.title}</h3></div><span><Clock3 size={13} />{item.expired ? '已经逾期' : `余 ${item.turns_left} 月`}</span></header>
                 <p>{item.summary}</p>
                 <div className="commission-progress"><i><b style={{ width: `${item.progress}%` }} /></i><strong>{item.current}/{item.required}</strong></div>
-                <footer><small><Gift size={13} />{item.reward}</small><div><button className="quiet" type="button" disabled={busy || readOnly} onClick={() => onAction(item.abandon_action)}><Ban size={13} />放弃</button><button type="button" disabled={!item.ready || busy || readOnly} title={!item.ready ? '完成要求后才可交付' : `领取 ${item.reward}`} onClick={() => onAction(item.deliver_action)}>{item.ready ? <Gift size={14} /> : <LockKeyhole size={14} />}{item.ready ? '交付领取' : '尚未完成'}</button></div></footer>
+                <div className="commission-howto"><strong><MapPin size={13} />去哪里、怎么做</strong><p>{item.location}：{item.how_to}</p></div>
+                <footer><small><Gift size={13} />{item.reward}</small><div><button className="quiet" type="button" disabled={busy || readOnly} onClick={() => onAction(item.abandon_action)}><Ban size={13} />放弃</button><Dialog.Close asChild><button type="button" disabled={busy || readOnly || item.expired} title={item.action_hint} onClick={() => onAction(item.next_action)}>{item.ready ? <Gift size={14} /> : <ArrowRight size={14} />}{item.next_label}</button></Dialog.Close></div></footer>
               </article>
             ))}</div> : <div className="commission-empty"><ClipboardList size={25} /><div><strong>尚无在途委托</strong><p>从下方悬榜挑选差事，探索、斗法与百艺都会记录真实进度。</p></div></div>}
           </section>
@@ -73,6 +74,7 @@ export function CommissionBoard({
                 <header><span>{item.kind_label}</span><small>{item.issuer}</small></header>
                 <h3>{item.title}</h3><p>{item.summary}</p>
                 <dl><div><dt>要求</dt><dd>{item.requirement}</dd></div><div><dt>限期</dt><dd>{item.duration} 个月</dd></div><div><dt>报酬</dt><dd>{item.reward}</dd></div></dl>
+                <details className="commission-offer-guide"><summary>在哪里完成？</summary><p>{item.location}：{item.how_to}</p></details>
                 <button type="button" disabled={!item.eligible || busy || readOnly} title={readOnly ? '巡览模式仅供查看' : item.disabled_reason || `接取《${item.title}》`} onClick={() => onAction(item.accept_action)}>{item.completed ? <Check size={14} /> : item.eligible ? <ScrollText size={14} /> : <LockKeyhole size={14} />}{item.completed ? '本期已完成' : item.accepted ? '已经接取' : item.eligible ? '接取委托' : item.disabled_reason}</button>
               </article>
             ))}</div>

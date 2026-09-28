@@ -40,6 +40,15 @@ interface FocusActionRecommendation {
   badge: string
 }
 
+const MAJOR_PILLS = ['筑基丹', '凝晶丹', '结丹灵药', '结婴丹', '具灵丹', '化神丹', '悟道丹', '羽化丹', '登仙丹']
+
+function ownsItem(player: PlayerState, inventory: Snapshot['inventory'] | undefined, name: string) {
+  return Boolean(
+    player.resources?.[name] > 0 || player.inventory?.includes(name) ||
+    inventory?.items?.some((item) => item.name === name && item.count > 0)
+  )
+}
+
 export function TianjiFocusCard({
   player,
   state,
@@ -54,7 +63,7 @@ export function TianjiFocusCard({
   onOpenEncounter,
   onOpenCommissionBoard,
 }: TianjiFocusCardProps) {
-  const [showMilestones, setShowMilestones] = useState(true)
+  const [showMilestones, setShowMilestones] = useState(false)
 
   // 1. 动态推演「当务之急」焦点行动（Next Best Action）
   const recommendation = useMemo<FocusActionRecommendation>(() => {
@@ -106,38 +115,40 @@ export function TianjiFocusCard({
       }
     }
 
+    const needsFoundationPill = player.realm === '炼气·圆满' &&
+      !ownsItem(player, snapshot.inventory, '筑基丹') && !ownsItem(player, snapshot.inventory, '天材地宝')
+    if (needsFoundationPill) {
+      const canShop = player.spirit_stones >= 300
+      return {
+        tone: 'trade',
+        badge: '筑基准备',
+        eyebrow: '【破境资粮】先备丹药',
+        title: canShop ? '先去坊市寻找筑基丹' : '筑基丹尚未备齐 · 先赚灵石',
+        description: `人道筑基需要筑基丹×1；坊市参考价约 300 灵石，你现有 ${player.spirit_stones} 灵石。可做悬榜委托，或收集灵药与妖兽材料自行炼丹；地道也可使用天材地宝。`,
+        actionLabel: canShop ? '前往坊市备丹' : '查看可做的悬榜',
+        action: canShop ? '坊市' : 'open_commission',
+        isModalAction: !canShop && Boolean(onOpenCommissionBoard),
+        icon: Coins,
+      }
+    }
+
     // 优先级 4：修为圆满瓶颈（破境契机）
     if (player.cultivation >= player.cultivation_required) {
+      const isMajor = player.realm.endsWith('圆满')
       return {
         tone: 'breakthrough',
         badge: '破境契机',
         eyebrow: '【道基圆满】瓶颈已现',
-        title: `${player.realm}圆满 · 气海翻涌引动天劫`,
-        description: '经络灵力澎湃充盈，已至此境极限。天地雷劫呼之欲出，速速破关登仙！',
-        actionLabel: '引动雷劫破境',
+        title: `${player.realm} · 修为已满`,
+        description: isMajor ? '修为已经圆满，资粮备齐后可选择突破路线。' : '修为已满，可以尝试突破当前小境界；无需筑基丹或渡雷劫。',
+        actionLabel: isMajor ? '选择突破路线' : '尝试小境界突破',
         action: '突破',
         icon: Mountain,
       }
     }
 
-    // 优先级 5：悬赏有成（在途委托已达标，前往领赏）
-    const readyCommissions = snapshot.commissions?.active?.filter((item) => item.ready) || []
-    if (readyCommissions.length > 0) {
-      const firstReady = readyCommissions[0]
-      return {
-        tone: 'gain',
-        badge: '悬榜有成',
-        eyebrow: '【因果有偿】委托已达标',
-        title: `《${firstReady.title}》已成 · 前往东洲悬榜领赏`,
-        description: `历练圆满达成所托，可领取 ${firstReady.reward} 等丰厚报酬。`,
-        actionLabel: '领取悬榜赏金',
-        action: 'open_commission',
-        isModalAction: Boolean(onOpenCommissionBoard),
-        icon: ScrollText,
-      }
-    }
-
-    // 优先级 6：囊中羞涩（灵石不足 40 且未达突破，急需生财）
+    // 委托统一交给常驻追踪卡，避免与当务之急重复显示。
+    // 优先级 5：囊中羞涩（灵石不足 40 且未达突破，急需生财）
     if (player.spirit_stones < 40) {
       return {
         tone: 'trade',
@@ -152,7 +163,7 @@ export function TianjiFocusCard({
       }
     }
 
-    // 优先级 7：日常潜修纳气（日常主推）
+    // 优先级 6：日常潜修纳气（日常主推）
     const needCultivation = Math.max(0, player.cultivation_required - player.cultivation)
     const canRetreat = player.spirit >= 20
     return {
@@ -165,7 +176,7 @@ export function TianjiFocusCard({
       action: canRetreat ? '闭关3月' : '修炼',
       icon: Sparkles,
     }
-  }, [player, state.phase, snapshot.recovery, snapshot.commissions, pendingEncounter, onOpenCommissionBoard])
+  }, [player, state.phase, snapshot.recovery, snapshot.inventory, pendingEncounter, onOpenCommissionBoard])
 
   // 2. 当前道阶里程碑清单（Milestone Checklist）
   const milestones = useMemo(() => {
@@ -175,9 +186,13 @@ export function TianjiFocusCard({
       (snapshot.art_mastery?.spells && snapshot.art_mastery.spells.length > 0) ||
       (player.inventory || []).some((i) => /术|诀|法|经/.test(i))
     )
-    const hasPillOrWealth =
-      player.spirit_stones >= 150 ||
-      (player.inventory || []).some((i) => /丹/.test(i))
+    const [realmName, stageName] = player.realm.split('·')
+    const realmIndex = ['炼气', '筑基', '结晶', '金丹', '具灵', '元婴', '化神', '悟道', '羽化'].indexOf(realmName)
+    const requiredPill = MAJOR_PILLS[realmIndex]
+    const majorReady = Boolean(
+      (requiredPill && ownsItem(player, snapshot.inventory, requiredPill)) || ownsItem(player, snapshot.inventory, '天材地宝')
+    )
+    const needsMajorResources = stageName === '圆满' && Boolean(requiredPill)
 
     return [
       {
@@ -200,12 +215,12 @@ export function TianjiFocusCard({
       },
       {
         id: 'breakthrough_prep',
-        label: '筹备破关聚气灵丹与资粮',
-        done: hasPillOrWealth,
-        hint: hasPillOrWealth ? '资粮充足' : '备好破境灵丹或攒足灵石以御反噬',
+        label: needsMajorResources ? `备齐${requiredPill}或天材地宝` : '小境界无需破境材料',
+        done: !needsMajorResources || majorReady,
+        hint: !needsMajorResources ? '修为满值即可尝试' : majorReady ? '已持有可用的破境材料' : '灵石本身不能突破；先到坊市购丹、炼丹或寻找天材地宝',
       },
     ]
-  }, [player, snapshot.art_mastery])
+  }, [player, snapshot.art_mastery, snapshot.inventory])
 
   const RecIcon = recommendation.icon
 
