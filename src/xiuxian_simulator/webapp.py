@@ -152,6 +152,11 @@ class WebApplication:
         with self._lock:
             return self.engine.saves.export_payload(name)
 
+    def delete_save(self, name: str) -> dict[str, Any]:
+        with self._lock:
+            result = self.engine.saves.delete(name)
+            return {**result, "save_summaries": self.engine.saves.list_summaries()}
+
     def import_save(
         self,
         payload: dict[str, Any],

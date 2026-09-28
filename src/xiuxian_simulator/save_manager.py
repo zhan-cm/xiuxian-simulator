@@ -102,6 +102,36 @@ class SaveManager:
     def list_names(self) -> list[str]:
         return sorted(path.stem for path in self.save_dir.glob("*.json"))
 
+    def delete(self, name: str) -> dict[str, str]:
+        """Remove a save and its backup from the list, retaining recoverable bytes."""
+        if not name or self.normalize_name(name) != name:
+            raise ValueError("存档名称无效，请从卷宗列表选择。")
+        root = self.save_dir.resolve()
+        source = self.path_for(name)
+        backup = self.backup_path_for(name)
+        for path in (source, backup):
+            if path.is_symlink() or path.resolve().parent != root:
+                raise ValueError("存档路径无效，不能删除目录之外的文件。")
+        if not source.is_file():
+            raise FileNotFoundError(f"找不到存档：{name}")
+        trash = self.save_dir / '.trash'
+        if trash.is_symlink() or trash.resolve().parent != root:
+            raise ValueError("回收目录路径无效。")
+        trash.mkdir(exist_ok=True)
+        recovery = Path(tempfile.mkdtemp(prefix='deleted-', dir=trash))
+        moved: list[Path] = []
+        try:
+            for path in (source, backup):
+                if path.is_file():
+                    path.rename(recovery / path.name)
+                    moved.append(path)
+        except OSError:
+            for path in reversed(moved):
+                (recovery / path.name).rename(path)
+            recovery.rmdir()
+            raise
+        return {"name": name, "recovery_directory": str(recovery.resolve())}
+
     def list_summaries(self) -> list[dict[str, object]]:
         summaries: list[dict[str, object]] = []
         for path in sorted(self.save_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):

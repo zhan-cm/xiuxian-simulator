@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+import tempfile
 
 from xiuxian_simulator.cli import build_engine
 from xiuxian_simulator.state import GameState
@@ -96,6 +97,9 @@ class TestTianjiRankings(unittest.TestCase):
 
     def test_engine_actions_and_webapp(self) -> None:
         engine = build_engine()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        engine.saves.save_dir = Path(temp.name)
         engine.process("开始游戏")
         engine.process("确认默认创角")
         engine.state.player.resources["天机令"] = 100

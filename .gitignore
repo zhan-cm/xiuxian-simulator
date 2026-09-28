@@ -8,6 +8,7 @@ __pycache__/
 .env
 data/saves/*.json
 data/saves/*.bak
+data/saves/.trash/
 !data/saves/.gitkeep
 data/logs/
 data/*.log

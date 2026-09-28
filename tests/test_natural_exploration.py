@@ -1,5 +1,7 @@
 import unittest
 from xiuxian_simulator.cli import build_engine
+import tempfile
+from pathlib import Path
 from xiuxian_simulator.natural_exploration import KYUSHU_LANDMARKS, NaturalExplorationEngine
 from xiuxian_simulator.state import GameState
 from xiuxian_simulator.travel import TravelEngine
@@ -97,6 +99,9 @@ class TestNaturalExploration(unittest.TestCase):
 
     def test_engine_and_webapp_integration(self) -> None:
         engine = build_engine()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        engine.saves.save_dir = Path(temp.name)
         engine.process("开始游戏")
         engine.process("确认默认创角")
         engine.state.player.location = "东洲·青岳"
@@ -124,7 +129,6 @@ class TestNaturalExploration(unittest.TestCase):
         self.assertIn("太古挪移大阵", out_teleport)
         self.assertEqual(TravelEngine.current_region(engine.state), "西漠")
 
-        from pathlib import Path
         root = Path(__file__).resolve().parent.parent
         webapp = WebApplication(engine, root)
         app_snap = webapp.snapshot()

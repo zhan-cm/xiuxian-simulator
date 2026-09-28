@@ -97,6 +97,17 @@ def create_modern_app(engine: GameEngine, root: Path) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.delete("/api/v1/saves")
+    def delete_save(name: str) -> dict[str, Any]:
+        try:
+            return game.delete_save(name)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail="删除失败，无法移动存档文件。请检查文件是否被占用。") from exc
+
     @app.get("/api/v1/saves/export")
     def export_save(name: str) -> Response:
         try:

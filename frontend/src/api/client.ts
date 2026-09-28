@@ -12,6 +12,13 @@ export function fetchSnapshot(): Promise<Snapshot> {
   return fetch('/api/v1/state', { headers: { Accept: 'application/json' } }).then(decode<Snapshot>)
 }
 
+export function deleteSave(name: string): Promise<{ name: string; recovery_directory: string }> {
+  return fetch(`/api/v1/saves?name=${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json' },
+  }).then(decode<{ name: string; recovery_directory: string }>)
+}
+
 export function performAction(action: string): Promise<Snapshot> {
   return fetch('/api/v1/actions', {
     method: 'POST',

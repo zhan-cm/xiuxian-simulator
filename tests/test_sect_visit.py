@@ -1,5 +1,7 @@
 ﻿import unittest
 from xiuxian_simulator.cli import build_engine
+import tempfile
+from pathlib import Path
 from xiuxian_simulator.sect_visit import SECT_PROFILES, SectVisitEngine
 from xiuxian_simulator.state import GameState
 
@@ -53,6 +55,9 @@ class TestSectVisit(unittest.TestCase):
 
     def test_engine_actions(self) -> None:
         engine = build_engine()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        engine.saves.save_dir = Path(temp.name)
         engine.process("开始游戏")
         engine.process("确认默认创角")
         engine.state.player.spirit_stones = 1000

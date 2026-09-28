@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 from xiuxian_simulator.artifact_growth import ArtifactGrowthEngine, INSCRIPTIONS, INFUSIBLE_MATERIALS
 from xiuxian_simulator.state import GameState
 from xiuxian_simulator.engine import GameEngine
@@ -76,6 +78,9 @@ class TestLifeboundInscriptions(unittest.TestCase):
     def test_engine_action_dispatch(self) -> None:
         from xiuxian_simulator.cli import build_engine
         engine = build_engine()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        engine.saves.save_dir = Path(temp.name)
         engine.process('开始游戏')
         engine.process('确认默认创角')
         engine.state.player.inventory.append('玄铁剑')
